@@ -1,0 +1,12 @@
+name: sme-copilot
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      - ./backend/data:/app/data

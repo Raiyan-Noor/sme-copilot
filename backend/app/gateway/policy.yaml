@@ -1,0 +1,75 @@
+# Gateway policy: the canonical tier assignment for every action. Must match the Tiers table in CLAUDE.md.
+#
+# The LLM proposes; this file and the gateway decide (invariant 1). Rules applied by the gateway:
+#   - Unknown tools are denied.
+#   - Any argument with provenance "untrusted" escalates the action to T3, whatever its normal tier (invariant 3).
+#   - T2 runs only under a valid, unexpired, Ed25519-signed standing mandate; caps below are hard ceilings the
+#     mandate may lower but never raise (invariant 6).
+#   - T3 runs only after the owner signs the exact payload {action, args_hash, nonce, expiry}.
+#   - T4 has no tools, by design (invariant 5). Matching requests get analysis only and are logged as violations.
+# Money is integer minor units. Cap values are scaffold placeholders until prompt 6 sets them.
+
+version: 1
+default_decision: deny
+
+untrusted_provenance:
+  escalate_to: T3
+
+tiers:
+  T1:
+    description: Autonomous, read/compute only
+    execution: autonomous
+    tools:
+      - "get_*"
+      - "list_*"
+      - explain_fact
+      - match_financing
+      - get_passport
+
+  T2:
+    description: Autonomous under a signed standing mandate with hard caps
+    execution: standing_mandate
+    tools:
+      send_invoice_reminder:
+        max_invoice_minor: 50000
+        customer: allowlisted
+        frequency:
+          max: 1
+          per: customer
+          window_days: 3
+      pay_recurring_bill:
+        max_amount_minor: 50000
+        payee: known
+
+  T3:
+    description: Agent prepares, owner signs the exact payload
+    execution: owner_signature
+    tools:
+      submit_loan_application: {}
+      change_payee_details:
+        requires_out_of_band_call_script: true
+      delay_supplier_payment: {}
+      send_supplier_message: {}
+      cancel_subscription: {}
+
+  T4:
+    description: Not implemented, by design. Analysis only; attempts are logged as violations.
+    execution: never
+    tools: []
+    refused_request_categories:
+      - large_debt
+      - hiring_or_firing
+      - pricing_change
+      - deal_commitment
+
+# System tools: never in the planner's registry; callable only by the system.
+system_tools:
+  anchor:
+    tier: T1
+    caller: system
+    testnet_only: true
+    allowed_chain_ids: [11155111, 84532]
+    moves_value: false
+    rate_cap:
+      max: 12
+      window_minutes: 60
