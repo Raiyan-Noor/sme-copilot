@@ -15,6 +15,10 @@ Model, per future day d (day 1 is today, before any of today's rows have posted)
   a category the pack does not define at all are not added either and are counted in
   `forecast.scheduled.unmatched.count`, so a category mismatch is visible instead of silent.
   Overdue payables are assumed paid today. Overdue receivables are left out of the expected path.
+- Promises to pay: a customer's promise read from a clean inbox email (quarantine/feed.py, source
+  `mailbox_promise`) is a receivable on the promised date. The invoice it refers to (same reference) is superseded
+  for the projection, so its cash is counted once, on the promised date. Superseded invoices are counted in
+  `forecast.scheduled.superseded_by_promise.count`.
 
 Uncertainty band (about 80%): sigma is the standard deviation of daily baseline residuals (actual minus model)
 over the lookback; after h days the band is Z * sigma * sqrt(h). The low path also drops every receivable not yet
@@ -42,6 +46,7 @@ LOOKBACK_DAYS = 56  # eight of each weekday
 Z = 1.2816  # two-sided 80%
 WEEKDAYS = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
 BASELINE_LINES = frozenset({"revenue", "cogs", "operating", "uncategorized"})
+PROMISE_SOURCE = "mailbox_promise"  # quarantine/feed.py
 
 
 @dataclass(frozen=True)
@@ -66,6 +71,7 @@ class _Projection:
     overdue_receivables: list[ScheduledItem]
     in_baseline: list[ScheduledItem]
     unmatched: list[ScheduledItem]
+    superseded: list[ScheduledItem]
     days: list[_Day]
     baseline_row_ids: tuple[str, ...]
 
@@ -122,6 +128,10 @@ def _project(snapshot: LedgerSnapshot, pack: EnginePack, clock: Clock,
     sigma_fact = money("forecast.band.daily_sigma", round(sigma), cur, BY, all_baseline_ids or ["clock:today"])
 
     open_items = [s for s in scheduled if s.status == "open"]
+    promised = {s.reference for s in open_items if s.source == PROMISE_SOURCE and s.reference}
+    superseded = [s for s in open_items if s.source != PROMISE_SOURCE and s.kind == "receivable"
+                  and s.reference in promised]
+    open_items = [s for s in open_items if s not in superseded]
     counted = [s for s in open_items if pack.is_scheduled(s.category)]
     in_baseline = [s for s in open_items if s.category in pack.categories and not pack.is_scheduled(s.category)]
     unmatched = [s for s in open_items if s.category not in pack.categories]
@@ -149,8 +159,8 @@ def _project(snapshot: LedgerSnapshot, pack: EnginePack, clock: Clock,
         band = round(Z * sigma * math.sqrt(h))
         out.append(_Day(d, m, b_in, b_out, s_in, s_out, tuple(s.id for s in items), balance,
                         balance - band - future_rec, balance + band + overdue_total))
-    return _Projection(start_balance, baseline_facts, sigma_fact, overdue_rec, in_baseline, unmatched, out,
-                       all_baseline_ids)
+    return _Projection(start_balance, baseline_facts, sigma_fact, overdue_rec, in_baseline, unmatched, superseded,
+                       out, all_baseline_ids)
 
 
 def forecast(snapshot: LedgerSnapshot, pack: EnginePack, clock: Clock,
@@ -173,6 +183,9 @@ def forecast(snapshot: LedgerSnapshot, pack: EnginePack, clock: Clock,
                            [s.id for s in p.in_baseline]))
     if p.unmatched:
         facts.append(count("forecast.scheduled.unmatched.count", len(p.unmatched), BY, [s.id for s in p.unmatched]))
+    if p.superseded:
+        facts.append(count("forecast.scheduled.superseded_by_promise.count", len(p.superseded), BY,
+                           [s.id for s in p.superseded]))
 
     for n in HORIZONS:
         span = p.days[:n]

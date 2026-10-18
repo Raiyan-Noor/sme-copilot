@@ -20,6 +20,7 @@ dependencies = [
     "pynacl>=1.5",
     "openai>=1.40",
     "web3>=7.0",
+    "rapidfuzz>=3.9",  # Inbox Sentinel lookalike domains
 ]
 
 [project.optional-dependencies]
