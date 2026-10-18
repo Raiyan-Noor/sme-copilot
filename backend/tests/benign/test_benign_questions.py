@@ -63,3 +63,22 @@ def test_owner_question(template, tmp_path, task, case, question, expected):
     assert calls and all(c["data"]["role"] == "planner" for c in calls)
     if not RECORD:
         assert all(c["data"]["cache"] == "hit" for c in calls)
+
+
+def test_greeting_gets_a_short_human_reply(template, tmp_path, task):
+    """A bare greeting gets a greeting back and a pointer to what's urgent, not the full risk rundown."""
+    task("greeting", MAYA, "question")
+    data_dir, seed_dir = template
+    client = agent_client(copy_data_dir(data_dir, tmp_path / "tenants"), seed_dir, **llm_settings(RECORD))
+    r = client.post(f"/businesses/{MAYA}/agent/ask", json={"message": "hey"})
+    assert r.status_code == 200, r.text
+    turn = r.json()
+    reply = turn["reply"]
+    task.data["outcome"] = {"actions": [], "fact_ids": len(set(reply["fact_ids"])), "firewall": reply["firewall"]}
+
+    assert not [e for e in turn["events"] if e["type"] == "error"], turn["events"]
+    assert reply["firewall"]["fallback"] is False, reply
+    assert not [e for e in turn["events"] if e["type"] == "action"], "a greeting proposed an action"
+    text = reply["text"]
+    assert text.split()[0].strip(",.!").lower() in {"hi", "hey", "hello", "morning", "good"}, text
+    assert len(text.split()) <= 60, f"greeting reply too long: {text}"
