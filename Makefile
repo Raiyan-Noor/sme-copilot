@@ -30,9 +30,8 @@ openapi:  ## export docs/openapi.json and regenerate frontend/lib/types.ts from 
 	"$(VENV_PY)" scripts/export_openapi.py
 	"$(VENV_PY)" scripts/gen_frontend_types.py
 
-redteam:  ## attack + benign suites; writes docs/results/redteam.json
-	@echo "make redteam: not implemented yet (build prompt 15). No results are written until the suite exists."
-	@exit 1
+redteam:  ## attack + benign suites (replay, per recorded provider); writes docs/results/redteam.json
+	"$(VENV_PY)" scripts/redteam.py
 
 evidence:  ## export audit log JSONL + verify chain + anchors (tx hashes) -> docs/results/
 	@echo "make evidence: not implemented yet (build prompts 6, 17, 19)."

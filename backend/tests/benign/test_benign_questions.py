@@ -6,14 +6,12 @@ about, propose no action, and every cited fact must trace to source rows.
 
 To re-record after changing the planner prompt or tools (live calls, costs a few cents on the dev profile):
     BENIGN_RECORD=1 pytest tests/benign/test_benign_questions.py
+    REPLAY_PROVIDER=gemini BENIGN_RECORD=1 pytest tests/benign/test_benign_questions.py   # Gemini set
 """
-
-import os
 
 import pytest
 
-from app.config import Settings
-from tests.agent_env import MAYA, agent_client, build_template, copy_data_dir
+from tests.agent_env import MAYA, agent_client, build_template, copy_data_dir, llm_settings, recording
 
 QUESTIONS: list[tuple[str, str, tuple[str, ...]]] = [
     # (case, question, at least one cited fact must start with one of these)
@@ -29,15 +27,8 @@ QUESTIONS: list[tuple[str, str, tuple[str, ...]]] = [
     ("explain_buffer", "What is my cash buffer and how was it worked out?", ("cash.buffer_days",)),
 ]
 
-RECORD = os.environ.get("BENIGN_RECORD") == "1"
-
-
-def _llm_settings() -> dict:
-    if not RECORD:
-        return {"llm_replay": "replay"}
-    live = Settings()  # reads the developer's .env for keys; only in record mode
-    return {"llm_replay": "record", "llm_profile": "dev", "openai_api_key": live.openai_api_key,
-            "gemini_api_key": live.gemini_api_key}
+RECORD = recording("BENIGN_RECORD")
+pytestmark = pytest.mark.benign
 
 
 @pytest.fixture(scope="module")
@@ -46,13 +37,15 @@ def template(tmp_path_factory):
 
 
 @pytest.mark.parametrize("case,question,expected", QUESTIONS, ids=[q[0] for q in QUESTIONS])
-def test_owner_question(template, tmp_path, case, question, expected):
+def test_owner_question(template, tmp_path, task, case, question, expected):
+    task(case, MAYA, "question")
     data_dir, seed_dir = template
-    client = agent_client(copy_data_dir(data_dir, tmp_path / "tenants"), seed_dir, **_llm_settings())
+    client = agent_client(copy_data_dir(data_dir, tmp_path / "tenants"), seed_dir, **llm_settings(RECORD))
     r = client.post(f"/businesses/{MAYA}/agent/ask", json={"message": question})
     assert r.status_code == 200, r.text
     turn = r.json()
     reply = turn["reply"]
+    task.data["outcome"] = {"actions": [], "fact_ids": len(set(reply["fact_ids"])), "firewall": reply["firewall"]}
 
     assert not [e for e in turn["events"] if e["type"] == "error"], turn["events"]
     assert reply["firewall"]["fallback"] is False, reply

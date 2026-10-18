@@ -25,7 +25,26 @@ from app.agent.context import TurnContext
 from app.agent.events import ActionEvent, ReplySegment
 from app.firewall.digit_check import check_output
 from app.firewall.render import render
-from app.gateway import ArgValue, Decision, ProposedAction
+from app.gateway import ArgValue, Decision, ProposedAction, load_policy
+from app.gateway.dispatch import ACTION_ARGS
+
+
+def _is_fact_arg(name: str, typ: type) -> bool:
+    return typ is int or name.endswith("date")
+
+
+def action_catalog() -> str:
+    """The actions the gateway knows, with their exact argument names, generated from dispatch.ACTION_ARGS and
+    policy.yaml so the planner's view can never drift from what the gateway accepts. Words only, no tier numbers:
+    the planner would echo them. A Tier 4 action is absent by design (invariant 5)."""
+    policy = load_policy()
+    parts = []
+    for tool, spec in ACTION_ARGS.items():
+        args = ", ".join(n + ("=fact" if _is_fact_arg(n, t) else "") for n, t in spec.items())
+        how = "runs within the owner's standing limit" if tool in policy.t2 else "waits for the owner's signature"
+        parts.append(f"{tool}({args}): {how}")
+    return "; ".join(parts)
+
 
 PROPOSE_ACTION_SCHEMA: dict[str, Any] = {
     "type": "function",
@@ -34,7 +53,8 @@ PROPOSE_ACTION_SCHEMA: dict[str, Any] = {
         "description": (
             "Ask the gateway to carry out an action for the owner. It checks the owner's signed policy and returns "
             "executed, pending_approval or denied. Arguments: IDs exactly as tool results gave them; every amount "
-            "or date as {\"fact\": \"<fact id>\"} citing a fact from a tool result, never a number."
+            "or date (marked =fact) as {\"fact\": \"<fact id>\"} citing a fact from a tool result, never a number. "
+            "The only actions that exist, with their exact arguments: " + action_catalog() + "."
         ),
         "parameters": {
             "type": "object",

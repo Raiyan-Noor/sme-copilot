@@ -330,3 +330,17 @@ def test_bad_conversation_id_is_rejected(make_client):
     client, _ = make_client()
     r = client.post(f"/businesses/{MAYA}/agent/ask", json={"message": "hi", "conversation_id": "conv_1; drop"})
     assert r.status_code == 422
+
+
+def test_propose_action_lists_exactly_the_gateway_actions():
+    """The planner is told every action the gateway accepts, with its exact argument names, and nothing else."""
+    from app.agent.actions import PROPOSE_ACTION_SCHEMA
+    from app.firewall.digit_check import is_numeric_char
+    from app.gateway.dispatch import ACTION_ARGS
+
+    description = PROPOSE_ACTION_SCHEMA["function"]["description"]
+    for tool, spec in ACTION_ARGS.items():
+        assert f"{tool}(" in description and all(arg in description for arg in spec), tool
+    for t4 in ("price", "hire", "fire", "contract"):
+        assert t4 not in description.lower()
+    assert not any(is_numeric_char(c) for c in description)  # nothing for the planner to echo into a reply

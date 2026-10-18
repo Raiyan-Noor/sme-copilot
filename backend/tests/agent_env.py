@@ -7,6 +7,7 @@ agent suites build their tenants with a fixed key. Same seed + same key = same r
 
 import functools
 import json
+import os
 import shutil
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -23,7 +24,41 @@ from app.services.runtime import Runtime
 from tests.helpers import TEST_PASSCODE, make_settings
 
 MAYA = "maya-corner-store"
+LINA = "lina-boutique"
 FIXED_PII_KEY = bytes(range(32))
+
+# Recordings per provider. OpenAI's live in the default replay dir (what CI replays); another provider's go in a
+# sibling folder, selected with REPLAY_PROVIDER, so `make redteam` can report each provider separately.
+REPLAY_PROVIDERS = ("openai", "gemini")
+
+
+def replay_provider() -> str:
+    provider = os.environ.get("REPLAY_PROVIDER", "openai")
+    if provider not in REPLAY_PROVIDERS:
+        raise ValueError(f"REPLAY_PROVIDER must be one of {REPLAY_PROVIDERS}, not {provider!r}")
+    return provider
+
+
+def recording(flag: str) -> bool:
+    """True when this suite should record: its own flag (e.g. BENIGN_RECORD=1) or REPLAY_RECORD=1 for all suites."""
+    return os.environ.get(flag) == "1" or os.environ.get("REPLAY_RECORD") == "1"
+
+
+def llm_settings(record: bool) -> dict[str, Any]:
+    """Settings overrides for the real LLM adapter. Replay by default (no keys, no network). Recording reads the
+    developer's .env for keys and makes live calls only for requests not already recorded. Recording for Gemini
+    leaves the OpenAI key out, so the adapter's fallback is the provider that answers."""
+    from app.config import Settings
+
+    provider = replay_provider()
+    out: dict[str, Any] = {"llm_replay": "record" if record else "replay"}
+    if provider != "openai":
+        out["llm_replay_dir"] = Settings.model_fields["llm_replay_dir"].default / provider
+    if record:
+        live = Settings()
+        out.update(llm_profile="dev", gemini_api_key=live.gemini_api_key,
+                   openai_api_key=live.openai_api_key if provider == "openai" else "")
+    return out
 
 
 def build_template(root: Path) -> tuple[Path, Path]:
