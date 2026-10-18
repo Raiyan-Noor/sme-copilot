@@ -1,0 +1,14 @@
+.kc-chat{display:flex;gap:14px;align-items:flex-start;max-width:100%}
+.kc-chat--owner{justify-content:flex-end}
+.kc-chat__avatar{flex-shrink:0;width:28px;height:28px;display:flex;align-items:center;justify-content:center;margin-top:3px}
+.kc-chat__avatar img{width:26px;height:auto}
+.kc-chat__avatar span{font-family:var(--font-advisor);font-weight:500;color:var(--brand-primary);font-size:18px}
+.kc-chat__col{display:flex;flex-direction:column;gap:6px;min-width:0;max-width:min(560px,88%)}
+.kc-chat--owner .kc-chat__col{align-items:flex-end;max-width:min(440px,78%)}
+.kc-chat__name{font-size:12px;font-weight:400;color:var(--text-muted)}
+.kc-chat__bubble{text-wrap:pretty;font-variant-numeric:tabular-nums lining-nums}
+.kc-chat--copilot .kc-chat__bubble{font-family:var(--font-advisor);font-size:var(--type-advisor-size);line-height:var(--type-advisor-line);font-weight:400;font-optical-sizing:auto;color:var(--text);padding:0}
+.kc-chat--copilot .kc-chat__bubble .kc-caption{font-family:var(--font-advisor);font-size:inherit;font-style:italic}
+.kc-chat--owner .kc-chat__bubble{font-family:var(--font-body);font-size:15px;line-height:22px;background:var(--surface-raised);color:var(--text);padding:10px 16px;border-radius:var(--radius-lg)}
+.kc-chat__attach{width:100%;margin-top:8px;font-family:var(--font-body)}
+.kc-chat__meta{font-size:12px;line-height:16px;color:var(--text-muted)}

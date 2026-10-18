@@ -1,0 +1,8 @@
+.kc-tabs{display:flex;gap:24px;overflow-x:auto}
+.kc-tabs__tab{all:unset;box-sizing:border-box;cursor:pointer;display:inline-flex;align-items:center;gap:6px;height:40px;border-bottom:2px solid transparent;font-family:var(--font-body);font-size:14px;font-weight:400;color:var(--text-muted);white-space:nowrap;transition:color var(--duration-fast),border-color var(--duration-fast)}
+.kc-tabs--sm .kc-tabs__tab{height:34px;font-size:13px}
+.kc-tabs__tab:hover{color:var(--text)}
+.kc-tabs__tab.is-active{color:var(--text);font-weight:500;border-bottom-color:var(--brand-primary)}
+.kc-tabs__tab:focus-visible{outline:var(--focus-ring-width) solid var(--focus-ring);outline-offset:-2px;border-radius:4px}
+.kc-tabs__count{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:18px;padding:0 6px;border-radius:var(--radius-full);background:var(--surface-raised);font-size:11px;font-weight:500;color:var(--text-muted);font-variant-numeric:tabular-nums}
+.kc-tabs__tab.is-active .kc-tabs__count{background:var(--brand-primary-soft);color:var(--brand-primary)}

@@ -1,0 +1,20 @@
+:root{
+/* 4px base */
+--space-0:0;--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:20px;--space-6:24px;--space-8:32px;--space-10:40px;--space-12:48px;--space-16:64px;
+/* Radii: soft */
+--radius-sm:8px;--radius-md:14px;--radius-lg:20px;--radius-full:9999px;
+/* Elevation: surface steps do the work. shadow-1 is flat; shadow-2 only for floating layers (sheet, toast) */
+--shadow-1:none;
+--shadow-2:0 24px 64px rgba(0,0,0,0.45);
+/* Focus ring: one ring, brand-primary, solid */
+--focus-ring-width:2px;--focus-ring-offset:2px;
+/* Motion */
+--ease-standard:cubic-bezier(0.2,0,0,1); /* @kind other */
+--duration-fast:140ms; /* @kind other */
+--duration-base:220ms; /* @kind other */
+--duration-slow:320ms; /* @kind other */
+/* Layout: conversation-first. Chat column centered on the window, stats rail pinned right, detail panel slides in from the right */
+--chat-column:720px;--rail-width:280px;--detail-width:560px;--control-h-sm:32px;--control-h-md:40px;--control-h-lg:48px;
+/* Icons */
+--icon-stroke:1.5;--icon-sm:16px;--icon-md:20px;
+}

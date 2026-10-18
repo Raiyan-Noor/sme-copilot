@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="color-scheme" content="dark"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KaChing — Advisor</title>
+<link rel="stylesheet" href="_ds/kaching-design-system-2fdbe135-b152-415c-b5b4-1bd10a115c81/tokens/typography.css">
+<link rel="stylesheet" href="_ds/kaching-design-system-2fdbe135-b152-415c-b5b4-1bd10a115c81/tokens/colors.css">
+<link rel="stylesheet" href="_ds/kaching-design-system-2fdbe135-b152-415c-b5b4-1bd10a115c81/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/kaching-design-system-2fdbe135-b152-415c-b5b4-1bd10a115c81/tokens/base.css">
+<link rel="stylesheet" href="_ds/kaching-design-system-2fdbe135-b152-415c-b5b4-1bd10a115c81/components/button/button.css">
+<link rel="stylesheet" href="_ds/kaching-design-system-2fdbe135-b152-415c-b5b4-1bd10a115c81/components/badge/badge.css">
+<link rel="stylesheet" href="_ds/kaching-design-system-2fdbe135-b152-415c-b5b4-1bd10a115c81/components/fact-number/fact-number.css">
+<link rel="stylesheet" href="_ds/kaching-design-system-2fdbe135-b152-415c-b5b4-1bd10a115c81/components/kpi-tile/kpi-tile.css">
+<link rel="stylesheet" href="_ds/kaching-design-system-2fdbe135-b152-415c-b5b4-1bd10a115c81/components/card/card.css">
+<link rel="stylesheet" href="_ds/kaching-design-system-2fdbe135-b152-415c-b5b4-1bd10a115c81/components/progress/progress.css">
+<link rel="stylesheet" href="_ds/kaching-design-system-2fdbe135-b152-415c-b5b4-1bd10a115c81/components/approval-card/approval-card.css">
+<link rel="stylesheet" href="_ds/kaching-design-system-2fdbe135-b152-415c-b5b4-1bd10a115c81/components/alert-banner/alert-banner.css">
+<link rel="stylesheet" href="_ds/kaching-design-system-2fdbe135-b152-415c-b5b4-1bd10a115c81/components/tier-row/tier-row.css">
+<link rel="stylesheet" href="_ds/kaching-design-system-2fdbe135-b152-415c-b5b4-1bd10a115c81/components/table/table.css">
+<link rel="stylesheet" href="_ds/kaching-design-system-2fdbe135-b152-415c-b5b4-1bd10a115c81/components/tabs/tabs.css">
+<link rel="stylesheet" href="_ds/kaching-design-system-2fdbe135-b152-415c-b5b4-1bd10a115c81/components/toast/toast.css">
+<link rel="stylesheet" href="_ds/kaching-design-system-2fdbe135-b152-415c-b5b4-1bd10a115c81/components/sheet/sheet.css">
+<link rel="stylesheet" href="_ds/kaching-design-system-2fdbe135-b152-415c-b5b4-1bd10a115c81/components/chat-bubble/chat-bubble.css">
+<link rel="stylesheet" href="_ds/kaching-design-system-2fdbe135-b152-415c-b5b4-1bd10a115c81/styles.css">
+<link rel="stylesheet" href="app/app.css">
+<style>.ka-p{display:block}</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="_ds/kaching-design-system-2fdbe135-b152-415c-b5b4-1bd10a115c81/_ds_bundle.js"></script>
+<script src="app/data.js"></script>
+</head><body>
+<div id="root"></div>
+<script type="text/babel" src="app/shell.jsx"></script>
+<script type="text/babel" src="app/chat.jsx"></script>
+<script type="text/babel" src="app/panels.jsx"></script>
+<script type="text/babel">
+const Q = new URLSearchParams(location.search);
+const nowT = () => new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).toLowerCase();
+function usePhone() { return useMQ('(max-width:760px)'); }
+function useMQ(q) {
+  const mq = React.useMemo(() => window.matchMedia(q), []);
+  const [p, setP] = React.useState(mq.matches);
+  React.useEffect(() => { const f = () => setP(mq.matches); mq.addEventListener('change', f); return () => mq.removeEventListener('change', f); }, []);
+  return p;
+}
+function App() {
+  const { Toast, Icon } = window.KaChingDesignSystem_2fdbe1;
+  const phone = usePhone();
+  const mid = useMQ('(min-width:761px) and (max-width:1100px)');
+  const [midSb, setMidSb] = React.useState(false);
+  React.useEffect(() => { if (mid) setRailOpen(false); }, [mid]);
+  const [conv, setConv] = React.useState(Q.get('view') || 'brief');
+  const [convList, setConvList] = React.useState([{ id: 'brief', title: 'Morning brief · Oct 18' }, { id: 'flour', title: 'Can I afford to restock flour?' }]);
+  const [msgs, setMsgs] = React.useState({
+    brief: [{ t: 'brief' }],
+    flour: [{ t: 'day', text: 'Oct 16' }, { t: 'owner', text: 'Can I afford to restock flour?', meta: '4:12 pm' }, { t: 'reply', key: 'flour', meta: '4:12 pm' },
+      { t: 'owner', text: 'Order it, but split the delivery in two.', meta: '4:18 pm' }, { t: 'note', text: 'Switched to backup model. Answers may take a little longer', meta: '4:18 pm' }, { t: 'reply', key: 'split', meta: '4:19 pm' }],
+  });
+  const initPanel = Q.get('panel') ? [{ view: Q.get('panel'), tab: Q.get('tab') || undefined, key: Q.get('key') || 'safe' }] : [];
+  const [stack, setStack] = React.useState(initPanel);
+  const [userMini, setUserMini] = React.useState(Q.get('sb') === 'mini');
+  const [railOpen, setRailOpen] = React.useState(Q.get('rail') !== '0');
+  const [drawer, setDrawer] = React.useState(false);
+  const [today, setToday] = React.useState(Q.get('today') === '1');
+  const [fraudOpen, setFraudOpen] = React.useState(true);
+  const [approval, setApproval] = React.useState(Q.get('signed') ? 'executed' : 'waiting');
+  const [improve, setImprove] = React.useState('waiting');
+  const [toasts, setToasts] = React.useState([]);
+  const scrollerRef = React.useRef(null);
+  React.useEffect(() => { if (Q.get('signed')) setMsgs((m) => ({ ...m, brief: [...m.brief, { t: 'signed', meta: '9:16 am' }] })); }, []);
+  const panelOpen = stack.length > 0;
+  React.useEffect(() => {
+    const k = (e) => { if (e.key === 'Escape') { if (panelOpen) setStack([]); else { setToday(false); setDrawer(false); } } };
+    window.addEventListener('keydown', k); return () => window.removeEventListener('keydown', k);
+  }, [panelOpen]);
+  const toast = (t) => { const id = Math.random(); setToasts((x) => [...x, { ...t, id }]); setTimeout(() => setToasts((x) => x.filter((y) => y.id !== id)), 4500); };
+  const push = (id, m) => setMsgs((s) => ({ ...s, [id]: [...(s[id] || []), m] }));
+  const replaceLast = (id, m) => setMsgs((s) => ({ ...s, [id]: [...s[id].slice(0, -1), m] }));
+  const send = (text) => {
+    let id = conv;
+    if (conv === 'new') { id = 'c' + Date.now(); setConvList((l) => [{ id, title: text }, ...l]); setMsgs((s) => ({ ...s, [id]: [] })); setConv(id); }
+    setTimeout(() => {
+      push(id, { t: 'owner', text, meta: nowT() }); push(id, { t: 'thinking' });
+      setTimeout(() => replaceLast(id, { t: 'reply', key: window.kaPick(text), meta: nowT() }), 800);
+    }, 0);
+  };
+  const goToWaiting = (target) => {
+    setConv('brief'); setToday(false); if (phone) setStack([]);
+    setTimeout(() => {
+      const el = document.getElementById(target || (approval === 'waiting' ? 'ka-wait-approval' : 'ka-wait-improve'));
+      const sc = scrollerRef.current; if (!el || !sc) return;
+      sc.scrollTop += el.getBoundingClientRect().top - sc.getBoundingClientRect().top - 24;
+    }, 80);
+  };
+  const ctx = {
+    phone, conv, convList, scrollerRef, fraudOpen, approval, improve, toast, goToWaiting,
+    waiting: (approval === 'waiting' || approval === 'signing' ? 1 : 0) + (improve === 'waiting' ? 1 : 0),
+    setConv: (id) => setConv(id), newConv: () => setConv('new'),
+    toggleSb: () => (mid ? setMidSb((x) => !x) : setUserMini((x) => !x)), closeDrawer: () => { setDrawer(false); setMidSb(false); },
+    setRailOpen, setToday,
+    openPanel: (view, o = {}) => { setStack([{ view, ...o }]); setToday(false); setDrawer(false); },
+    pushPanel: (view, o = {}) => setStack((s) => [...s, { view, ...o }]),
+    popPanel: () => setStack((s) => s.slice(0, -1)),
+    closePanel: () => setStack([]),
+    setPanelTab: (tab) => setStack((s) => [...s.slice(0, -1), { ...s[s.length - 1], tab }]),
+    trace: (key) => { setStack((s) => [...s, { view: 'trace', key }]); setToday(false); },
+    scrollToWaiting: () => goToWaiting(),
+    ask: (q) => { setStack([]); send(q); },
+    blockFraud: () => { setFraudOpen(false); toast({ variant: 'danger', title: 'Payment stays blocked', description: 'Northside Packaging, $2,980.00' }); },
+    approve: () => {
+      setApproval('signing'); push('brief', { t: 'thinking', text: 'Checking your signature…' });
+      setTimeout(() => { setApproval('executed'); replaceLast('brief', { t: 'signed', meta: nowT() }); toast({ variant: 'success', title: 'Payment scheduled', description: '$1,240.00 to Fresh Farms on Oct 21' }); }, 900);
+    },
+    decline: () => { setApproval('blocked'); toast({ title: 'Declined', description: 'Nothing was sent.' }); },
+    signImprove: () => { setImprove('executed'); toast({ variant: 'savings', title: 'Cancellation signed', description: 'Saves $86 a month from Nov 1' }); },
+    skipImprove: () => setImprove('skipped'),
+  };
+  const mini = !phone && (mid ? !midSb : (userMini || panelOpen));
+  const title = (convList.find((c) => c.id === conv) || {}).title || 'New conversation';
+  const style = { '--sb-w': mini ? '64px' : '248px', '--right-w': panelOpen ? (KA_PANELS[stack[stack.length - 1].view].wide ? '760px' : '560px') : railOpen ? '300px' : '0px' };
+  return (
+    <div className="ka-app" style={style}>
+      <Sidebar ctx={ctx} mini={mini} drawer={drawer || (mid && midSb)} />
+      {mid && midSb ? <div className="ka-scrim" style={{ background: 'transparent' }} onClick={() => setMidSb(false)}></div> : null}
+      {phone && drawer ? <div className="ka-scrim" onClick={() => setDrawer(false)}></div> : null}
+      <main className="ka-stage" data-screen-label={conv === 'new' ? 'New conversation' : `Chat: ${title}`}>
+        <header className="ka-head">
+          <div className="ka-col"><span className="ka-head__title">{conv === 'new' ? '' : title}</span></div>
+          {!railOpen && !panelOpen ? <div className="ka-head__right"><button className="ka-ibtn" aria-label="Show stats" title="Show stats" onClick={() => setRailOpen(true)}><Icon name="panel-right-open" size={20} /></button></div> : null}
+        </header>
+        <header className="ka-phonehead">
+          <button className="ka-ibtn" aria-label="Open menu" onClick={() => setDrawer(true)}><Icon name="menu" size={20} /></button>
+          <button className="ka-today" onClick={() => setToday(true)} aria-label={`Today, ${ctx.waiting} waiting for you`}>Today{ctx.waiting ? <span className="g">· {ctx.waiting}</span> : null}<Icon name="chevron-down" size={16} style={{ color: 'var(--text-muted)' }} /></button>
+          <button className="ka-ibtn" aria-label="New conversation" onClick={ctx.newConv}><Icon name="square-pen" size={20} /></button>
+        </header>
+        {conv === 'new' ? <EmptyState onSend={send} /> : <Conversation key={conv} ctx={ctx} msgs={msgs[conv] || []} onSend={send} title={title} />}
+      </main>
+      <Rail ctx={ctx} hidden={panelOpen || !railOpen} />
+      {phone ? <TodaySheet ctx={ctx} open={today} /> : null}
+      <DetailPanel ctx={ctx} stack={stack} />
+      <div className="ka-toasts">{toasts.map((t) => <Toast key={t.id} {...t} onClose={() => setToasts((x) => x.filter((y) => y.id !== t.id))} />)}</div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body></html>

@@ -1,0 +1,10 @@
+.kc-kpi{display:flex;flex-direction:column;gap:8px;min-width:0;container-type:inline-size}
+.kc-kpi__label{display:flex;align-items:center;gap:6px;font-family:var(--font-body);font-size:var(--type-label-size);line-height:var(--type-label-line);font-weight:400;color:var(--text-muted)}
+.kc-kpi__value{font-family:var(--font-display);font-weight:300;color:var(--text);font-variant-numeric:tabular-nums lining-nums;font-feature-settings:"tnum" 1,"lnum" 1;letter-spacing:-0.015em;white-space:nowrap}
+.kc-kpi--lg .kc-kpi__value{font-size:min(var(--type-display-number-size),17cqi);line-height:1.15}
+.kc-kpi--md .kc-kpi__value{font-size:min(32px,14cqi);line-height:1.2}
+.kc-kpi__foot{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.kc-kpi__delta{display:inline-flex;align-items:center;gap:4px;font-size:13px;font-weight:500;font-variant-numeric:tabular-nums}
+.kc-kpi__delta--good{color:var(--success)}
+.kc-kpi__delta--bad{color:var(--text)}
+.kc-kpi__delta--neutral{color:var(--text-muted)}

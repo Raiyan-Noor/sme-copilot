@@ -1,0 +1,18 @@
+.kc-tier{display:grid;grid-template-columns:32px minmax(0,1fr) auto;gap:16px;align-items:start;padding:20px 0;color:var(--text)}
+.kc-tier + .kc-tier{margin-top:4px}
+.kc-tier__num{width:32px;height:32px;border-radius:var(--radius-full);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:400;font-size:14px;background:var(--brand-primary-soft);color:var(--brand-primary)}
+.kc-tier--approval .kc-tier__num{background:transparent;color:var(--warning);box-shadow:inset 0 0 0 1px var(--kc-gold-line)}
+.kc-tier--never .kc-tier__num{background:var(--danger-soft);color:var(--danger)}
+.kc-tier__main{display:flex;flex-direction:column;gap:6px;min-width:0}
+.kc-tier__head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.kc-tier__name{font-family:var(--font-display);font-size:16px;line-height:22px;font-weight:500}
+.kc-tier__mode{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:500;line-height:16px}
+.kc-tier__mode--auto{color:var(--success)}.kc-tier__mode--approval{color:var(--warning)}.kc-tier__mode--never{color:var(--danger)}
+.kc-tier__desc{margin:0;font-size:14px;line-height:21px;color:var(--text-muted)}
+.kc-tier__tools{list-style:none;margin:4px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.kc-tier__tool{display:inline-flex;align-items:center;gap:4px;height:24px;white-space:nowrap;line-height:16px;padding:0 10px;border-radius:var(--radius-full);background:var(--surface-raised);font-size:12px;font-weight:400;color:var(--text)}
+.kc-tier--never .kc-tier__tool{text-decoration:line-through;text-decoration-color:var(--text-muted);color:var(--text-muted);background:transparent;box-shadow:inset 0 0 0 1px var(--border)}
+.kc-tier__signed{display:flex;align-items:center;gap:4px}
+.kc-tier__side{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.kc-tier__limit{display:flex;flex-direction:column;align-items:flex-end}
+.kc-tier__limit-val{font-size:18px;line-height:24px;font-weight:300;font-variant-numeric:tabular-nums;white-space:nowrap}

@@ -1,0 +1,58 @@
+/* KaChing color tokens. Dark theme only. Brand values sampled from the logo. */
+:root{
+color-scheme:dark;
+/* Logo primitives (reference only; the logo itself) */
+--kc-navy:#0D2741;
+--kc-green:#01775A;
+--kc-teal:#01AD8B;
+--kc-gold:#F9A415;
+/* Dark ramp, navy-tinted */
+--kc-ink-0:#0F141A;
+--kc-ink-1:#151C24;
+--kc-ink-2:#1B2430;
+--kc-ink-3:#222D3A;
+--kc-ink-line:#283340;
+--kc-ink-strong:#6B7A89;
+--kc-mist:#E6ECF1;
+--kc-mist-muted:#93A1AE;
+--kc-white:#FFFFFF;
+/* Green: text on dark, and the button fill */
+--kc-green-text:#02A27D;
+--kc-green-text-hover:#34BC97;
+--kc-green-fill:#01775A;
+--kc-green-fill-hover:#017F60;
+--kc-green-fill-press:#016B51;
+--kc-green-wash:#132A27;
+/* Gold: thin outlines only */
+--kc-gold-line:rgba(249,164,21,0.45);
+--kc-muted-teal:#5E9C98;
+
+/* Semantic tokens (names map 1:1 to code) */
+--brand-primary:var(--kc-green-text);
+--brand-primary-hover:var(--kc-green-text-hover);
+--brand-primary-press:var(--kc-green-fill-press);
+--brand-primary-soft:var(--kc-green-wash);
+--brand-accent:var(--kc-gold);
+--brand-accent-soft:rgba(249,164,21,0.10);
+--surface:var(--kc-ink-0);
+--surface-muted:var(--kc-ink-1);
+--surface-raised:var(--kc-ink-2);
+--border:var(--kc-ink-line);
+--border-strong:var(--kc-ink-strong);
+--text:var(--kc-mist);
+--text-muted:var(--kc-mist-muted);
+--on-brand:var(--kc-white);
+--success:#4FBF8B;
+--success-soft:rgba(79,191,139,0.12);
+--warning:var(--kc-gold);
+--warning-soft:var(--brand-accent-soft);
+--danger:#F07B70;
+--danger-soft:rgba(240,123,112,0.12);
+--chart-1:var(--kc-green-text);
+--chart-2:var(--kc-muted-teal);
+--chart-3:var(--kc-ink-strong);
+--chart-4:#3E5A6E;
+--chart-5:#2E3A48;
+--focus-ring:var(--brand-primary);
+--overlay-scrim:rgba(5,8,12,0.64);
+}

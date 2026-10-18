@@ -1,0 +1,5 @@
+.kc-fact{all:unset;cursor:pointer;font:inherit;color:inherit;letter-spacing:inherit;font-variant-numeric:tabular-nums lining-nums;text-decoration:underline dotted;text-decoration-color:var(--border-strong);text-decoration-thickness:1px;text-underline-offset:0.22em;border-radius:4px;padding:0 2px;margin:0 -2px;transition:background-color var(--duration-fast) var(--ease-standard),text-decoration-color var(--duration-fast)}
+.kc-fact:hover{background:var(--brand-primary-soft);text-decoration-color:var(--brand-primary)}
+.kc-fact:focus-visible{outline:var(--focus-ring-width) solid var(--focus-ring);outline-offset:1px}
+.kc-fact--positive{color:var(--success)}
+.kc-fact--negative{color:var(--text)}

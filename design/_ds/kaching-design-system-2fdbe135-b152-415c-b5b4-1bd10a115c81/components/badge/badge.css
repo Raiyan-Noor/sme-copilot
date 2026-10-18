@@ -1,0 +1,12 @@
+.kc-pill{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px 0 8px;border-radius:var(--radius-full);font-family:var(--font-body);font-size:12px;font-weight:500;line-height:1;white-space:nowrap;border:1px solid transparent}
+.kc-pill--sm{height:20px;padding:0 8px 0 6px;gap:4px;font-size:11px}
+.kc-pill--success{background:var(--success-soft);color:var(--success)}
+.kc-pill--warning{background:transparent;color:var(--warning);border-color:var(--kc-gold-line)}
+.kc-pill--danger{background:var(--danger-soft);color:var(--danger)}
+.kc-pill--neutral{background:var(--surface-raised);color:var(--text-muted)}
+.kc-pill--synthetic{background:transparent;color:var(--text-muted);border:1px dashed var(--border-strong)}
+.kc-badge{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 8px;border-radius:var(--radius-sm);font-family:var(--font-body);font-size:12px;font-weight:500;line-height:1;white-space:nowrap;font-variant-numeric:tabular-nums}
+.kc-badge--neutral{background:var(--surface-raised);color:var(--text)}
+.kc-badge--brand{background:var(--brand-primary-soft);color:var(--brand-primary)}
+.kc-badge--savings{background:var(--success-soft);color:var(--success)}
+.kc-badge--outline{background:transparent;color:var(--text-muted);border:1px solid var(--border)}

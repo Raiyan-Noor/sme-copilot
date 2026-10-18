@@ -1,0 +1,13 @@
+.kc-toast{display:flex;align-items:flex-start;gap:12px;width:360px;max-width:calc(100vw - 32px);padding:14px 14px 14px 18px;background:var(--surface-raised);border-radius:var(--radius-md);box-shadow:var(--shadow-2);color:var(--text);font-family:var(--font-body);animation:kc-toast-in var(--duration-base) var(--ease-standard)}
+@keyframes kc-toast-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.kc-toast__icon{display:flex;padding-top:1px;color:var(--text-muted)}
+.kc-toast--success .kc-toast__icon,.kc-toast--savings .kc-toast__icon{color:var(--success)}
+.kc-toast--danger .kc-toast__icon{color:var(--danger)}
+.kc-toast__content{flex:1;min-width:0}
+.kc-toast__title{font-size:14px;line-height:20px;font-weight:500}
+.kc-toast__desc{font-size:13px;line-height:18px;color:var(--text-muted);margin-top:2px;font-variant-numeric:tabular-nums}
+.kc-toast__action{all:unset;cursor:pointer;font-size:13px;font-weight:500;color:var(--brand-primary);padding:2px 6px;border-radius:var(--radius-sm)}
+.kc-toast__action:hover{background:var(--brand-primary-soft)}
+.kc-toast__close{all:unset;cursor:pointer;display:flex;padding:3px;color:var(--text-muted);border-radius:var(--radius-sm)}
+.kc-toast__close:hover{background:var(--kc-ink-3);color:var(--text)}
+.kc-toast__action:focus-visible,.kc-toast__close:focus-visible{outline:var(--focus-ring-width) solid var(--focus-ring);outline-offset:1px}

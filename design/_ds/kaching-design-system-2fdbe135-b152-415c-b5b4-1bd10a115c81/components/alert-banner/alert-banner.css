@@ -1,0 +1,13 @@
+.kc-alert{display:flex;gap:14px;align-items:flex-start;padding:18px 20px;border-radius:var(--radius-lg);background:var(--surface-muted);color:var(--text)}
+.kc-alert--fraud{background:var(--danger-soft)}
+.kc-alert__icon{display:flex;padding-top:1px;color:var(--text-muted)}
+.kc-alert--fraud .kc-alert__icon{color:var(--danger)}
+.kc-alert__content{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0}
+.kc-alert__eyebrow{font-size:12px;line-height:16px;font-weight:500;color:var(--text-muted)}
+.kc-alert--fraud .kc-alert__eyebrow{color:var(--danger)}
+.kc-alert__title{font-size:15px;line-height:22px;font-weight:500}
+.kc-alert__body{font-size:14px;line-height:21px;color:var(--text);text-wrap:pretty}
+.kc-alert__actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.kc-alert__close{all:unset;cursor:pointer;color:var(--text-muted);display:flex;padding:4px;border-radius:var(--radius-sm)}
+.kc-alert__close:hover{background:rgba(230,236,241,.06);color:var(--text)}
+.kc-alert__close:focus-visible{outline:var(--focus-ring-width) solid var(--focus-ring);outline-offset:1px}

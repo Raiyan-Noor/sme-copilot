@@ -1,0 +1,66 @@
+<!-- @dsCard group="KaChing app" viewport="1440x900" name="Owner web app" subtitle="Centered chat with morning brief, stats rail, detail panel" -->
+<!-- @startingPoint section="Screens" subtitle="Conversation-first: centered chat, stats rail, slide-in detail panel" viewport="1440x900" -->
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="color-scheme" content="dark"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KaChing — Owner app</title>
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="kit.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<script src="data.js"></script>
+</head><body>
+<div id="root"></div>
+<script type="text/babel" src="rail.jsx"></script>
+<script type="text/babel" src="chat.jsx"></script>
+<script type="text/babel" src="detail-views.jsx"></script>
+<script type="text/babel" src="detail-panel.jsx"></script>
+<script type="text/babel">
+function App() {
+  const { Sheet, TraceStep, Toast, Button } = window.KaChingDesignSystem_2fdbe1;
+  const d = window.KC_DATA;
+  const [detail, setDetail] = React.useState(null);
+  const [invoice, setInvoice] = React.useState(null);
+  const [seed, setSeed] = React.useState(null);
+  const [traceKey, setTraceKey] = React.useState(null);
+  const [toasts, setToasts] = React.useState([]);
+  const [fraudOpen, setFraudOpen] = React.useState(true);
+  const [approvalState, setApprovalState] = React.useState({});
+  React.useEffect(() => {
+    const k = (e) => { if (e.key === 'Escape' && !traceKey && detail) setDetail(null); };
+    window.addEventListener('keydown', k); return () => window.removeEventListener('keydown', k);
+  }, [traceKey, detail]);
+  const toast = (t) => { const id = Math.random(); setToasts((x) => [...x, { ...t, id }]); setTimeout(() => setToasts((x) => x.filter((y) => y.id !== id)), 5000); };
+  const ctx = {
+    open: (v) => { setDetail(v); setInvoice(null); },
+    close: () => setDetail(null),
+    openInvoice: (id) => { setDetail('inbox'); setInvoice(d.invoices.find((i) => i.id === id)); },
+    invoice, setInvoice,
+    trace: setTraceKey, toast, fraudOpen, approvalState,
+    blockFraud: () => { setFraudOpen(false); toast({ variant: 'danger', title: 'Payment stays blocked', description: 'Northside Packaging, $2,980.00. I emailed their known address to confirm.' }); },
+    approve: (a) => { setApprovalState((s) => ({ ...s, [a.id]: 'executed' })); toast({ variant: 'success', title: a.id === 'a1' ? 'Payment scheduled' : 'Reminder sent', description: `${a.amount} · ${a.title.replace(/^(Pay|Send reminder to) /, '')}`, action: { label: 'Undo', onClick: () => setApprovalState((s) => { const n = { ...s }; delete n[a.id]; return n; }) } }); },
+    decline: (a) => { setApprovalState((s) => ({ ...s, [a.id]: 'blocked' })); toast({ title: 'Declined', description: 'Nothing was sent.' }); },
+    ask: setSeed,
+  };
+  const tr = traceKey && d.traces[traceKey];
+  return (
+    <div className={`kit-app${detail ? ' has-detail' : ''}`}>
+      <main className="kit-stage" data-screen-label="Chat">
+        <header className="kit-stagehead"><img src="../../assets/logo-wordmark-dark.png" alt="KaChing" /></header>
+        <Conversation ctx={ctx} seed={seed} onSeedUsed={() => setSeed(null)} />
+      </main>
+      <Rail ctx={ctx} />
+      <DetailPanel ctx={ctx} view={detail} />
+      <Sheet open={!!tr} onOpenChange={(o) => !o && setTraceKey(null)} title={tr && tr.title} description={tr && tr.description}
+        footer={<Button variant="secondary" size="sm" iconLeft="download" onClick={() => toast({ title: 'Trace exported', description: 'Saved as CSV.' })}>Export trace</Button>}>
+        {tr ? tr.steps.map((s, i) => <TraceStep key={i} {...s} />) : null}
+      </Sheet>
+      <div className="kit-toasts">{toasts.map((t) => <Toast key={t.id} {...t} onClose={() => setToasts((x) => x.filter((y) => y.id !== t.id))} />)}</div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body></html>

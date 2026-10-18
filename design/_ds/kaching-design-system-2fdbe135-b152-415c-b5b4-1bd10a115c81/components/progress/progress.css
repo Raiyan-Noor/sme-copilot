@@ -1,0 +1,14 @@
+.kc-progress{width:100%;background:var(--surface-raised);border-radius:var(--radius-full);overflow:hidden}
+.kc-progress--sm{height:4px}.kc-progress--md{height:6px}
+.kc-progress__fill{height:100%;border-radius:var(--radius-full);transition:width var(--duration-slow) var(--ease-standard)}
+.kc-progress__fill--brand{background:var(--brand-primary)}
+.kc-progress__fill--teal{background:var(--chart-2)}
+.kc-progress__fill--gold{background:var(--brand-accent)}
+.kc-progress__fill--danger{background:var(--danger)}
+.kc-progress__fill--neutral{background:var(--chart-3)}
+.kc-factor{display:flex;flex-direction:column;gap:8px;min-width:0}
+.kc-factor__row{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.kc-factor__label{font-size:14px;line-height:20px;color:var(--text)}
+.kc-factor__value{font-size:14px;line-height:20px;font-weight:500;color:var(--text);font-variant-numeric:tabular-nums;white-space:nowrap}
+.kc-factor__track-wrap{position:relative}
+.kc-factor__threshold{position:absolute;top:-3px;width:2px;height:12px;background:var(--text-muted);border-radius:1px;transform:translateX(-1px)}
