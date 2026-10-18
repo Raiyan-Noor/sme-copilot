@@ -12,7 +12,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field, TypeAdapter
 
 from app.agent.context import CONVERSATION_ID_PATTERN, ConversationStore
-from app.agent.events import AgentEvent, ReplyEvent
+from app.agent.events import AgentEvent, ReplyEvent, StageEvent
 from app.agent.service import run_turn, start_turn
 from app.api.deps import BusinessId, RuntimeDep
 
@@ -38,9 +38,12 @@ def _conversations(request: Request) -> ConversationStore:
 
 @router.post("/businesses/{business_id}/agent/ask", response_model=AgentTurn)
 def ask(business_id: BusinessId, body: AskRequest, request: Request, rt: RuntimeDep) -> AgentTurn:
-    """Ask the planner and get the whole turn at once: tool calls, gateway decisions and the checked reply."""
+    """Ask the planner and get the whole turn at once: tool calls, gateway decisions and the checked reply.
+
+    Stage events are progress lines for a waiting UI, so they are left out here (the chat stream carries them).
+    """
     ctx = start_turn(rt, _conversations(request), business_id, body.conversation_id)
-    events = list(run_turn(ctx, body.message, rt.llm))
+    events = [e for e in run_turn(ctx, body.message, rt.llm) if not isinstance(e, StageEvent)]
     reply = next(e for e in reversed(events) if isinstance(e, ReplyEvent))
     return AgentTurn(conversation_id=ctx.conversation.id, events=events, reply=reply)
 
@@ -49,10 +52,13 @@ def ask(business_id: BusinessId, body: AskRequest, request: Request, rt: Runtime
     "/businesses/{business_id}/agent/chat",
     response_class=StreamingResponse,
     responses={200: {"content": {"text/event-stream": {}},
-                     "description": "Server-sent events: conversation, tool_call, action, error, reply; then done."}},
+                     "description": "Server-sent events: conversation, stage, tool_call, action, error, reply; then done."}},
 )
 def chat(business_id: BusinessId, body: AskRequest, request: Request, rt: RuntimeDep) -> StreamingResponse:
-    """Ask the planner and stream the turn as server-sent events. The reply arrives whole, after the firewall."""
+    """Ask the planner and stream the turn as server-sent events.
+
+    Stage events arrive as each step of the planner loop starts. The reply arrives whole, after the firewall.
+    """
     ctx = start_turn(rt, _conversations(request), business_id, body.conversation_id)
     llm = rt.llm
 

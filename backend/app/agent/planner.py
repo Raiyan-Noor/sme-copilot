@@ -14,6 +14,7 @@ The planner holds no executor and no gateway: actions go through actions.propose
 
 import hashlib
 import json
+import time
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any, Protocol
@@ -27,6 +28,7 @@ from app.agent.events import (
     FirewallReport,
     ReplyEvent,
     ReplySegment,
+    StageEvent,
     ToolCallEvent,
 )
 from app.agent.tools import READ_TOOLS, Tool, run_tool
@@ -95,6 +97,24 @@ def fallback_text(ctx: TurnContext, *, unavailable: bool = False) -> str:
     return head + " Here are the figures I looked up:\n" + "\n".join(lines)
 
 
+class _Timer:
+    """Wall-clock latency of one turn, for the audit log: when the first stage went out, each LLM call, the total.
+
+    Elapsed time only (time.perf_counter), never business time: that comes from clock.py.
+    """
+
+    def __init__(self):
+        self.start = time.perf_counter()
+        self.llm_ms: list[int] = []
+
+    def ms(self, since: float | None = None) -> int:
+        return round((time.perf_counter() - (self.start if since is None else since)) * 1000)
+
+    def report(self, first_stage_ms: int) -> dict[str, Any]:
+        return {"first_stage_ms": first_stage_ms, "llm_ms": self.llm_ms, "llm_total_ms": sum(self.llm_ms),
+                "total_ms": self.ms()}
+
+
 class Planner:
     def __init__(self, llm: ChatClient, read_tools: tuple[Tool, ...] = READ_TOOLS):
         self.llm = llm
@@ -104,7 +124,10 @@ class Planner:
     def run(self, ctx: TurnContext, message: str) -> Iterator[ConversationEvent | ToolCallEvent | ActionEvent |
                                                                   ReplyEvent | ErrorEvent]:
         conv = ctx.conversation
+        self._timer = timer = _Timer()
         yield ConversationEvent(conversation_id=conv.id, today_fact_id=TODAY_FACT_ID)
+        yield StageEvent(stage="received")
+        self._first_stage_ms = timer.ms()
         ctx.audit.append("agent.turn_started", {
             "conversation_id": conv.id, "business_id": ctx.business_id, "history_messages": len(conv.messages),
             "message_sha256": hashlib.sha256(message.encode()).hexdigest(), "message_chars": len(message),
@@ -117,9 +140,13 @@ class Planner:
         drafts = 0
 
         for _ in range(MAX_STEPS):
+            yield StageEvent(stage="fixing" if rejected and messages[-1]["role"] == "user" else "thinking")
+            began = time.perf_counter()
             try:
                 result = self.llm.chat("planner", messages, tools=self.schemas, max_output_tokens=MAX_OUTPUT_TOKENS)
+                timer.llm_ms.append(timer.ms(began))
             except (LLMError, ReplayMiss) as exc:
+                timer.llm_ms.append(timer.ms(began))
                 kind = "replay_miss" if isinstance(exc, ReplayMiss) else "llm_unavailable"
                 yield ErrorEvent(kind=kind, message="The assistant is unavailable, so this reply uses a template.")
                 yield self._finish(ctx, None, drafts, rejected, unavailable=True)
@@ -130,6 +157,8 @@ class Planner:
                 messages.append(assistant)
                 turn.append(assistant)
                 for call in result.tool_calls:
+                    yield (StageEvent(stage="action") if call.name == "propose_action"
+                           else StageEvent(stage="tool", tool=call.name if call.name in self.tools else None))
                     content, events = self._call(ctx, call)
                     yield from events
                     tool_msg = {"role": "tool", "tool_call_id": call.id, "content": json.dumps(content)}
@@ -139,6 +168,7 @@ class Planner:
 
             text = (result.content or "").strip()
             drafts += 1
+            yield StageEvent(stage="firewall")
             check = check_output(text, ctx.store)
             if text and check.ok:
                 conv.messages += turn + [{"role": "assistant", "content": text}]
@@ -196,6 +226,7 @@ class Planner:
         ctx.audit.append("agent.reply", {
             "conversation_id": ctx.conversation.id, "fact_ids": list(rendered.fact_ids), "drafts": drafts,
             "rejected": rejected, "fallback": fallback, "llm_unavailable": unavailable,
+            "timing": self._timer.report(self._first_stage_ms),
         })
         return ReplyEvent(text=rendered.text, fact_ids=list(rendered.fact_ids), firewall=report,
                           segments=[ReplySegment(text=s.text, fact_id=s.fact_id) for s in rendered.segments])

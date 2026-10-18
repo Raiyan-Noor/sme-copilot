@@ -2,7 +2,9 @@
 
 The reply is emitted once, whole, after the Numeric Firewall has passed it (invariant 4); it is never streamed
 token by token, because the owner must not see text the firewall has not checked. Tool and action events stream as
-they happen. No event carries raw untrusted text (invariant 2) or an LLM-written digit.
+they happen. Stage events say what the planner loop is doing right now, so the UI can show a status line while the
+owner waits; they carry a stage code and, for tool stages, the tool name. No event carries raw untrusted text
+(invariant 2) or an LLM-written digit.
 """
 
 from typing import Annotated, Literal
@@ -19,6 +21,17 @@ class ConversationEvent(BaseModel):
     type: Literal["conversation"] = "conversation"
     conversation_id: str
     today_fact_id: str
+
+
+Stage = Literal["received", "thinking", "tool", "action", "firewall", "fixing"]
+
+
+class StageEvent(BaseModel):
+    """Progress through the planner loop. Emitted before each step starts, so the UI's line matches the wait."""
+
+    type: Literal["stage"] = "stage"
+    stage: Stage
+    tool: str | None = None  # set for stage="tool": the read tool about to run
 
 
 class ToolCallEvent(BaseModel):
@@ -63,5 +76,5 @@ class ErrorEvent(BaseModel):
     message: str
 
 
-AgentEvent = Annotated[ConversationEvent | ToolCallEvent | ActionEvent | ReplyEvent | ErrorEvent,
+AgentEvent = Annotated[ConversationEvent | StageEvent | ToolCallEvent | ActionEvent | ReplyEvent | ErrorEvent,
                        Field(discriminator="type")]

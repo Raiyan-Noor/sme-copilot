@@ -289,6 +289,7 @@ class LLMAdapter:
             provider, model, completion = self._call_with_fallback(role, request, attempts)
             return {"provider": provider, "model": model, "completion": completion.model_dump()}
 
+        began = time.perf_counter()
         try:
             outcome = self.cache.fetch(CACHE_NAMESPACE, content, live)
         except ReplayMiss as exc:
@@ -322,6 +323,7 @@ class LLMAdapter:
             "request_key": outcome.key,
             "tool_calls": [c.name for c in completion.tool_calls],
             "attempts": attempts,
+            "latency_ms": round((time.perf_counter() - began) * 1000),  # wall time incl. fallbacks; ~0 on a hit
         })
         info = CallInfo(role, provider, model, completion.usage, cost, outcome.status, outcome.key, entry.seq)
         return completion, info
