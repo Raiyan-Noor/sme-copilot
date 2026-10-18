@@ -41,6 +41,10 @@ class Settings(BaseSettings):
     llm_profile: Literal["dev", "demo"] = "dev"
     llm_replay: Literal["record", "replay", "off"] = "replay"
     llm_budget_usd: float = Field(default=7.0, ge=0)
+    llm_timeout_s: float = Field(default=60.0, gt=0)
+    gemini_model: str = "gemini-2.5-flash"
+    # Recorded responses (committed) that CI replays; also the anchoring RPC mock later.
+    llm_replay_dir: Path = REPO_ROOT / "backend" / "data" / "replay"
 
     # Anchoring (invariant 9)
     anchor_rpc_url: str = ""

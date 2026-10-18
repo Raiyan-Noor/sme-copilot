@@ -25,6 +25,7 @@ from app.audit import AuditLog
 from app.clock import SimClock
 from app.config import Settings
 from app.gateway import Gateway
+from app.llm.adapter import LLMAdapter
 from app.services.businesses import bootstrap_from_seed, business_info, open_business, seed_profiles
 from app.services.finance import Computed, compute, ledger_version, load_inputs
 
@@ -44,6 +45,7 @@ class Runtime:
         self._audit: AuditLog | None = None
         self._gateways: dict[str, Gateway] = {}
         self._facts: dict[tuple, Computed] = {}
+        self._llm: LLMAdapter | None = None
 
     # Setup
     @property
@@ -71,6 +73,14 @@ class Runtime:
     def audit(self) -> AuditLog:
         self.ensure_ready()
         return self._audit
+
+    @property
+    def llm(self) -> LLMAdapter:
+        """The one LLM adapter (OpenAI, Gemini fallback, record/replay), logging to this runtime's audit log."""
+        with self._lock:
+            if self._llm is None:
+                self._llm = LLMAdapter.from_settings(self.settings, self.audit)
+            return self._llm
 
     # Clock
     def _clock_file(self) -> Path:
