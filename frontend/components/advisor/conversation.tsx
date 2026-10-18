@@ -14,6 +14,7 @@ import { ruleLabel, sentence, toolTitle } from "@/lib/format";
 import type { ActionEvent, Decision } from "@/lib/types";
 
 import { BriefMessage } from "./brief";
+import { RevealSegments, StageLine } from "./stage-line";
 import { useAdvisor, type Msg } from "./state";
 
 /** Owner questions with recorded replays (tests/benign), so the chips also work in replay mode. */
@@ -151,7 +152,7 @@ function Message({ m }: { m: Msg }) {
   if (m.t === "thinking") {
     return (
       <ChatBubble role="copilot">
-        <span className="kc-caption">Checking your accounts…</span>
+        <StageLine stage={m.stage} seq={m.seq} />
       </ChatBubble>
     );
   }
@@ -192,7 +193,7 @@ function Message({ m }: { m: Msg }) {
         ) : undefined
       }
     >
-      <Segments segments={m.reply.segments} />
+      <RevealSegments segments={m.reply.segments} arrived={m.arrived} />
     </ChatBubble>
   );
 }

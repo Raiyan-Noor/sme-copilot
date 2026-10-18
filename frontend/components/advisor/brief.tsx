@@ -20,6 +20,7 @@ import { useApi } from "@/lib/use-api";
 import { cn } from "@/lib/utils";
 
 import { useFastForward } from "./fast-forward";
+import { StageLine } from "./stage-line";
 import { useAdvisor, type Resolution } from "./state";
 
 const RESOLVED: Record<Resolution, { status: PillStatus; note: string }> = {
@@ -84,7 +85,7 @@ export function BriefMessage() {
   if (!brief.data) {
     return (
       <ChatBubble role="copilot" name="Morning brief">
-        <span className="kc-caption">Reading your accounts…</span>
+        <StageLine initial="Reading your accounts…" />
       </ChatBubble>
     );
   }

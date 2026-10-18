@@ -9,7 +9,9 @@ import type { ToastData } from "@/components/kc/misc";
 import { chatStream } from "@/lib/api";
 import { errorMessage } from "@/lib/errors";
 import { nowTime } from "@/lib/format";
-import type { ActionEvent, Decision, ReplyEvent } from "@/lib/types";
+import type { ActionEvent, Decision, ReplyEvent, StageEvent } from "@/lib/types";
+
+import type { Stage } from "./stage-line";
 
 export type PanelView = "cash" | "financing" | "inbox" | "trust" | "email" | "trace";
 export type TrustTab = "limits" | "audit" | "anchors" | "redteam";
@@ -34,8 +36,8 @@ const NO_ENTRIES: PanelEntry[] = [];
 export type Msg =
   | { t: "brief" }
   | { t: "owner"; text: string; at: string }
-  | { t: "thinking"; tools: string[] }
-  | { t: "reply"; reply: ReplyEvent; actions: ActionEvent[]; at: string }
+  | { t: "thinking"; tools: string[]; stage?: Stage; seq: number }
+  | { t: "reply"; reply: ReplyEvent; actions: ActionEvent[]; at: string; arrived: number }
   | { t: "note"; text: string; at?: string }
   | { t: "signed"; decision: Decision; at: string };
 
@@ -214,7 +216,7 @@ export function AdvisorProvider({ children }: { children: React.ReactNode }) {
       update(convId, (c) => ({
         ...c,
         busy: true,
-        msgs: [...c.msgs, { t: "owner", text, at: nowTime() }, { t: "thinking", tools: [] }],
+        msgs: [...c.msgs, { t: "owner", text, at: nowTime() }, { t: "thinking", tools: [], seq: 0 }],
       }));
 
       const replaceThinking = (m: Msg | null) =>
@@ -234,6 +236,12 @@ export function AdvisorProvider({ children }: { children: React.ReactNode }) {
             if (event === "conversation") {
               const sid = (data as { conversation_id: string }).conversation_id;
               update(convId, (c) => ({ ...c, serverId: sid }));
+            } else if (event === "stage") {
+              const { stage, tool } = data as StageEvent;
+              update(convId, (c) => ({
+                ...c,
+                msgs: c.msgs.map((m) => (m.t === "thinking" ? { ...m, stage: { stage, tool }, seq: m.seq + 1 } : m)),
+              }));
             } else if (event === "tool_call") {
               const tool = (data as { tool: string }).tool;
               update(convId, (c) => ({
@@ -245,7 +253,7 @@ export function AdvisorProvider({ children }: { children: React.ReactNode }) {
               actions.push(a);
               if (a.status === "pending_approval" && a.approval_id) addPending([a.approval_id]);
             } else if (event === "reply") {
-              replaceThinking({ t: "reply", reply: data as ReplyEvent, actions: [...actions], at: nowTime() });
+              replaceThinking({ t: "reply", reply: data as ReplyEvent, actions: [...actions], at: nowTime(), arrived: Date.now() });
             } else if (event === "error") {
               // Shown above the pending reply: the turn may still finish with template text.
               const note: Msg = { t: "note", text: (data as { message: string }).message, at: nowTime() };

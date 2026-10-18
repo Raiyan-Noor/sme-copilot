@@ -1227,7 +1227,7 @@
           "agent"
         ],
         "summary": "Ask",
-        "description": "Ask the planner and get the whole turn at once: tool calls, gateway decisions and the checked reply.",
+        "description": "Ask the planner and get the whole turn at once: tool calls, gateway decisions and the checked reply.\n\nStage events are progress lines for a waiting UI, so they are left out here (the chat stream carries them).",
         "operationId": "ask",
         "parameters": [
           {
@@ -1283,7 +1283,7 @@
           "agent"
         ],
         "summary": "Chat",
-        "description": "Ask the planner and stream the turn as server-sent events. The reply arrives whole, after the firewall.",
+        "description": "Ask the planner and stream the turn as server-sent events.\n\nStage events arrive as each step of the planner loop starts. The reply arrives whole, after the firewall.",
         "operationId": "chat",
         "parameters": [
           {
@@ -1311,7 +1311,7 @@
         },
         "responses": {
           "200": {
-            "description": "Server-sent events: conversation, tool_call, action, error, reply; then done.",
+            "description": "Server-sent events: conversation, stage, tool_call, action, error, reply; then done.",
             "content": {
               "text/event-stream": {}
             }
@@ -2542,6 +2542,9 @@
                   "$ref": "#/components/schemas/ConversationEvent"
                 },
                 {
+                  "$ref": "#/components/schemas/StageEvent"
+                },
+                {
                   "$ref": "#/components/schemas/ToolCallEvent"
                 },
                 {
@@ -2561,6 +2564,7 @@
                   "conversation": "#/components/schemas/ConversationEvent",
                   "error": "#/components/schemas/ErrorEvent",
                   "reply": "#/components/schemas/ReplyEvent",
+                  "stage": "#/components/schemas/StageEvent",
                   "tool_call": "#/components/schemas/ToolCallEvent"
                 }
               }
@@ -7265,6 +7269,45 @@
         ],
         "title": "SourceRow",
         "description": "One cited source. Money is integer minor units; `text` is untrusted and owner-UI only."
+      },
+      "StageEvent": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "stage",
+            "title": "Type",
+            "default": "stage"
+          },
+          "stage": {
+            "type": "string",
+            "enum": [
+              "received",
+              "thinking",
+              "tool",
+              "action",
+              "firewall",
+              "fixing"
+            ],
+            "title": "Stage"
+          },
+          "tool": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool"
+          }
+        },
+        "type": "object",
+        "required": [
+          "stage"
+        ],
+        "title": "StageEvent",
+        "description": "Progress through the planner loop. Emitted before each step starts, so the UI's line matches the wait."
       },
       "StandingMandateDraft": {
         "properties": {

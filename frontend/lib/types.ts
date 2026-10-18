@@ -918,6 +918,13 @@ export interface SourceRow {
   text?: string | null;
 }
 
+/** Progress through the planner loop. Emitted before each step starts, so the UI's line matches the wait. */
+export interface StageEvent {
+  type?: "stage";
+  stage: "received" | "thinking" | "tool" | "action" | "firewall" | "fixing";
+  tool?: string | null;
+}
+
 /** A payload for the owner to sign: `args_hash` binds the terms, the nonce is fresh, `message` is what to sign. */
 export interface StandingMandateDraft {
   payload: SignedPayload;

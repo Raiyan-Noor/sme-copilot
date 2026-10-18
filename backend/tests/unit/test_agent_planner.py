@@ -316,9 +316,39 @@ def test_chat_streams_server_sent_events(make_client):
         assert r.status_code == 200 and r.headers["content-type"].startswith("text/event-stream")
         body = "".join(r.iter_text())
     events = [(m[1], json.loads(m[2])) for m in re.finditer(r"event: (\w+)\ndata: (.*)\n\n", body)]
-    assert [name for name, _ in events] == ["conversation", "tool_call", "reply", "done"]
-    assert events[2][1]["fact_ids"] == ["runway.days"]
-    assert events[3][1]["conversation_id"] == events[0][1]["conversation_id"]
+    assert [name for name, _ in events] == ["conversation", "stage", "stage", "stage", "tool_call", "stage",
+                                            "stage", "reply", "done"]
+    assert [(d["stage"], d["tool"]) for name, d in events if name == "stage"] == [
+        ("received", None), ("thinking", None), ("tool", "get_runway"), ("thinking", None), ("firewall", None)]
+    assert events[-2][1]["fact_ids"] == ["runway.days"]
+    assert events[-1][1]["conversation_id"] == events[0][1]["conversation_id"]
+
+
+def _stages(client, message="Hi"):
+    with client.stream("POST", f"/businesses/{MAYA}/agent/chat", json={"message": message}) as r:
+        body = "".join(r.iter_text())
+    return [json.loads(m[1])["stage"] for m in re.finditer(r"event: stage\ndata: (.*)\n\n", body)]
+
+
+def test_stages_show_the_firewall_reprompt(make_client):
+    client, _ = make_client(calls(("get_cash_position", {})), text("About $15,800."),
+                            text("You have {fact:cash.balance}."))
+    assert _stages(client) == ["received", "thinking", "tool", "thinking", "firewall", "fixing", "firewall"]
+
+
+def test_stages_show_an_action_being_prepared(make_client):
+    client, _ = make_client(calls(("propose_action", {"tool": "change_prices", "args": {"product_id": "MILK-1L"},
+                                                      "reason": "Raise milk prices."})),
+                            text("I can't change prices; that decision stays with you."))
+    assert "action" in _stages(client, "Raise my milk price.")
+
+
+def test_reply_audit_records_turn_timing(make_client):
+    client, _ = make_client(calls(("get_runway", {})), text("Cash lasts {fact:runway.days}."))
+    ask(client)
+    timing = audit(client, "agent.reply")[-1]["data"]["timing"]
+    assert len(timing["llm_ms"]) == 2 and timing["llm_total_ms"] == sum(timing["llm_ms"])
+    assert 0 <= timing["first_stage_ms"] <= timing["total_ms"]
 
 
 def test_unknown_business_is_404_before_streaming(make_client):
