@@ -94,7 +94,9 @@ class Gateway:
         self.audit = audit
         self.clock = clock
         self.policy = policy or load_policy()
+        self.data_dir = data_dir  # the tenant directory, or None for an in-memory gateway
         self.executors = Executors(data_dir)
+        self.loan_drafts = self.executors.loan_drafts
         assert set(self.policy.t2) | set(self.policy.t3) == set(ACTION_ARGS), "policy.yaml and dispatch disagree"
 
     @classmethod
@@ -119,7 +121,7 @@ class Gateway:
         if tier == "T1":
             return self._log(action, Decision(status="denied", tool=tool, tier=tier, rule="t1_is_not_an_action"))
 
-        bad = check_args(tool, action.values())
+        bad = check_args(tool, action.values()) or self.executors.precheck(tool, action.values())
         if bad:
             return self._log(action, Decision(status="denied", tool=tool, tier=tier, rule=bad))
 
@@ -204,6 +206,10 @@ class Gateway:
         t3 = self.policy.t3.get(tool)
         if t3 and t3.requires_out_of_band_call_script and not out_of_band_confirmed:
             return deny("out_of_band_call_required")
+        # The draft (or other referent) must still be intact before the signature is spent.
+        bad = self.executors.precheck(tool, approval.args)
+        if bad:
+            return deny(bad)
         if not self.store.consume_nonce(payload.nonce, today):
             return deny("replayed_nonce")
         if approval.status != "pending":

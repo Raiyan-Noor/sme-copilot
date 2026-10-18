@@ -5,7 +5,7 @@ import pytest
 from pydantic import ValidationError
 
 from app.gateway import ProposedAction
-from tests.gateway_env import action, bill, reminder
+from tests.gateway_env import action, bill, loan_application, reminder
 
 pytestmark = pytest.mark.policy
 
@@ -71,14 +71,14 @@ def test_mandate_for_one_tool_does_not_cover_another(env):
 
 
 @pytest.mark.parametrize("tool_action", [
-    lambda: action("submit_loan_application", product_id="prd_nano", amount_minor=100_000),
-    lambda: action("change_payee_details", payee_id="pay_citygrid", account_token="acct_tok_1"),
-    lambda: action("delay_supplier_payment", payment_ref="pmt_1", new_date="2026-10-25"),
-    lambda: action("send_supplier_message", supplier_id="sup_fl", template_id="tpl_delay"),
-    lambda: action("cancel_subscription", subscription_id="sub_1"),
+    lambda env: loan_application(env.gateway),
+    lambda env: action("change_payee_details", payee_id="pay_citygrid", account_token="acct_tok_1"),
+    lambda env: action("delay_supplier_payment", payment_ref="pmt_1", new_date="2026-10-25"),
+    lambda env: action("send_supplier_message", supplier_id="sup_fl", template_id="tpl_delay"),
+    lambda env: action("cancel_subscription", subscription_id="sub_1"),
 ])
 def test_t3_always_pending_even_with_trusted_args(env, tool_action):
-    d = env.gateway.propose(tool_action())
+    d = env.gateway.propose(tool_action(env))
     assert d.status == "pending_approval" and d.tier == "T3" and d.effective_tier == "T3"
     assert d.approval.payload.action == d.tool
     assert env.bank_ops == [] and env.outbox == []

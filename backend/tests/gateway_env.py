@@ -8,6 +8,8 @@ from nacl.signing import SigningKey
 
 from app.audit import AuditLog
 from app.clock import SimClock
+from app.audit import canonical_hash
+from app.engine.application import draft_id_for
 from app.gateway import ArgValue, Gateway, ProposedAction, SignedPayload, StandingTerms
 
 TODAY = date(2026, 10, 18)
@@ -67,6 +69,19 @@ def action(tool: str, untrusted: tuple[str, ...] = (), **args) -> ProposedAction
     return ProposedAction(tool=tool, args={
         k: ArgValue(value=v, provenance="untrusted" if k in untrusted else "trusted") for k, v in args.items()
     })
+
+
+def save_loan_draft(gateway: Gateway, product_id: str = "prd_nano", amount: int = 100_000) -> str:
+    """A minimal draft application in the gateway's draft store (the financing service builds real ones)."""
+    doc = {"schema": "loan_application_draft/v1", "product": {"id": product_id}, "amount_minor": amount}
+    draft_id = draft_id_for(canonical_hash(doc))
+    gateway.loan_drafts.save(draft_id, doc)
+    return draft_id
+
+
+def loan_application(gateway: Gateway, product_id: str = "prd_nano", amount: int = 100_000, **kw) -> ProposedAction:
+    return action("submit_loan_application", product_id=product_id, amount_minor=amount,
+                  draft_id=save_loan_draft(gateway, product_id, amount), **kw)
 
 
 def reminder(customer_id: str = "cus_sunrise", amount: int = 38_650, invoice_id: str = "INV-1", **kw):

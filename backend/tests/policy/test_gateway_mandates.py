@@ -7,7 +7,7 @@ import pytest
 
 from app.audit import canonical_hash
 from app.gateway import SignedPayload, StandingTerms, load_policy
-from tests.gateway_env import Owner, action, bill
+from tests.gateway_env import Owner, action, bill, loan_application
 
 pytestmark = pytest.mark.policy
 
@@ -17,7 +17,7 @@ BILL_CAP = load_policy().t2["pay_recurring_bill"].max_amount_minor
 
 
 def loan(env):
-    return env.gateway.propose(action("submit_loan_application", product_id="prd_nano", amount_minor=100_000))
+    return env.gateway.propose(loan_application(env.gateway))
 
 
 # T3 approvals
@@ -74,7 +74,7 @@ def test_signature_over_different_args_does_not_approve(env):
     """The owner signed a smaller loan; that signature cannot approve the pending larger one."""
     d = loan(env)
     p = d.approval.payload
-    other = SignedPayload(action=p.action, args_hash=canonical_hash({"amount_minor": 1, "product_id": "prd_nano"}),
+    other = SignedPayload(action=p.action, args_hash=canonical_hash({"amount_minor": 1, "draft_id": "lad_x", "product_id": "prd_nano"}),
                           nonce=p.nonce, expiry=p.expiry)
     r = env.gateway.approve(d.approval.approval_id, env.owner.sign(other), env.owner.public_key)
     assert r.status == "denied" and r.rule == "bad_signature"
@@ -117,7 +117,8 @@ def test_payee_change_needs_out_of_band_call(env):
 def test_approval_payload_binds_exact_args_and_ttl(env):
     d = loan(env)
     p = d.approval.payload
-    assert p.args_hash == canonical_hash({"amount_minor": 100_000, "product_id": "prd_nano"})
+    assert p.args_hash == canonical_hash({"amount_minor": 100_000, "draft_id": d.approval.args["draft_id"],
+                                          "product_id": "prd_nano"})
     assert p.expiry == env.clock.today() + timedelta(days=TTL)
     assert len(p.nonce) == 32
 

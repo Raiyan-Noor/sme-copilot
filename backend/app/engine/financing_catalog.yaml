@@ -1,0 +1,130 @@
+# Synthetic financing catalog. Every lender and product here is invented for the demo and labelled as such in the UI.
+# Format and rule semantics: app/engine/catalog.py. Money is integer minor units in `currency`.
+#
+# Eligibility is machine-readable: each rule names a metric the engine computes as a Fact, and a threshold.
+# The matcher reports pass or fail with a reason for every rule. Sizing is separate: an eligible product is offered
+# only up to the repayment-safe amount (see `sizing`), never more than its own maximum.
+#
+# Every product is small working-capital or asset finance. Large debt is Tier 4 and has no product here.
+synthetic: true
+version: 1
+currency: USD
+
+sizing:
+  # Stress: sales fall by this share for the whole term. Lost cash = drop x expected inflows x gross margin, since
+  # stock bought falls with sales.
+  revenue_drop: 0.20
+  # Keep at least half of the stressed monthly surplus as a cushion: installments may use at most this share.
+  max_share_of_stressed_surplus: 0.50
+  # The forecast's bad-case path must stay above zero after paying the installments due within the forecast horizon.
+  liquidity_horizon_months: 3
+
+products:
+  - id: prd_nano
+    name: Nano Restock Loan
+    lender: Synthetic Microfinance Co-op
+    type: nano_loan
+    min_amount_minor: 20000
+    max_amount_minor: 400000
+    step_minor: 5000
+    term_months: 3
+    monthly_rate: 0.02
+    rules:
+      - {rule: min_history_months, value: 3}
+      - {rule: min_digital_history_months, value: 3}
+      - {rule: min_payment_punctuality, value: 0.80}
+
+  - id: prd_stock_line
+    name: Stock Line
+    lender: Synthetic Trade Finance Ltd
+    type: inventory_financing
+    min_amount_minor: 200000
+    max_amount_minor: 1500000
+    step_minor: 10000
+    term_months: 6
+    monthly_rate: 0.015
+    rules:
+      - {rule: min_history_months, value: 6}
+      - {rule: min_avg_monthly_revenue_minor, value: 2000000}
+      - {rule: min_payment_punctuality, value: 0.90}
+      - {rule: min_readiness_score, value: 0.50}
+
+  - id: prd_term_loan
+    name: Working Capital Term Loan
+    lender: Synthetic Community Bank
+    type: working_capital_loan
+    min_amount_minor: 300000
+    max_amount_minor: 2500000
+    step_minor: 10000
+    term_months: 12
+    monthly_rate: 0.013
+    rules:
+      - {rule: min_history_months, value: 12}
+      - {rule: min_readiness_score, value: 0.60}
+      - {rule: min_buffer_days, value: 10}
+
+  - id: prd_digital_line
+    name: Digital Sales Credit Line
+    lender: Synthetic Payments Bank
+    type: overdraft
+    min_amount_minor: 100000
+    max_amount_minor: 1000000
+    step_minor: 10000
+    term_months: 6
+    monthly_rate: 0.018
+    rules:
+      - {rule: min_digital_history_months, value: 12}
+      - {rule: min_digital_share, value: 0.40}
+
+  - id: prd_cash_advance
+    name: Merchant Cash Advance
+    lender: Synthetic Advance Partners
+    type: merchant_cash_advance
+    min_amount_minor: 100000
+    max_amount_minor: 800000
+    step_minor: 10000
+    term_months: 4
+    monthly_rate: 0.035
+    rules:
+      - {rule: min_digital_history_months, value: 4}
+      - {rule: min_digital_share, value: 0.30}
+
+  - id: prd_invoice_advance
+    name: Invoice Advance
+    lender: Synthetic Factoring Co
+    type: invoice_financing
+    min_amount_minor: 50000
+    max_amount_minor: 1000000
+    step_minor: 5000
+    term_months: 2
+    monthly_rate: 0.02
+    rules:
+      - {rule: min_invoice_revenue_share, value: 0.25}
+      - {rule: max_collection_days, value: 45}
+
+  - id: prd_equipment_lease
+    name: Cold Storage Equipment Lease
+    lender: Synthetic Leasing Ltd
+    type: equipment_lease
+    min_amount_minor: 150000
+    max_amount_minor: 1200000
+    step_minor: 10000
+    term_months: 18
+    monthly_rate: 0.011
+    rules:
+      - {rule: min_history_months, value: 12}
+      - {rule: min_readiness_score, value: 0.50}
+
+  - id: prd_growth_coop
+    name: Neighbourhood Growth Loan
+    lender: Synthetic Credit Union
+    type: working_capital_loan
+    min_amount_minor: 50000
+    max_amount_minor: 600000
+    step_minor: 5000
+    term_months: 6
+    monthly_rate: 0.01
+    rules:
+      - {rule: min_history_months, value: 6}
+      - {rule: min_readiness_score, value: 0.65}
+      - {rule: max_collection_days, value: 30}
