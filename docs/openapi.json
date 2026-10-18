@@ -1,0 +1,3195 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "sme-copilot API",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Health",
+        "operationId": "health",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses": {
+      "get": {
+        "tags": [
+          "businesses"
+        ],
+        "summary": "Get Businesses",
+        "operationId": "get_businesses",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/BusinessInfo"
+                  },
+                  "type": "array",
+                  "title": "Response Get Businesses"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}": {
+      "get": {
+        "tags": [
+          "businesses"
+        ],
+        "summary": "Get Business",
+        "operationId": "get_business",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/packs": {
+      "get": {
+        "tags": [
+          "businesses"
+        ],
+        "summary": "Get Packs",
+        "operationId": "get_packs",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PackSummary"
+                  },
+                  "type": "array",
+                  "title": "Response Get Packs"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/pack": {
+      "put": {
+        "tags": [
+          "businesses"
+        ],
+        "summary": "Switch Pack",
+        "description": "Switch the business's active Skill Pack. Categories, forecast seasonality and KPIs follow it.",
+        "operationId": "switch_pack",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PackSwitch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessInfo"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/transactions": {
+      "get": {
+        "tags": [
+          "ledger"
+        ],
+        "summary": "Get Transactions",
+        "description": "Ledger rows, categorized by the active Skill Pack. Amounts are signed integer minor units.",
+        "operationId": "get_transactions",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          },
+          {
+            "name": "date_from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date From"
+            }
+          },
+          {
+            "name": "date_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date To"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Category"
+            }
+          },
+          {
+            "name": "account_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Account Id"
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "type": "string",
+              "default": "desc",
+              "title": "Order"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionPage"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/statements": {
+      "post": {
+        "tags": [
+          "ledger"
+        ],
+        "summary": "Upload Statement",
+        "description": "Ingest a CSV statement for one account. All rows or none; re-uploading the same rows adds no duplicates.",
+        "operationId": "upload_statement",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_statement"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IngestReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Statement rejected; nothing was written",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatementRejectedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/facts": {
+      "get": {
+        "tags": [
+          "finance"
+        ],
+        "summary": "Get Facts",
+        "operationId": "get_facts",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          },
+          {
+            "name": "prefix",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 128
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "e.g. cash. or forecast.30d.",
+              "title": "Prefix"
+            },
+            "description": "e.g. cash. or forecast.30d."
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 2000,
+              "minimum": 1,
+              "default": 500,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FactList"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/facts/{fact_id}/explain": {
+      "get": {
+        "tags": [
+          "finance"
+        ],
+        "summary": "Explain Fact",
+        "description": "The fact, every fact it was computed from, and the source rows they cite (owner view, with row text).",
+        "operationId": "explain_fact",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          },
+          {
+            "name": "fact_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Fact Id"
+            }
+          },
+          {
+            "name": "max_rows",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "default": 50,
+              "title": "Max Rows"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FactTrace"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/pnl": {
+      "get": {
+        "tags": [
+          "finance"
+        ],
+        "summary": "Get Pnl",
+        "description": "Cash-basis profit and loss per calendar month or ISO week (only days before today count).",
+        "operationId": "get_pnl",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "month",
+                "week"
+              ],
+              "type": "string",
+              "default": "month",
+              "title": "Period"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PnlResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/cash": {
+      "get": {
+        "tags": [
+          "finance"
+        ],
+        "summary": "Get Cash",
+        "description": "Cash balance per account and in total, buffer days and runway.",
+        "operationId": "get_cash",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CashPosition"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/forecast": {
+      "get": {
+        "tags": [
+          "finance"
+        ],
+        "summary": "Get Forecast",
+        "operationId": "get_forecast",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForecastResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/kpis": {
+      "get": {
+        "tags": [
+          "finance"
+        ],
+        "summary": "Get Kpis",
+        "operationId": "get_kpis",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KpiResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/gateway/owner-key": {
+      "post": {
+        "tags": [
+          "gateway"
+        ],
+        "summary": "Enroll Owner Key",
+        "description": "Enroll the owner's public key (first key only; re-sending the same key is a no-op).",
+        "operationId": "enroll_owner_key",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OwnerKeyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnerKey"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/gateway/approvals/{approval_id}": {
+      "get": {
+        "tags": [
+          "gateway"
+        ],
+        "summary": "Get Approval",
+        "operationId": "get_approval",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          },
+          {
+            "name": "approval_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^apr_[0-9a-f]{16}$",
+              "title": "Approval Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApprovalView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/gateway/approvals/{approval_id}/approve": {
+      "post": {
+        "tags": [
+          "gateway"
+        ],
+        "summary": "Approve",
+        "description": "Execute a pending action with the owner's signature over its exact payload. Returns the gateway's decision:\n`executed`, or `denied` with the rule that fired (bad signature, expired, replayed nonce, ...).",
+        "operationId": "approve",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          },
+          {
+            "name": "approval_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^apr_[0-9a-f]{16}$",
+              "title": "Approval Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApproveRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Decision"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/gateway/mandates/draft": {
+      "post": {
+        "tags": [
+          "gateway"
+        ],
+        "summary": "Draft Standing Mandate",
+        "description": "Build the payload for a T2 standing mandate. Nothing is stored; the gateway checks it when registered.",
+        "operationId": "draft_standing_mandate",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StandingMandateDraftRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandingMandateDraft"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/gateway/mandates": {
+      "post": {
+        "tags": [
+          "gateway"
+        ],
+        "summary": "Register Standing Mandate",
+        "description": "Register a signed T2 standing mandate. Its terms may lower policy caps but never raise them.",
+        "operationId": "register_standing_mandate",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StandingMandateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MandateResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/audit": {
+      "get": {
+        "tags": [
+          "audit"
+        ],
+        "summary": "Get Audit",
+        "operationId": "get_audit",
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 64
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "exact kind, or a prefix ending in '.'",
+              "title": "Kind"
+            },
+            "description": "exact kind, or a prefix ending in '.'"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditPage"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/audit/head": {
+      "get": {
+        "tags": [
+          "audit"
+        ],
+        "summary": "Get Head",
+        "description": "The chain head: what on-chain anchoring publishes.",
+        "operationId": "get_head",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Head"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/audit/verify": {
+      "get": {
+        "tags": [
+          "audit"
+        ],
+        "summary": "Verify",
+        "description": "Recompute every hash and link; reports the first entry that breaks the chain.",
+        "operationId": "verify",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerifyResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/audit/export": {
+      "get": {
+        "tags": [
+          "audit"
+        ],
+        "summary": "Export",
+        "description": "Download a verified copy of the log. `X-Audit-Verified` and `X-Audit-Head-*` describe the exported file.",
+        "operationId": "export",
+        "responses": {
+          "200": {
+            "description": "The audit log as JSONL",
+            "content": {
+              "application/x-ndjson": {}
+            }
+          }
+        }
+      }
+    },
+    "/clock": {
+      "get": {
+        "tags": [
+          "clock"
+        ],
+        "summary": "Get Clock",
+        "operationId": "get_clock",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClockState"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/clock/advance": {
+      "post": {
+        "tags": [
+          "clock"
+        ],
+        "summary": "Advance",
+        "operationId": "advance",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdvanceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClockState"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/gateway/propose": {
+      "post": {
+        "tags": [
+          "gateway (testing)"
+        ],
+        "summary": "Propose",
+        "description": "Testing: propose an action as the planner would. Returns `executed`, `pending_approval` or `denied`.",
+        "operationId": "propose",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProposedAction"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Decision"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Account": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "currency"
+        ],
+        "title": "Account"
+      },
+      "AdvanceRequest": {
+        "properties": {
+          "days": {
+            "type": "integer",
+            "maximum": 365.0,
+            "minimum": 1.0,
+            "title": "Days"
+          }
+        },
+        "type": "object",
+        "required": [
+          "days"
+        ],
+        "title": "AdvanceRequest"
+      },
+      "ApprovalRequest": {
+        "properties": {
+          "approval_id": {
+            "type": "string",
+            "title": "Approval Id"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/SignedPayload"
+          },
+          "args": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Args"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Reasons"
+          },
+          "requires_out_of_band_call_script": {
+            "type": "boolean",
+            "title": "Requires Out Of Band Call Script",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "approval_id",
+          "payload",
+          "args",
+          "reasons"
+        ],
+        "title": "ApprovalRequest",
+        "description": "What the owner is asked to sign. `payload` is signed as canonical JSON; `args` are shown to the owner."
+      },
+      "ApprovalView": {
+        "properties": {
+          "approval_id": {
+            "type": "string",
+            "title": "Approval Id"
+          },
+          "tool": {
+            "type": "string",
+            "title": "Tool"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "args": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Args"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Reasons"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/SignedPayload"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "requires_out_of_band_call_script": {
+            "type": "boolean",
+            "title": "Requires Out Of Band Call Script"
+          }
+        },
+        "type": "object",
+        "required": [
+          "approval_id",
+          "tool",
+          "status",
+          "args",
+          "reasons",
+          "payload",
+          "message",
+          "requires_out_of_band_call_script"
+        ],
+        "title": "ApprovalView",
+        "description": "A pending (or decided) approval. The owner signs `message`: the canonical JSON bytes of `payload`."
+      },
+      "ApproveRequest": {
+        "properties": {
+          "signature": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{128}$",
+            "title": "Signature",
+            "description": "Ed25519 signature, hex"
+          },
+          "public_key": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{64}$",
+            "title": "Public Key",
+            "description": "Ed25519 public key, hex"
+          },
+          "out_of_band_confirmed": {
+            "type": "boolean",
+            "title": "Out Of Band Confirmed",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "signature",
+          "public_key"
+        ],
+        "title": "ApproveRequest"
+      },
+      "ArgValue": {
+        "properties": {
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "provenance": {
+            "type": "string",
+            "enum": [
+              "trusted",
+              "untrusted"
+            ],
+            "title": "Provenance"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "value",
+          "provenance"
+        ],
+        "title": "ArgValue",
+        "description": "One action argument with where its value came from. Provenance is required: there is no default."
+      },
+      "AuditEntry": {
+        "properties": {
+          "seq": {
+            "type": "integer",
+            "title": "Seq"
+          },
+          "date": {
+            "type": "string",
+            "title": "Date"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "data": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Data"
+          },
+          "prev_hash": {
+            "type": "string",
+            "title": "Prev Hash"
+          },
+          "hash": {
+            "type": "string",
+            "title": "Hash"
+          }
+        },
+        "type": "object",
+        "required": [
+          "seq",
+          "date",
+          "kind",
+          "data",
+          "prev_hash",
+          "hash"
+        ],
+        "title": "AuditEntry"
+      },
+      "AuditPage": {
+        "properties": {
+          "head": {
+            "$ref": "#/components/schemas/Head"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/AuditEntry"
+            },
+            "type": "array",
+            "title": "Entries"
+          }
+        },
+        "type": "object",
+        "required": [
+          "head",
+          "total",
+          "offset",
+          "limit",
+          "entries"
+        ],
+        "title": "AuditPage"
+      },
+      "Body_upload_statement": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "description": "CSV statement (UTF-8)"
+          },
+          "account_number": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Account Number",
+            "description": "Tokenized before storage"
+          },
+          "account_name": {
+            "type": "string",
+            "maxLength": 120,
+            "title": "Account Name",
+            "default": "Statement account"
+          },
+          "decimal_sep": {
+            "type": "string",
+            "enum": [
+              ".",
+              ","
+            ],
+            "title": "Decimal Sep",
+            "default": "."
+          },
+          "date_format": {
+            "type": "string",
+            "enum": [
+              "%Y-%m-%d",
+              "%d/%m/%Y",
+              "%m/%d/%Y",
+              "%d.%m.%Y"
+            ],
+            "title": "Date Format",
+            "default": "%Y-%m-%d"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file",
+          "account_number"
+        ],
+        "title": "Body_upload_statement"
+      },
+      "BusinessDetail": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "pack_id": {
+            "type": "string",
+            "title": "Pack Id"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          },
+          "synthetic": {
+            "type": "boolean",
+            "title": "Synthetic"
+          },
+          "seed_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed Source"
+          },
+          "accounts": {
+            "items": {
+              "$ref": "#/components/schemas/Account"
+            },
+            "type": "array",
+            "title": "Accounts"
+          },
+          "transactions": {
+            "type": "integer",
+            "title": "Transactions"
+          },
+          "scheduled_items": {
+            "type": "integer",
+            "title": "Scheduled Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "pack_id",
+          "currency",
+          "synthetic",
+          "accounts",
+          "transactions",
+          "scheduled_items"
+        ],
+        "title": "BusinessDetail"
+      },
+      "BusinessInfo": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "pack_id": {
+            "type": "string",
+            "title": "Pack Id"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          },
+          "synthetic": {
+            "type": "boolean",
+            "title": "Synthetic"
+          },
+          "seed_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed Source"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "pack_id",
+          "currency",
+          "synthetic"
+        ],
+        "title": "BusinessInfo"
+      },
+      "CashPosition": {
+        "properties": {
+          "as_of": {
+            "type": "string",
+            "format": "date",
+            "title": "As Of"
+          },
+          "balance": {
+            "$ref": "#/components/schemas/Fact"
+          },
+          "accounts": {
+            "items": {
+              "$ref": "#/components/schemas/Fact"
+            },
+            "type": "array",
+            "title": "Accounts"
+          },
+          "last_activity": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Fact"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "avg_daily_spend": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Fact"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "buffer_days": {
+            "$ref": "#/components/schemas/Fact"
+          },
+          "runway_days": {
+            "$ref": "#/components/schemas/Fact"
+          },
+          "runway_date": {
+            "$ref": "#/components/schemas/Fact"
+          },
+          "runway_stressed_days": {
+            "$ref": "#/components/schemas/Fact"
+          },
+          "runway_stressed_date": {
+            "$ref": "#/components/schemas/Fact"
+          }
+        },
+        "type": "object",
+        "required": [
+          "as_of",
+          "balance",
+          "accounts",
+          "last_activity",
+          "avg_daily_spend",
+          "buffer_days",
+          "runway_days",
+          "runway_date",
+          "runway_stressed_days",
+          "runway_stressed_date"
+        ],
+        "title": "CashPosition"
+      },
+      "ClockState": {
+        "properties": {
+          "today": {
+            "type": "string",
+            "format": "date",
+            "title": "Today"
+          },
+          "start": {
+            "type": "string",
+            "format": "date",
+            "title": "Start"
+          },
+          "offset_days": {
+            "type": "integer",
+            "title": "Offset Days"
+          }
+        },
+        "type": "object",
+        "required": [
+          "today",
+          "start",
+          "offset_days"
+        ],
+        "title": "ClockState"
+      },
+      "Decision": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "executed",
+              "pending_approval",
+              "denied"
+            ],
+            "title": "Status"
+          },
+          "tool": {
+            "type": "string",
+            "title": "Tool"
+          },
+          "tier": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "T1",
+                  "T2",
+                  "T3",
+                  "T4"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tier"
+          },
+          "effective_tier": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "T1",
+                  "T2",
+                  "T3",
+                  "T4"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective Tier"
+          },
+          "rule": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rule"
+          },
+          "approval": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ApprovalRequest"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "mandate_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mandate Id"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "tool"
+        ],
+        "title": "Decision"
+      },
+      "Fact": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_.:\\-]{0,127}$",
+            "title": "Id"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "unit": {
+            "type": "string",
+            "enum": [
+              "money",
+              "ratio",
+              "days",
+              "date",
+              "count"
+            ],
+            "title": "Unit"
+          },
+          "display": {
+            "type": "string",
+            "title": "Display"
+          },
+          "source_row_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Source Row Ids"
+          },
+          "computed_by": {
+            "type": "string",
+            "title": "Computed By"
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency"
+          },
+          "inputs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Inputs",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "value",
+          "unit",
+          "display",
+          "source_row_ids",
+          "computed_by"
+        ],
+        "title": "Fact",
+        "description": "One computed value.\n\n`value` is the machine value: integer minor units for money (with `currency` set), a float for ratios and\ndays, an ISO date for dates, an int for counts, or None when there is nothing to report (e.g. runway that does\nnot run out within the forecast horizon; `display` then says so in words)."
+      },
+      "FactList": {
+        "properties": {
+          "as_of": {
+            "type": "string",
+            "format": "date",
+            "title": "As Of"
+          },
+          "pack_ref": {
+            "type": "string",
+            "title": "Pack Ref"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "facts": {
+            "items": {
+              "$ref": "#/components/schemas/Fact"
+            },
+            "type": "array",
+            "title": "Facts"
+          }
+        },
+        "type": "object",
+        "required": [
+          "as_of",
+          "pack_ref",
+          "total",
+          "facts"
+        ],
+        "title": "FactList"
+      },
+      "FactTrace": {
+        "properties": {
+          "fact_id": {
+            "type": "string",
+            "title": "Fact Id"
+          },
+          "facts": {
+            "items": {
+              "$ref": "#/components/schemas/Fact"
+            },
+            "type": "array",
+            "title": "Facts"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/SourceRow"
+            },
+            "type": "array",
+            "title": "Rows"
+          },
+          "rows_total": {
+            "type": "integer",
+            "title": "Rows Total"
+          },
+          "missing_inputs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Missing Inputs"
+          }
+        },
+        "type": "object",
+        "required": [
+          "fact_id",
+          "facts",
+          "rows",
+          "rows_total",
+          "missing_inputs"
+        ],
+        "title": "FactTrace",
+        "description": "The fact, every fact it was computed from (breadth first, each once), and the rows they cite.\n\n`rows` is capped at the requested limit, the explained fact's own rows first; `rows_total` counts them all.\n`missing_inputs` lists input IDs not computed in this request (should be empty; non-empty means a bug)."
+      },
+      "ForecastDay": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date",
+            "title": "Date"
+          },
+          "expected": {
+            "$ref": "#/components/schemas/Fact"
+          },
+          "low": {
+            "$ref": "#/components/schemas/Fact"
+          },
+          "high": {
+            "$ref": "#/components/schemas/Fact"
+          }
+        },
+        "type": "object",
+        "required": [
+          "date",
+          "expected",
+          "low",
+          "high"
+        ],
+        "title": "ForecastDay"
+      },
+      "ForecastHorizon": {
+        "properties": {
+          "days": {
+            "type": "integer",
+            "title": "Days"
+          },
+          "end_date": {
+            "$ref": "#/components/schemas/Fact"
+          },
+          "end_balance": {
+            "$ref": "#/components/schemas/Fact"
+          },
+          "end_balance_low": {
+            "$ref": "#/components/schemas/Fact"
+          },
+          "end_balance_high": {
+            "$ref": "#/components/schemas/Fact"
+          },
+          "inflows": {
+            "$ref": "#/components/schemas/Fact"
+          },
+          "outflows": {
+            "$ref": "#/components/schemas/Fact"
+          },
+          "scheduled_in": {
+            "$ref": "#/components/schemas/Fact"
+          },
+          "scheduled_out": {
+            "$ref": "#/components/schemas/Fact"
+          },
+          "min_balance": {
+            "$ref": "#/components/schemas/Fact"
+          },
+          "min_balance_date": {
+            "$ref": "#/components/schemas/Fact"
+          }
+        },
+        "type": "object",
+        "required": [
+          "days",
+          "end_date",
+          "end_balance",
+          "end_balance_low",
+          "end_balance_high",
+          "inflows",
+          "outflows",
+          "scheduled_in",
+          "scheduled_out",
+          "min_balance",
+          "min_balance_date"
+        ],
+        "title": "ForecastHorizon"
+      },
+      "ForecastResponse": {
+        "properties": {
+          "as_of": {
+            "type": "string",
+            "format": "date",
+            "title": "As Of"
+          },
+          "pack_ref": {
+            "type": "string",
+            "title": "Pack Ref"
+          },
+          "start_balance": {
+            "$ref": "#/components/schemas/Fact"
+          },
+          "horizons": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastHorizon"
+            },
+            "type": "array",
+            "title": "Horizons"
+          },
+          "daily": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastDay"
+            },
+            "type": "array",
+            "title": "Daily"
+          },
+          "overdue_receivables": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Fact"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "overdue_receivables_count": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Fact"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "unmatched_scheduled_count": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Fact"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "as_of",
+          "pack_ref",
+          "start_balance",
+          "horizons",
+          "daily",
+          "overdue_receivables",
+          "overdue_receivables_count",
+          "unmatched_scheduled_count"
+        ],
+        "title": "ForecastResponse",
+        "description": "30/60/90-day summaries and the daily expected/low/high path for the chart (about an 80% band)."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "Head": {
+        "properties": {
+          "seq": {
+            "type": "integer",
+            "title": "Seq"
+          },
+          "hash": {
+            "type": "string",
+            "title": "Hash"
+          }
+        },
+        "type": "object",
+        "required": [
+          "seq",
+          "hash"
+        ],
+        "title": "Head",
+        "description": "The chain head: what gets anchored. `seq` is -1 and `hash` is GENESIS_HASH for an empty log."
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "HealthResponse"
+      },
+      "IngestReport": {
+        "properties": {
+          "import_id": {
+            "type": "string",
+            "title": "Import Id"
+          },
+          "account_id": {
+            "type": "string",
+            "title": "Account Id"
+          },
+          "rows": {
+            "type": "integer",
+            "title": "Rows"
+          },
+          "inserted": {
+            "type": "integer",
+            "title": "Inserted"
+          },
+          "duplicates": {
+            "type": "integer",
+            "title": "Duplicates"
+          },
+          "date_from": {
+            "type": "string",
+            "format": "date",
+            "title": "Date From"
+          },
+          "date_to": {
+            "type": "string",
+            "format": "date",
+            "title": "Date To"
+          },
+          "ignored_columns": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Ignored Columns"
+          }
+        },
+        "type": "object",
+        "required": [
+          "import_id",
+          "account_id",
+          "rows",
+          "inserted",
+          "duplicates",
+          "date_from",
+          "date_to",
+          "ignored_columns"
+        ],
+        "title": "IngestReport"
+      },
+      "KpiResponse": {
+        "properties": {
+          "as_of": {
+            "type": "string",
+            "format": "date",
+            "title": "As Of"
+          },
+          "pack_ref": {
+            "type": "string",
+            "title": "Pack Ref"
+          },
+          "benchmarks_synthetic": {
+            "type": "boolean",
+            "const": true,
+            "title": "Benchmarks Synthetic",
+            "default": true
+          },
+          "kpis": {
+            "items": {
+              "$ref": "#/components/schemas/KpiRow"
+            },
+            "type": "array",
+            "title": "Kpis"
+          }
+        },
+        "type": "object",
+        "required": [
+          "as_of",
+          "pack_ref",
+          "kpis"
+        ],
+        "title": "KpiResponse",
+        "description": "The active pack's KPIs against its healthy ranges. Benchmarks are synthetic and labelled as such."
+      },
+      "KpiRow": {
+        "properties": {
+          "kpi_id": {
+            "type": "string",
+            "title": "Kpi Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "below",
+              "within",
+              "above",
+              "no_data"
+            ],
+            "title": "Status"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Fact"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "healthy_min": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Fact"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "healthy_max": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Fact"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "kpi_id",
+          "label",
+          "status",
+          "value",
+          "healthy_min",
+          "healthy_max"
+        ],
+        "title": "KpiRow"
+      },
+      "MandateRecord": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "approval",
+              "standing"
+            ],
+            "title": "Kind"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/SignedPayload"
+          },
+          "signature": {
+            "type": "string",
+            "title": "Signature"
+          },
+          "public_key": {
+            "type": "string",
+            "title": "Public Key"
+          },
+          "terms": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StandingTerms"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "signed_on": {
+            "type": "string",
+            "format": "date",
+            "title": "Signed On"
+          },
+          "record_hash": {
+            "type": "string",
+            "title": "Record Hash"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "payload",
+          "signature",
+          "public_key",
+          "signed_on",
+          "record_hash"
+        ],
+        "title": "MandateRecord",
+        "description": "A verified, stored mandate. `record_hash` is the canonical-JSON hash of `document()`, the anchoring leaf."
+      },
+      "MandateResult": {
+        "properties": {
+          "accepted": {
+            "type": "boolean",
+            "title": "Accepted"
+          },
+          "rule": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rule"
+          },
+          "mandate": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MandateRecord"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "accepted"
+        ],
+        "title": "MandateResult"
+      },
+      "OwnerKey": {
+        "properties": {
+          "public_key": {
+            "type": "string",
+            "title": "Public Key"
+          },
+          "enrolled": {
+            "type": "boolean",
+            "title": "Enrolled"
+          }
+        },
+        "type": "object",
+        "required": [
+          "public_key",
+          "enrolled"
+        ],
+        "title": "OwnerKey"
+      },
+      "OwnerKeyRequest": {
+        "properties": {
+          "public_key": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{64}$",
+            "title": "Public Key",
+            "description": "Ed25519 public key, hex"
+          }
+        },
+        "type": "object",
+        "required": [
+          "public_key"
+        ],
+        "title": "OwnerKeyRequest"
+      },
+      "PackSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "ref": {
+            "type": "string",
+            "title": "Ref"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "benchmarks_synthetic": {
+            "type": "boolean",
+            "title": "Benchmarks Synthetic"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "version",
+          "ref",
+          "display_name",
+          "benchmarks_synthetic"
+        ],
+        "title": "PackSummary"
+      },
+      "PackSwitch": {
+        "properties": {
+          "pack_id": {
+            "type": "string",
+            "title": "Pack Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "pack_id"
+        ],
+        "title": "PackSwitch"
+      },
+      "PnlPeriod": {
+        "properties": {
+          "period": {
+            "type": "string",
+            "title": "Period"
+          },
+          "first_day": {
+            "$ref": "#/components/schemas/Fact"
+          },
+          "last_day": {
+            "$ref": "#/components/schemas/Fact"
+          },
+          "days_covered": {
+            "$ref": "#/components/schemas/Fact"
+          },
+          "lines": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Fact"
+            },
+            "type": "object",
+            "title": "Lines"
+          }
+        },
+        "type": "object",
+        "required": [
+          "period",
+          "first_day",
+          "last_day",
+          "days_covered",
+          "lines"
+        ],
+        "title": "PnlPeriod",
+        "description": "One period. `lines` is keyed by line ID: revenue, cogs, gross_profit, gross_margin, operating_expenses,\noperating_profit, revenue.<category>, expense.<category>, owner_drawings, uncategorized.count ..."
+      },
+      "PnlResponse": {
+        "properties": {
+          "as_of": {
+            "type": "string",
+            "format": "date",
+            "title": "As Of"
+          },
+          "pack_ref": {
+            "type": "string",
+            "title": "Pack Ref"
+          },
+          "period": {
+            "type": "string",
+            "enum": [
+              "month",
+              "week"
+            ],
+            "title": "Period"
+          },
+          "periods": {
+            "items": {
+              "$ref": "#/components/schemas/PnlPeriod"
+            },
+            "type": "array",
+            "title": "Periods"
+          }
+        },
+        "type": "object",
+        "required": [
+          "as_of",
+          "pack_ref",
+          "period",
+          "periods"
+        ],
+        "title": "PnlResponse"
+      },
+      "ProposedAction": {
+        "properties": {
+          "tool": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Tool"
+          },
+          "args": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ArgValue"
+            },
+            "type": "object",
+            "title": "Args",
+            "default": {}
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "tool"
+        ],
+        "title": "ProposedAction"
+      },
+      "RowError": {
+        "properties": {
+          "line": {
+            "type": "integer",
+            "title": "Line"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "line",
+          "message"
+        ],
+        "title": "RowError"
+      },
+      "SignedPayload": {
+        "properties": {
+          "action": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,63}$",
+            "title": "Action"
+          },
+          "args_hash": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Args Hash"
+          },
+          "nonce": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_\\-]{16,128}$",
+            "title": "Nonce"
+          },
+          "expiry": {
+            "type": "string",
+            "format": "date",
+            "title": "Expiry"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "action",
+          "args_hash",
+          "nonce",
+          "expiry"
+        ],
+        "title": "SignedPayload",
+        "description": "Exactly what the owner signs."
+      },
+      "SourceRow": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "transaction",
+              "scheduled_item",
+              "sale_line",
+              "clock",
+              "pack",
+              "unknown"
+            ],
+            "title": "Kind"
+          },
+          "date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date"
+          },
+          "amount_minor": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount Minor"
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "account_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account Id"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "kind"
+        ],
+        "title": "SourceRow",
+        "description": "One cited source. Money is integer minor units; `text` is untrusted and owner-UI only."
+      },
+      "StandingMandateDraft": {
+        "properties": {
+          "payload": {
+            "$ref": "#/components/schemas/SignedPayload"
+          },
+          "terms": {
+            "$ref": "#/components/schemas/StandingTerms"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "payload",
+          "terms",
+          "message"
+        ],
+        "title": "StandingMandateDraft",
+        "description": "A payload for the owner to sign: `args_hash` binds the terms, the nonce is fresh, `message` is what to sign."
+      },
+      "StandingMandateDraftRequest": {
+        "properties": {
+          "action": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,63}$",
+            "title": "Action"
+          },
+          "terms": {
+            "$ref": "#/components/schemas/StandingTerms"
+          },
+          "days": {
+            "type": "integer",
+            "maximum": 365.0,
+            "minimum": 1.0,
+            "title": "Days",
+            "default": 30
+          }
+        },
+        "type": "object",
+        "required": [
+          "action",
+          "terms"
+        ],
+        "title": "StandingMandateDraftRequest"
+      },
+      "StandingMandateRequest": {
+        "properties": {
+          "payload": {
+            "$ref": "#/components/schemas/SignedPayload"
+          },
+          "terms": {
+            "$ref": "#/components/schemas/StandingTerms"
+          },
+          "signature": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{128}$",
+            "title": "Signature",
+            "description": "Ed25519 signature, hex"
+          },
+          "public_key": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{64}$",
+            "title": "Public Key",
+            "description": "Ed25519 public key, hex"
+          }
+        },
+        "type": "object",
+        "required": [
+          "payload",
+          "terms",
+          "signature",
+          "public_key"
+        ],
+        "title": "StandingMandateRequest"
+      },
+      "StandingTerms": {
+        "properties": {
+          "max_amount_minor": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Max Amount Minor"
+          },
+          "allowlist": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Allowlist"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "max_amount_minor",
+          "allowlist"
+        ],
+        "title": "StandingTerms",
+        "description": "What a T2 standing mandate delegates: a cap (never above policy.yaml) and an allow-list of IDs."
+      },
+      "StatementRejected": {
+        "properties": {
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "errors": {
+            "items": {
+              "$ref": "#/components/schemas/RowError"
+            },
+            "type": "array",
+            "title": "Errors"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message",
+          "errors"
+        ],
+        "title": "StatementRejected"
+      },
+      "StatementRejectedResponse": {
+        "properties": {
+          "detail": {
+            "$ref": "#/components/schemas/StatementRejected"
+          }
+        },
+        "type": "object",
+        "required": [
+          "detail"
+        ],
+        "title": "StatementRejectedResponse"
+      },
+      "Transaction": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "account_id": {
+            "type": "string",
+            "title": "Account Id"
+          },
+          "posted_on": {
+            "type": "string",
+            "format": "date",
+            "title": "Posted On"
+          },
+          "amount_minor": {
+            "type": "integer",
+            "title": "Amount Minor"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "counterparty": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Counterparty"
+          },
+          "counterparty_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Counterparty Ref"
+          },
+          "reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference"
+          },
+          "channel": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Channel"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "balance_minor": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Balance Minor"
+          },
+          "import_id": {
+            "type": "string",
+            "title": "Import Id"
+          },
+          "source_line": {
+            "type": "integer",
+            "title": "Source Line"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "account_id",
+          "posted_on",
+          "amount_minor",
+          "currency",
+          "description",
+          "import_id",
+          "source_line"
+        ],
+        "title": "Transaction"
+      },
+      "TransactionPage": {
+        "properties": {
+          "pack_ref": {
+            "type": "string",
+            "title": "Pack Ref"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Transaction"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "pack_ref",
+          "total",
+          "offset",
+          "limit",
+          "items"
+        ],
+        "title": "TransactionPage"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "VerifyResult": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok"
+          },
+          "entries": {
+            "type": "integer",
+            "title": "Entries"
+          },
+          "head": {
+            "$ref": "#/components/schemas/Head"
+          },
+          "first_bad_seq": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Bad Seq"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ok",
+          "entries",
+          "head"
+        ],
+        "title": "VerifyResult"
+      }
+    },
+    "securitySchemes": {
+      "Passcode": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Passcode"
+      }
+    }
+  },
+  "security": [
+    {
+      "Passcode": []
+    }
+  ]
+}

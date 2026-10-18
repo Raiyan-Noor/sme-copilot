@@ -11,8 +11,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse
 
-from app.api import health
+from app.api import audit, businesses, clock, finance, gateway, health, ledger
 from app.config import Settings, get_settings
+from app.firewall.store import UnknownFactError
+from app.ledger.schema import TenantError
+from app.packs.loader import PackError
+from app.services.runtime import ClockNotConfigured, Runtime
 
 PASSCODE_HEADER = "X-Passcode"
 PUBLIC_PATHS = frozenset({"/health", "/docs", "/docs/oauth2-redirect", "/redoc", "/openapi.json"})
@@ -20,7 +24,8 @@ PUBLIC_PATHS = frozenset({"/health", "/docs", "/docs/oauth2-redirect", "/redoc",
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or get_settings()
-    app = FastAPI(title="sme-copilot API", version="0.1.0")
+    # operationId = the route function's name, so a generated client gets readable method names.
+    app = FastAPI(title="sme-copilot API", version="0.1.0", generate_unique_id_function=lambda route: route.name)
     passcode = settings.demo_passcode.get_secret_value()
 
     @app.middleware("http")
@@ -43,7 +48,23 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_headers=["*"],
     )
 
-    app.include_router(health.router)
+    app.state.runtime = Runtime(settings)
+    for router in (health.router, businesses.router, ledger.router, finance.router, gateway.router, audit.router,
+                   clock.router):
+        app.include_router(router)
+    if settings.expose_test_routes:
+        app.include_router(gateway.test_router)
+
+    def error(status: int, prefix: str = ""):
+        async def handler(_: Request, exc: Exception) -> JSONResponse:
+            detail = exc.args[0] if exc.args else exc.__class__.__name__
+            return JSONResponse({"detail": f"{prefix}{detail}"}, status_code=status)
+        return handler
+
+    app.add_exception_handler(TenantError, error(404))
+    app.add_exception_handler(UnknownFactError, error(404, "unknown fact: "))
+    app.add_exception_handler(PackError, error(422))
+    app.add_exception_handler(ClockNotConfigured, error(503))
 
     def openapi() -> dict:
         """Declare the passcode header so /docs shows an Authorize button."""

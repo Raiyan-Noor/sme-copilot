@@ -1,0 +1,153 @@
+"""Process-wide runtime state behind the API: the simulated clock, the audit log, one Gateway per business and a
+cache of computed facts.
+
+Built lazily on first use, so importing the app has no side effects (no files created, nothing seeded). On first
+use it creates data_dir, restores the simulated clock, opens the audit log (configured as the default for
+`app.audit.append`) and loads any seed businesses that have no tenant yet.
+
+- Clock: one SimClock for the whole app (clock.py is the only time source). Its start date and fast-forward offset
+  persist in data_dir/clock.json, so a restart does not rewind the demo. It only moves forward.
+- Audit (invariant 7): one hash-chained log, data_dir/audit.jsonl; every mutation through the API appends to it.
+- Gateways (invariants 1, 6): one per business, state under data_dir/<business_id>/. Every action goes through one.
+- Fact cache: keyed by business, active pack, simulated date and ledger version, so a page refresh does not
+  recompute (or re-log) the same facts. Each fresh computation is logged with a hash of every fact it produced.
+"""
+
+import json
+import threading
+from collections.abc import Iterator
+from contextlib import contextmanager
+from datetime import date
+from pathlib import Path
+
+import app.audit as audit_module
+from app.audit import AuditLog
+from app.clock import SimClock
+from app.config import Settings
+from app.gateway import Gateway
+from app.services.businesses import bootstrap_from_seed, business_info, open_business, seed_profiles
+from app.services.finance import Computed, compute, ledger_version, load_inputs
+
+FACT_CACHE_SIZE = 16
+
+
+class ClockNotConfigured(RuntimeError):
+    """No persisted clock, no SIM_START and no seed data to take the start date from."""
+
+
+class Runtime:
+    def __init__(self, settings: Settings):
+        self.settings = settings
+        self._lock = threading.RLock()
+        self._ready = False
+        self._clock: SimClock | None = None
+        self._audit: AuditLog | None = None
+        self._gateways: dict[str, Gateway] = {}
+        self._facts: dict[tuple, Computed] = {}
+
+    # Setup
+    @property
+    def data_dir(self) -> Path:
+        return self.settings.data_dir
+
+    def ensure_ready(self) -> None:
+        with self._lock:
+            if self._ready:
+                return
+            self.data_dir.mkdir(parents=True, exist_ok=True)
+            self._clock = self._load_clock()
+            self._audit = AuditLog(self.data_dir / "audit.jsonl", self._clock)
+            audit_module.configure(self._audit)
+            if self.settings.seed_dir.is_dir():
+                bootstrap_from_seed(self.settings.seed_dir, self.data_dir, self._audit)
+            self._ready = True
+
+    @property
+    def clock(self) -> SimClock:
+        self.ensure_ready()
+        return self._clock
+
+    @property
+    def audit(self) -> AuditLog:
+        self.ensure_ready()
+        return self._audit
+
+    # Clock
+    def _clock_file(self) -> Path:
+        return self.data_dir / "clock.json"
+
+    def _load_clock(self) -> SimClock:
+        path = self._clock_file()
+        if path.exists():
+            state = json.loads(path.read_text(encoding="utf-8"))
+            return SimClock(date.fromisoformat(state["start"]), int(state["offset_days"]))
+        start = self.settings.sim_start
+        if start is None:
+            seed_days = [p["sim_today"] for p in seed_profiles(self.settings.seed_dir)] if (
+                self.settings.seed_dir.is_dir()) else []
+            if not seed_days:
+                raise ClockNotConfigured("set SIM_START or run `make seed`")
+            start = date.fromisoformat(max(seed_days))
+        clock = SimClock(start)
+        self._save_clock(clock)
+        return clock
+
+    def _save_clock(self, clock: SimClock) -> None:
+        state = {"start": clock.start.isoformat(), "offset_days": clock.offset_days}
+        tmp = self._clock_file().with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(state), encoding="utf-8")
+        tmp.replace(self._clock_file())
+
+    def advance_clock(self, days: int) -> date:
+        """Fast-forward the simulated clock (never backwards), persist it and log it."""
+        with self._lock:
+            clock = self.clock
+            before = clock.today()
+            today = clock.advance(days)
+            self._save_clock(clock)
+            self.audit.append("clock.advanced", {"from": before.isoformat(), "to": today.isoformat(), "days": days})
+            return today
+
+    # Businesses
+    @contextmanager
+    def business(self, business_id: str) -> Iterator:
+        """An open tenant connection. Raises TenantError for a bad or unknown ID."""
+        self.ensure_ready()
+        conn = open_business(self.data_dir, business_id)
+        try:
+            yield conn
+        finally:
+            conn.close()
+
+    def gateway(self, business_id: str) -> Gateway:
+        """The business's gateway (the only path to executors). Raises TenantError for an unknown business."""
+        with self.business(business_id):
+            pass
+        with self._lock:
+            gw = self._gateways.get(business_id)
+            if gw is None:
+                gw = Gateway.for_tenant(self.data_dir / business_id, self.audit, self.clock)
+                self._gateways[business_id] = gw
+            return gw
+
+    # Facts
+    def facts(self, business_id: str) -> Computed:
+        """Every fact for the business as of the simulated today, computed once per ledger version."""
+        with self.business(business_id) as conn, self._lock:
+            key = (business_id, business_info(conn).pack_id, self.clock.today(), ledger_version(conn))
+            cached = self._facts.get(key)
+            if cached is not None:
+                return cached
+            inputs = load_inputs(conn, self.settings.seed_dir, self.settings.holiday_calendar)
+            computed = compute(inputs, self.clock)
+            self.audit.append("engine.facts_computed", {
+                "business_id": business_id,
+                "pack": inputs.pack.ref,
+                "as_of": key[2].isoformat(),
+                "facts": len(computed.store),
+                "facts_sha256": computed.facts_sha256,
+            })
+            if len(self._facts) >= FACT_CACHE_SIZE:
+                self._facts.pop(next(iter(self._facts)))
+            self._facts[key] = computed
+            return computed

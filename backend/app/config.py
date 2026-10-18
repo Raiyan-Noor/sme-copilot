@@ -4,6 +4,7 @@ Secrets (API keys, ANCHOR_PRIVATE_KEY) are SecretStr so they never appear in rep
 checked against the testnet allow-list at load time (invariant 9): a mainnet chain ID makes the app refuse to start.
 """
 
+from datetime import date
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
@@ -26,6 +27,13 @@ class Settings(BaseSettings):
 
     # Data
     data_dir: Path = REPO_ROOT / "backend" / "data" / "tenants"
+    # `make seed` output; businesses found here are loaded into data_dir on first use (synthetic data only).
+    seed_dir: Path = REPO_ROOT / "backend" / "data" / "generated"
+    holiday_calendar: Path = REPO_ROOT / "backend" / "data" / "seed" / "holidays.yaml"
+    # Simulated clock start; defaults to the seed businesses' sim_today. Fast-forward state persists in data_dir.
+    sim_start: date | None = None
+    # Testing routes in /docs (e.g. propose an action directly, without the planner). Still fully gated.
+    expose_test_routes: bool = True
 
     # LLM
     openai_api_key: SecretStr = SecretStr("")

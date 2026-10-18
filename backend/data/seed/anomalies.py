@@ -25,7 +25,7 @@ def annualize(total: int) -> int:
 
 def reminder_cap_minor() -> int:
     policy = yaml.safe_load(POLICY.read_text(encoding="utf-8"))
-    return int(policy["tiers"]["T2"]["tools"]["send_invoice_reminder"]["max_invoice_minor"])
+    return int(policy["tiers"]["T2"]["tools"]["send_invoice_reminder"]["max_amount_minor"])
 
 
 def ledger_anomalies(data: BusinessData, holidays: list[Holiday]) -> list[dict]:

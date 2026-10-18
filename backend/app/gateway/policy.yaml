@@ -7,13 +7,19 @@
 #     mandate may lower but never raise (invariant 6).
 #   - T3 runs only after the owner signs the exact payload {action, args_hash, nonce, expiry}.
 #   - T4 has no tools, by design (invariant 5). Matching requests get analysis only and are logged as violations.
-# Money is integer minor units. Cap values are scaffold placeholders until prompt 6 sets them.
+#   - T2 rules name which argument carries the amount (amount_arg) and which is checked against the mandate's
+#     signed allow-list (allowlist_arg). Breaking a T2 cap, allow-list or frequency rule is denied, not escalated.
+# Money is integer minor units. Expiry is a simulated-clock date, inclusive.
 
 version: 1
 default_decision: deny
 
 untrusted_provenance:
   escalate_to: T3
+
+approvals:
+  ttl_days: 2                     # a T3 approval request expires this many days after it is proposed
+  standing_mandate_max_days: 90   # a T2 standing mandate may not be signed for longer than this
 
 tiers:
   T1:
@@ -31,15 +37,17 @@ tiers:
     execution: standing_mandate
     tools:
       send_invoice_reminder:
-        max_invoice_minor: 50000
-        customer: allowlisted
+        amount_arg: invoice_amount_minor
+        max_amount_minor: 50000
+        allowlist_arg: customer_id      # owner-signed allow-list of customers
         frequency:
           max: 1
-          per: customer
+          per: customer_id
           window_days: 3
       pay_recurring_bill:
+        amount_arg: amount_minor
         max_amount_minor: 50000
-        payee: known
+        allowlist_arg: payee_id         # owner-signed list of known payees
 
   T3:
     description: Agent prepares, owner signs the exact payload

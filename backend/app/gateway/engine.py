@@ -1,0 +1,304 @@
+"""The gateway: decides every proposed action (invariants 1, 3, 5, 6, 7).
+
+`propose()` returns exactly one of:
+- `executed`: a T2 action inside an active, signed standing mandate and every policy.yaml ceiling;
+- `pending_approval`: a T3 action, or any action with an untrusted-provenance argument (invariant 3), waiting for
+  the owner to sign the exact payload; the response carries the payload to sign;
+- `denied`: with the rule that fired.
+
+`approve()` executes a pending action only after verifying, in order: the signer's key is enrolled, the Ed25519
+signature covers the stored payload, the payload has not expired, any out-of-band call is confirmed, and the nonce
+is unused. The nonce is consumed before execution, so the same signature can never run twice.
+
+Unknown tools, system tools and anything T4-like are denied and logged as violations (invariant 5). Every decision,
+stored mandate and execution is appended to the audit log (invariant 7).
+"""
+
+import secrets
+from datetime import timedelta
+from pathlib import Path
+from typing import Any, Literal
+
+from pydantic import BaseModel, ConfigDict, Field
+
+from app.audit import AuditLog
+from app.clock import Clock
+from app.gateway.dispatch import ACTION_ARGS, Executors, check_args
+from app.gateway.mandate import MandateRecord, SignedPayload, StandingTerms, args_hash, verify_signature
+from app.gateway.policy import Policy, Tier, load_policy
+from app.gateway.store import Approval, GatewayStore
+
+Provenance = Literal["trusted", "untrusted"]
+Status = Literal["executed", "pending_approval", "denied"]
+
+
+class ArgValue(BaseModel):
+    """One action argument with where its value came from. Provenance is required: there is no default."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    value: str | int | bool | None
+    provenance: Provenance
+
+
+class ProposedAction(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    tool: str = Field(min_length=1, max_length=64)
+    args: dict[str, ArgValue] = {}
+
+    def values(self) -> dict[str, Any]:
+        return {k: v.value for k, v in self.args.items()}
+
+    def untrusted(self) -> list[str]:
+        return sorted(k for k, v in self.args.items() if v.provenance == "untrusted")
+
+
+class ApprovalRequest(BaseModel):
+    """What the owner is asked to sign. `payload` is signed as canonical JSON; `args` are shown to the owner."""
+
+    approval_id: str
+    payload: SignedPayload
+    args: dict[str, Any]
+    reasons: list[str]
+    requires_out_of_band_call_script: bool = False
+
+
+class Decision(BaseModel):
+    status: Status
+    tool: str
+    tier: Tier | None = None
+    effective_tier: Tier | None = None
+    rule: str | None = None
+    approval: ApprovalRequest | None = None
+    mandate_id: int | None = None
+    result: dict[str, Any] | None = None
+
+
+class MandateResult(BaseModel):
+    accepted: bool
+    rule: str | None = None
+    mandate: MandateRecord | None = None
+
+
+class Gateway:
+    def __init__(
+        self,
+        store: GatewayStore,
+        audit: AuditLog,
+        clock: Clock,
+        policy: Policy | None = None,
+        data_dir: Path | None = None,
+    ):
+        self.store = store
+        self.audit = audit
+        self.clock = clock
+        self.policy = policy or load_policy()
+        self.executors = Executors(data_dir)
+        assert set(self.policy.t2) | set(self.policy.t3) == set(ACTION_ARGS), "policy.yaml and dispatch disagree"
+
+    @classmethod
+    def for_tenant(cls, tenant_dir: Path, audit: AuditLog, clock: Clock, policy: Policy | None = None) -> "Gateway":
+        return cls(GatewayStore(tenant_dir / "gateway.sqlite"), audit, clock, policy, tenant_dir)
+
+    # Owner keys
+    def enroll_owner_key(self, public_key_hex: str) -> None:
+        """Store an owner's Ed25519 public key. The private key never reaches the server (invariant 6)."""
+        self.store.enroll_key(public_key_hex, self.clock.today())
+        self.audit.append("gateway.key_enrolled", {"public_key": public_key_hex.lower()})
+
+    # Proposals
+    def propose(self, action: ProposedAction) -> Decision:
+        tool, today = action.tool, self.clock.today()
+        tier = self.policy.tier_of(tool)
+
+        if tier is None:
+            rule = "system_tool" if tool in self.policy.system_tools else "unknown_tool"
+            self.audit.append("gateway.violation", {"tool": tool, "rule": rule})
+            return self._log(action, Decision(status="denied", tool=tool, rule=rule))
+        if tier == "T1":
+            return self._log(action, Decision(status="denied", tool=tool, tier=tier, rule="t1_is_not_an_action"))
+
+        bad = check_args(tool, action.values())
+        if bad:
+            return self._log(action, Decision(status="denied", tool=tool, tier=tier, rule=bad))
+
+        untrusted = action.untrusted()
+        if untrusted or tier == "T3":
+            reasons = [f"untrusted_provenance:{','.join(untrusted)}"] if untrusted else ["tier_T3"]
+            return self._log(action, self._request_approval(action, tier, reasons))
+
+        # T2, every argument trusted.
+        rule, mandate = self._check_t2(tool, action.values())
+        if rule:
+            return self._log(action, Decision(status="denied", tool=tool, tier=tier, effective_tier=tier, rule=rule))
+        result = self._execute(tool, action.values(), mandate.id)
+        return self._log(action, Decision(
+            status="executed", tool=tool, tier=tier, effective_tier=tier, mandate_id=mandate.id, result=result))
+
+    def _check_t2(self, tool: str, args: dict) -> tuple[str | None, MandateRecord | None]:
+        rule = self.policy.t2[tool]
+        today = self.clock.today()
+        mandate = self.store.active_standing(tool, today)
+        if mandate is None:
+            return "no_standing_mandate", None
+        terms = mandate.terms
+        if args[rule.allowlist_arg] not in terms.allowlist:
+            return f"not_allowlisted:{rule.allowlist_arg}", None
+        amount = args[rule.amount_arg]
+        if amount > rule.max_amount_minor:
+            return "over_policy_cap", None
+        if amount > terms.max_amount_minor:
+            return "over_mandate_cap", None
+        if rule.frequency:
+            key = str(args[rule.frequency.per])
+            since = today - timedelta(days=rule.frequency.window_days - 1)
+            if self.store.executions_since(tool, key, since) >= rule.frequency.max:
+                return "frequency_cap", None
+        return None, mandate
+
+    def _request_approval(self, action: ProposedAction, tier: Tier, reasons: list[str]) -> Decision:
+        today = self.clock.today()
+        values = action.values()
+        payload = SignedPayload(
+            action=action.tool,
+            args_hash=args_hash(values),
+            nonce=secrets.token_hex(16),
+            expiry=today + timedelta(days=self.policy.approval_ttl_days),
+        )
+        approval = Approval(f"apr_{secrets.token_hex(8)}", action.tool, values, payload, reasons, "pending")
+        self.store.add_approval(approval, today)
+        t3 = self.policy.t3.get(action.tool)
+        request = ApprovalRequest(
+            approval_id=approval.id,
+            payload=payload,
+            args=values,
+            reasons=reasons,
+            # A payee change always needs the call, including when escalated from untrusted content.
+            requires_out_of_band_call_script=bool(t3 and t3.requires_out_of_band_call_script),
+        )
+        return Decision(status="pending_approval", tool=action.tool, tier=tier, effective_tier="T3",
+                        rule=reasons[0], approval=request)
+
+    # Approvals
+    def approve(
+        self, approval_id: str, signature_hex: str, public_key_hex: str, out_of_band_confirmed: bool = False
+    ) -> Decision:
+        """Execute a pending action once the owner has signed its exact payload (invariant 6)."""
+        today = self.clock.today()
+        approval = self.store.get_approval(approval_id)
+        if approval is None:
+            return self._log_approval(approval_id, None, Decision(status="denied", tool="", rule="unknown_approval"))
+        tool, payload = approval.tool, approval.payload
+
+        def deny(rule: str) -> Decision:
+            return self._log_approval(approval_id, payload, Decision(
+                status="denied", tool=tool, tier=self.policy.tier_of(tool), effective_tier="T3", rule=rule))
+
+        if not self.store.is_enrolled(public_key_hex):
+            return deny("unknown_signer")
+        if not verify_signature(payload, signature_hex, public_key_hex):
+            return deny("bad_signature")
+        if today > payload.expiry:
+            return deny("expired")
+        t3 = self.policy.t3.get(tool)
+        if t3 and t3.requires_out_of_band_call_script and not out_of_band_confirmed:
+            return deny("out_of_band_call_required")
+        if not self.store.consume_nonce(payload.nonce, today):
+            return deny("replayed_nonce")
+        if approval.status != "pending":
+            return deny("approval_not_pending")
+        # Defense in depth: the stored args must still hash to what the owner signed.
+        if args_hash(approval.args) != payload.args_hash:
+            return deny("args_hash_mismatch")
+
+        mandate = self._store_mandate("approval", payload, signature_hex, public_key_hex, None)
+        self.store.set_approval_status(approval_id, "executed")
+        result = self._execute(tool, approval.args, mandate.id)
+        return self._log_approval(approval_id, payload, Decision(
+            status="executed", tool=tool, tier=self.policy.tier_of(tool), effective_tier="T3",
+            mandate_id=mandate.id, result=result))
+
+    # Standing mandates
+    def register_standing_mandate(
+        self, payload: SignedPayload, terms: StandingTerms, signature_hex: str, public_key_hex: str
+    ) -> MandateResult:
+        """Accept a signed T2 standing mandate. Its terms may lower policy.yaml caps but never raise them."""
+        today = self.clock.today()
+        rule = self._standing_rule(payload, terms, signature_hex, public_key_hex)
+        if rule:
+            self.audit.append("gateway.mandate_rejected", {"action": payload.action, "rule": rule,
+                                                           "nonce": payload.nonce})
+            return MandateResult(accepted=False, rule=rule)
+        if not self.store.consume_nonce(payload.nonce, today):
+            self.audit.append("gateway.mandate_rejected", {"action": payload.action, "rule": "replayed_nonce",
+                                                           "nonce": payload.nonce})
+            return MandateResult(accepted=False, rule="replayed_nonce")
+        mandate = self._store_mandate("standing", payload, signature_hex, public_key_hex, terms)
+        return MandateResult(accepted=True, mandate=mandate)
+
+    def _standing_rule(
+        self, payload: SignedPayload, terms: StandingTerms, signature_hex: str, public_key_hex: str
+    ) -> str | None:
+        today = self.clock.today()
+        rule = self.policy.t2.get(payload.action)
+        if rule is None:
+            return "not_a_t2_tool"
+        if payload.args_hash != terms.hash():
+            return "args_hash_mismatch"
+        if not self.store.is_enrolled(public_key_hex):
+            return "unknown_signer"
+        if not verify_signature(payload, signature_hex, public_key_hex):
+            return "bad_signature"
+        if today > payload.expiry:
+            return "expired"
+        if payload.expiry > today + timedelta(days=self.policy.standing_mandate_max_days):
+            return "mandate_too_long"
+        if terms.max_amount_minor > rule.max_amount_minor:
+            return "raises_policy_cap"
+        return None
+
+    # Internals
+    def _store_mandate(
+        self, kind: str, payload: SignedPayload, signature: str, public_key: str, terms: StandingTerms | None
+    ) -> MandateRecord:
+        mandate = self.store.add_mandate(kind, payload, signature, public_key.lower(), terms, self.clock.today())
+        self.audit.append("gateway.mandate_stored", {
+            "mandate_id": mandate.id, "kind": kind, "action": payload.action,
+            "expiry": payload.expiry.isoformat(), "record_hash": mandate.record_hash,
+        })
+        return mandate
+
+    def _execute(self, tool: str, args: dict, mandate_id: int) -> dict:
+        today = self.clock.today()
+        result = self.executors.run(tool, args, today)
+        rule = self.policy.t2.get(tool)
+        key = str(args[rule.frequency.per]) if rule and rule.frequency else None
+        self.store.record_execution(tool, key, today, mandate_id)
+        self.audit.append("executor.executed", {"tool": tool, "mandate_id": mandate_id, "result": result})
+        return result
+
+    def _log(self, action: ProposedAction, decision: Decision) -> Decision:
+        self.audit.append("gateway.decision", {
+            "tool": action.tool,
+            "args": action.values(),
+            "untrusted_args": action.untrusted(),
+            "status": decision.status,
+            "tier": decision.tier,
+            "effective_tier": decision.effective_tier,
+            "rule": decision.rule,
+            "approval_id": decision.approval.approval_id if decision.approval else None,
+            "mandate_id": decision.mandate_id,
+        })
+        return decision
+
+    def _log_approval(self, approval_id: str, payload: SignedPayload | None, decision: Decision) -> Decision:
+        self.audit.append("gateway.approval", {
+            "approval_id": approval_id,
+            "tool": decision.tool,
+            "nonce": payload.nonce if payload else None,
+            "status": decision.status,
+            "rule": decision.rule,
+            "mandate_id": decision.mandate_id,
+        })
+        return decision
