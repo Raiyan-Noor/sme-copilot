@@ -1,57 +1,110 @@
+/* Brand fonts (Google Fonts, latin subset): Public Sans for UI and numbers, Newsreader only when the advisor speaks.
+   Declared with @font-face because an @import here would land after Tailwind's rules and be dropped. */
+@font-face {
+  font-family: "Public Sans";
+  font-style: normal;
+  font-weight: 300 600;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/publicsans/v21/ijwRs572Xtc6ZYQws9YVwnNGfJ4.woff2) format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Public Sans";
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/publicsans/v21/ijwAs572Xtc6ZYQws9YVwnNDZpDyNjGolS673tpRgDcqd1s.woff2) format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Newsreader";
+  font-style: normal;
+  font-weight: 400 500;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/newsreader/v26/cY9AfjOCX1hbuyalUrK4397yjA.woff2) format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Newsreader";
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/newsreader/v26/cY9XfjOCX1hbuyalUrK439vogqCz_goCYw7oRd6JFYYzbA.woff2) format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 /*
  * BRANDING 1/3: every color, radius and font in the app lives here as a semantic CSS variable.
  *
  * Components use only these variables (directly, or via the Tailwind and shadcn/ui names mapped below) and never a
- * color literal; `scripts/check_branding.py` enforces that. A brand swap edits the values in the first two blocks
- * and nothing else. The values below are neutral placeholders until the designer's palette arrives.
+ * color literal; `scripts/check_branding.py` enforces that. A brand swap edits the values in the first block
+ * and nothing else. Brand: KaChing, dark theme only; values from the designer's tokens (design/tokens/).
  */
 
 @custom-variant dark (&:is(.dark *));
 
-/* ---- 1. Brand tokens (placeholders) ------------------------------------------------------------------------- */
-:root {
-  --brand-primary: oklch(0.3 0 0);
-  --brand-primary-contrast: oklch(0.98 0 0);
-  --brand-accent: oklch(0.55 0 0);
-  --brand-accent-contrast: oklch(0.98 0 0);
+/* ---- 1. Brand tokens. Dark only, so `.dark` carries the same values. --------------------------------------- */
+:root,
+.dark {
+  color-scheme: dark;
 
-  --surface: oklch(1 0 0);
-  --surface-muted: oklch(0.96 0 0);
-  --border: oklch(0.9 0 0);
-  --text: oklch(0.2 0 0);
-  --text-muted: oklch(0.5 0 0);
+  /* Green: --brand-primary for text, links, icons, focus; --brand-primary-fill for the primary button. */
+  --brand-primary: #02a27d;
+  --brand-primary-hover: #34bc97;
+  --brand-primary-fill: #01775a;
+  --brand-primary-fill-hover: #017f60;
+  --brand-primary-fill-press: #016b51;
+  --brand-primary-contrast: #ffffff;
+  --brand-primary-soft: #132a27;
+  /* Gold means "needs you": text, icons and thin outlines only, never a fill. */
+  --brand-accent: #f9a415;
+  --brand-accent-contrast: #0f141a;
+  --brand-accent-line: rgba(249, 164, 21, 0.45);
+  --brand-accent-soft: rgba(249, 164, 21, 0.1);
 
-  --success: oklch(0.5 0.1 150);
-  --warning: oklch(0.65 0.12 80);
-  --danger: oklch(0.55 0.18 27);
+  --surface: #0f141a;
+  --surface-muted: #151c24;
+  --surface-raised: #1b2430;
+  --surface-raised-hover: #222d3a;
+  --border: #283340;
+  --border-strong: #6b7a89;
+  --text: #e6ecf1;
+  --text-muted: #93a1ae;
+  --overlay-scrim: rgba(5, 8, 12, 0.64);
 
-  --chart-1: oklch(0.3 0 0);
-  --chart-2: oklch(0.45 0 0);
-  --chart-3: oklch(0.6 0 0);
-  --chart-4: oklch(0.72 0 0);
-  --chart-5: oklch(0.84 0 0);
+  --success: #4fbf8b;
+  --success-soft: rgba(79, 191, 139, 0.12);
+  --warning: #f9a415;
+  --warning-soft: rgba(249, 164, 21, 0.1);
+  --danger: #f07b70;
+  --danger-soft: rgba(240, 123, 112, 0.12);
 
-  --radius: 0.5rem;
-  --font-body: ui-sans-serif, system-ui, sans-serif;
-  --font-code: ui-monospace, SFMono-Regular, Menlo, monospace;
+  --chart-1: #02a27d;
+  --chart-2: #5e9c98;
+  --chart-3: #6b7a89;
+  --chart-4: #3e5a6e;
+  --chart-5: #2e3a48;
+
+  --shadow-floating: 0 24px 64px rgba(0, 0, 0, 0.45);
+
+  --radius: 0.875rem;
+  --radius-small: 0.5rem;
+  --radius-medium: 0.875rem;
+  --radius-large: 1.25rem;
+  --font-body: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-advisor-face: "Newsreader", Georgia, "Times New Roman", serif;
+  --font-code: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 }
 
-/* ---- 2. Dark-mode tokens (placeholders; applied by a `.dark` ancestor) --------------------------------------- */
-.dark {
-  --brand-primary: oklch(0.9 0 0);
-  --brand-primary-contrast: oklch(0.2 0 0);
-  --brand-accent: oklch(0.7 0 0);
-  --brand-accent-contrast: oklch(0.2 0 0);
-
-  --surface: oklch(0.17 0 0);
-  --surface-muted: oklch(0.24 0 0);
-  --border: oklch(0.32 0 0);
-  --text: oklch(0.96 0 0);
-  --text-muted: oklch(0.7 0 0);
-
-  --success: oklch(0.7 0.12 150);
-  --warning: oklch(0.78 0.12 80);
-  --danger: oklch(0.68 0.18 27);
+/* ---- 2. Brand base: page background, tabular figures, selection. ------------------------------------------- */
+html {
+  background: var(--surface);
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: "tnum" 1, "lnum" 1;
+}
+::selection {
+  background: var(--brand-primary-soft);
+  color: var(--text);
 }
 
 /* ---- 3. shadcn/ui variables, derived from the brand tokens. Not edited on a brand swap. ---------------------- */
@@ -59,29 +112,29 @@
 .dark {
   --background: var(--surface);
   --foreground: var(--text);
-  --card: var(--surface);
+  --card: var(--surface-muted);
   --card-foreground: var(--text);
-  --popover: var(--surface);
+  --popover: var(--surface-raised);
   --popover-foreground: var(--text);
-  --primary: var(--brand-primary);
+  --primary: var(--brand-primary-fill);
   --primary-foreground: var(--brand-primary-contrast);
-  --secondary: var(--surface-muted);
+  --secondary: var(--surface-raised);
   --secondary-foreground: var(--text);
   --muted: var(--surface-muted);
   --muted-foreground: var(--text-muted);
-  --accent: var(--surface-muted);
+  --accent: var(--brand-primary-soft);
   --accent-foreground: var(--text);
   --destructive: var(--danger);
   --input: var(--border);
-  --ring: var(--brand-accent);
-  --sidebar: var(--surface-muted);
+  --ring: var(--brand-primary);
+  --sidebar: var(--surface);
   --sidebar-foreground: var(--text);
-  --sidebar-primary: var(--brand-primary);
-  --sidebar-primary-foreground: var(--brand-primary-contrast);
-  --sidebar-accent: var(--surface);
+  --sidebar-primary: var(--brand-primary-soft);
+  --sidebar-primary-foreground: var(--brand-primary);
+  --sidebar-accent: var(--surface-muted);
   --sidebar-accent-foreground: var(--text);
   --sidebar-border: var(--border);
-  --sidebar-ring: var(--brand-accent);
+  --sidebar-ring: var(--brand-primary);
 }
 
 /* ---- 4. Tailwind theme: utility classes for both the semantic and the shadcn names. ------------------------- */
@@ -90,6 +143,20 @@
   --color-brand-primary-contrast: var(--brand-primary-contrast);
   --color-brand-accent: var(--brand-accent);
   --color-brand-accent-contrast: var(--brand-accent-contrast);
+  --color-brand-primary-hover: var(--brand-primary-hover);
+  --color-brand-primary-fill: var(--brand-primary-fill);
+  --color-brand-primary-fill-hover: var(--brand-primary-fill-hover);
+  --color-brand-primary-fill-press: var(--brand-primary-fill-press);
+  --color-brand-primary-soft: var(--brand-primary-soft);
+  --color-brand-accent-line: var(--brand-accent-line);
+  --color-brand-accent-soft: var(--brand-accent-soft);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-raised-hover: var(--surface-raised-hover);
+  --color-border-strong: var(--border-strong);
+  --color-overlay-scrim: var(--overlay-scrim);
+  --color-success-soft: var(--success-soft);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger-soft: var(--danger-soft);
   --color-surface: var(--surface);
   --color-surface-muted: var(--surface-muted);
   --color-text: var(--text);
@@ -133,12 +200,15 @@
   --font-sans: var(--font-body);
   --font-mono: var(--font-code);
   --font-heading: var(--font-body);
+  --font-advisor: var(--font-advisor-face);
 
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  --shadow-float: var(--shadow-floating);
+
+  --radius-sm: var(--radius-small);
+  --radius-md: var(--radius-medium);
+  --radius-lg: var(--radius-large);
+  --radius-xl: var(--radius-large);
+  --radius-2xl: calc(var(--radius-large) * 1.2);
+  --radius-3xl: calc(var(--radius-large) * 1.4);
+  --radius-4xl: calc(var(--radius-large) * 1.6);
 }
