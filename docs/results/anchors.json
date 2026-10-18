@@ -1,0 +1,34 @@
+{
+ "schema": "anchors/v1",
+ "generated_by": "make anchor (scripts/anchor.py)",
+ "data": "synthetic (Maya's Corner Store, Lina's Boutique)",
+ "chain_id": 11155111,
+ "chain_name": "Sepolia",
+ "explorer_base_url": "https://sepolia.etherscan.io",
+ "merkle": "index-based SHA-256; leaf = H(0x00 || '<kind>:<hash>'), node = H(0x01 || left || right); odd node promoted unchanged (backend/app/anchoring/merkle.py)",
+ "verified_log_ok": true,
+ "batches": [
+  {
+   "batch_id": "anc-000001",
+   "trigger": "manual",
+   "merkle_root": "f54a6a3f52dad35ec8b9be950da484327fc6f270cfc71cb44fb2f0bcc9c3dcc4",
+   "tx_hash": "0x285a223179bccd958c6f20073439e986debe314c9423f6fe4ade2b90765c7c65",
+   "explorer_url": "https://sepolia.etherscan.io/tx/0x285a223179bccd958c6f20073439e986debe314c9423f6fe4ade2b90765c7c65",
+   "chain_id": 11155111,
+   "from_address": "0x945Bba9062788823114726C5c2DaA74ED339017c",
+   "block_number": 11942865,
+   "block_timestamp": 1792348332,
+   "head_seq": 194,
+   "leaves": [
+    {
+     "kind": "audit_head",
+     "hash": "b07602348e3f11b0e48bdbe1704a1f956292ff84238e8a86e4c8980d2771017b",
+     "ref": "audit #194",
+     "leaf_hash": "f54a6a3f52dad35ec8b9be950da484327fc6f270cfc71cb44fb2f0bcc9c3dcc4",
+     "proof": []
+    }
+   ],
+   "verification": "match"
+  }
+ ]
+}

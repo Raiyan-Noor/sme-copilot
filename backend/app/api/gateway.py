@@ -109,8 +109,10 @@ def get_approval(business_id: BusinessId, approval_id: ApprovalId, rt: RuntimeDe
 def approve(business_id: BusinessId, approval_id: ApprovalId, body: ApproveRequest, rt: RuntimeDep) -> Decision:
     """Execute a pending action with the owner's signature over its exact payload. Returns the gateway's decision:
     `executed`, or `denied` with the rule that fired (bad signature, expired, replayed nonce, ...)."""
-    return rt.gateway(business_id).approve(approval_id, body.signature.lower(), body.public_key.lower(),
-                                           out_of_band_confirmed=body.out_of_band_confirmed)
+    decision = rt.gateway(business_id).approve(approval_id, body.signature.lower(), body.public_key.lower(),
+                                               out_of_band_confirmed=body.out_of_band_confirmed)
+    rt.anchors.request("owner_signed")  # end of an approval scenario; runs in the background (invariant 9)
+    return decision
 
 
 @router.post("/businesses/{business_id}/gateway/mandates/draft", response_model=StandingMandateDraft)
@@ -127,8 +129,10 @@ def draft_standing_mandate(business_id: BusinessId, body: StandingMandateDraftRe
 def register_standing_mandate(business_id: BusinessId, body: StandingMandateRequest,
                               rt: RuntimeDep) -> MandateResult:
     """Register a signed T2 standing mandate. Its terms may lower policy caps but never raise them."""
-    return rt.gateway(business_id).register_standing_mandate(body.payload, body.terms, body.signature.lower(),
-                                                             body.public_key.lower())
+    result = rt.gateway(business_id).register_standing_mandate(body.payload, body.terms, body.signature.lower(),
+                                                               body.public_key.lower())
+    rt.anchors.request("owner_signed")  # a newly signed mandate is a leaf of the next batch (invariant 9)
+    return result
 
 
 @test_router.post("/businesses/{business_id}/gateway/propose", response_model=Decision)

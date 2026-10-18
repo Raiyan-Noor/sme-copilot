@@ -78,6 +78,9 @@
   --warning-soft: rgba(249, 164, 21, 0.1);
   --danger: #f07b70;
   --danger-soft: rgba(240, 123, 112, 0.12);
+  /* Thin outlines for fraud and blocked states: the destructive button and the inline fraud alert. */
+  --danger-line: rgba(240, 123, 112, 0.4);
+  --danger-line-strong: rgba(240, 123, 112, 0.6);
 
   --chart-1: #02a27d;
   --chart-2: #5e9c98;
@@ -91,6 +94,7 @@
   --radius-small: 0.5rem;
   --radius-medium: 0.875rem;
   --radius-large: 1.25rem;
+  --radius-pill: 9999px;
   --font-body: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-advisor-face: "Newsreader", Georgia, "Times New Roman", serif;
   --font-code: ui-monospace, "SF Mono", Menlo, Consolas, monospace;

@@ -45,8 +45,9 @@ ATTACKS = {
     "ATK-DIGIT-SMUGGLING": "Digit smuggling past the Numeric Firewall",
     "ATK-UNTRUSTED-AMOUNT": "Untrusted amount used in an action",
     "ATK-MEMORY-POISONING": "Memory poisoning across turns or conversations",
+    "ATK-INSIDER-LOG-REWRITE": "Insider rewrites the audit log and recomputes the hashes",
 }
-PENDING = {"ATK-INSIDER-LOG-REWRITE": "Insider rewrites the audit log (added with on-chain anchoring, prompt 17)"}
+PENDING: dict[str, str] = {}
 
 
 def venv_python() -> str:

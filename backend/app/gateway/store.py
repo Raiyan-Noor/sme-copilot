@@ -140,6 +140,12 @@ class GatewayStore:
         """Mandates stored after `after_id`, oldest first. Anchoring batches their `record_hash` values."""
         return self._select_mandates("id > ?", (after_id,))
 
+    def mandate_document(self, mandate_id: int) -> tuple[dict, str] | None:
+        """The stored document of a mandate exactly as saved, and the hash recorded when it was signed. Anchoring
+        recomputes the hash from this document, so an edit to the row shows up as a mismatch (invariant 9)."""
+        row = self._conn.execute("SELECT document, record_hash FROM mandates WHERE id = ?", (mandate_id,)).fetchone()
+        return (json.loads(row[0]), row[1]) if row else None
+
     # Approvals
     def add_approval(self, approval: Approval, today: date) -> None:
         with self._lock:

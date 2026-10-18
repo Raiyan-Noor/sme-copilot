@@ -106,7 +106,9 @@ def get_passport(business_id: BusinessId, rt: RuntimeDep) -> PassportResponse:
 def export_passport(business_id: BusinessId, rt: RuntimeDep) -> PassportExport:
     """Export the Passport as canonical JSON. `sha256` is recorded in the audit log for anchoring."""
     c = _computed(rt, business_id)
-    return _exports(rt, business_id).export(business_id, c.financing, c.store, rt.audit)
+    exported = _exports(rt, business_id).export(business_id, c.financing, c.store, rt.audit)
+    rt.anchors.request("passport_exported")  # anchored in the background (invariant 9)
+    return exported
 
 
 @router.get("/businesses/{business_id}/passport/exports", response_model=list[PassportExportSummary])
@@ -146,6 +148,7 @@ def prepare_application(business_id: BusinessId, body: LoanApplicationRequest,
         "draft_id": ArgValue(value=draft.draft_id, provenance="trusted"),
     })
     decision = gateway.propose(action)
+    rt.anchors.request("passport_exported")
     return LoanApplicationResponse(draft_id=draft.draft_id, draft_sha256=draft.sha256,
                                    passport_sha256=draft.passport_sha256, draft=draft.document, decision=decision)
 

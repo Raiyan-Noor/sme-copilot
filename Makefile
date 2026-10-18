@@ -37,6 +37,5 @@ evidence:  ## export audit log JSONL + verify chain + anchors (tx hashes) -> doc
 	@echo "make evidence: not implemented yet (build prompts 6, 17, 19)."
 	@exit 1
 
-anchor:  ## anchor now against the live testnet (manual only; needs ANCHOR_* in .env)
-	@echo "make anchor: not implemented yet (build prompt 17)."
-	@exit 1
+anchor:  ## anchor now against the live testnet (manual only; needs ANCHOR_* in .env) -> docs/results/anchors.json
+	"$(VENV_PY)" scripts/anchor.py

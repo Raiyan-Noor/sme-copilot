@@ -47,4 +47,5 @@ def advance(body: AdvanceRequest, rt: RuntimeDep) -> AdvanceResult:
     """Move the simulated clock forward, then run the overnight job for each business (unless turned off)."""
     rt.advance_clock(body.days)
     reports = [run_overnight(rt, b.id) for b in list_businesses(rt.data_dir)] if body.run_overnight else []
+    rt.anchors.request("scenario_end")  # each fast-forward ends a demo scenario; anchored in the background
     return AdvanceResult(**_state(rt).model_dump(), overnight=reports)

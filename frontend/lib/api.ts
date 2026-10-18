@@ -6,6 +6,25 @@
  */
 import type {
   AdvanceRequest,
+  AnchorRequestResult,
+  AnchorStatus,
+  AuditVerifyResult,
+  LeafCheck,
+  PassportExportSummary,
+  AdvanceResult,
+  AskRequest,
+  InboxDetail,
+  InboxList,
+  InboxSyncResult,
+  FinancingResponse,
+  LeakView,
+  LimitsView,
+  LoanApplicationRequest,
+  LoanApplicationResponse,
+  MorningBrief,
+  PassportExport,
+  PassportResponse,
+  RedteamReport,
   ApprovalView,
   ApproveRequest,
   AuditPage,
@@ -32,7 +51,6 @@ import type {
   StandingMandateDraftRequest,
   StandingMandateRequest,
   TransactionPage,
-  VerifyResult,
 } from "@/lib/types";
 
 export const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000").replace(/\/+$/, "");
@@ -70,12 +88,16 @@ export class ApiError extends Error {
 
 type Query = Record<string, string | number | undefined | null>;
 
+function authHeaders(): Record<string, string> {
+  return { [PASSCODE_HEADER]: getPasscode() || memoryPasscode };
+}
+
 async function request<T>(method: string, path: string, opts: { query?: Query; body?: unknown } = {}): Promise<T> {
   const url = new URL(API_URL + path);
   for (const [k, v] of Object.entries(opts.query ?? {})) {
     if (v !== undefined && v !== null && v !== "") url.searchParams.set(k, String(v));
   }
-  const headers: Record<string, string> = { [PASSCODE_HEADER]: getPasscode() || memoryPasscode };
+  const headers = authHeaders();
   let body: BodyInit | undefined;
   if (opts.body instanceof FormData) {
     body = opts.body;
@@ -128,6 +150,27 @@ export const api = {
   cash: (id: string) => request<CashPosition>("GET", `${biz(id)}/cash`),
   forecast: (id: string) => request<ForecastResponse>("GET", `${biz(id)}/forecast`),
   kpis: (id: string) => request<KpiResponse>("GET", `${biz(id)}/kpis`),
+  leaks: (id: string) => request<LeakView[]>("GET", `${biz(id)}/leaks`),
+
+  // Morning Brief
+  brief: (id: string) => request<MorningBrief>("GET", `${biz(id)}/brief`),
+
+  // Inbox (quarantined extractor + sentinel)
+  inbox: (id: string) => request<InboxList>("GET", `${biz(id)}/inbox`),
+  inboxItem: (id: string, emailId: string) => request<InboxDetail>("GET", `${biz(id)}/inbox/${enc(emailId)}`),
+  syncInbox: (id: string) => request<InboxSyncResult>("POST", `${biz(id)}/inbox/sync`),
+
+  // Financing and the Readiness Passport
+  financing: (id: string) => request<FinancingResponse>("GET", `${biz(id)}/financing`),
+  passport: (id: string) => request<PassportResponse>("GET", `${biz(id)}/passport`),
+  exportPassport: (id: string) => request<PassportExport>("POST", `${biz(id)}/passport/export`),
+  passportExports: (id: string) => request<PassportExportSummary[]>("GET", `${biz(id)}/passport/exports`),
+  prepareApplication: (id: string, body: LoanApplicationRequest) =>
+    request<LoanApplicationResponse>("POST", `${biz(id)}/financing/applications`, { body }),
+
+  // Trust
+  limits: (id: string) => request<LimitsView>("GET", `${biz(id)}/limits`),
+  redteam: () => request<RedteamReport>("GET", "/redteam"),
 
   // Gateway
   enrollOwnerKey: (id: string, body: OwnerKeyRequest) =>
@@ -146,9 +189,67 @@ export const api = {
   audit: (q: { kind?: string; offset?: number; limit?: number } = {}) =>
     request<AuditPage>("GET", "/audit", { query: q }),
   auditHead: () => request<Head>("GET", "/audit/head"),
-  auditVerify: () => request<VerifyResult>("GET", "/audit/verify"),
+  auditVerify: () => request<AuditVerifyResult>("GET", "/audit/verify"),
+
+  // On-chain anchoring (hashes only, testnet only)
+  anchors: () => request<AnchorStatus>("GET", "/anchors"),
+  anchorNow: () => request<AnchorRequestResult>("POST", "/anchors"),
+  mandateOnchain: (id: string, mandateId: number) =>
+    request<LeafCheck>("GET", `${biz(id)}/gateway/mandates/${mandateId}/onchain`),
+  passportOnchain: (id: string, sha256: string) =>
+    request<LeafCheck>("GET", `${biz(id)}/passport/exports/${enc(sha256)}/onchain`),
+  verifyPassportFile: (passport: Record<string, unknown>) =>
+    request<LeafCheck>("POST", "/anchors/verify/passport", { body: passport }),
 
   // Simulated clock
   clock: () => request<ClockState>("GET", "/clock"),
-  advanceClock: (body: AdvanceRequest) => request<ClockState>("POST", "/clock/advance", { body }),
+  advanceClock: (body: AdvanceRequest) => request<AdvanceResult>("POST", "/clock/advance", { body }),
 };
+
+/**
+ * Ask the planner and read its turn as server-sent events (POST, so not EventSource). Yields each event as the
+ * backend emits it: conversation, tool_call, action, error, reply, then done. The reply arrives whole, after the
+ * Numeric Firewall; it is never streamed token by token.
+ */
+export async function* chatStream(
+  businessId: string,
+  body: AskRequest,
+  signal?: AbortSignal,
+): AsyncGenerator<{ event: string; data: unknown }> {
+  const res = await fetch(`${API_URL}${biz(businessId)}/agent/chat`, {
+    method: "POST",
+    headers: { ...authHeaders(), "Content-Type": "application/json", Accept: "text/event-stream" },
+    body: JSON.stringify(body),
+    cache: "no-store",
+    signal,
+  });
+  if (!res.ok || !res.body) {
+    const text = await res.text();
+    let detail: unknown = res.statusText;
+    try {
+      detail = JSON.parse(text)?.detail ?? detail;
+    } catch {
+      // not JSON
+    }
+    throw new ApiError(res.status, detail);
+  }
+  const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
+  let buffer = "";
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += value.replace(/\r\n/g, "\n");
+    let cut;
+    while ((cut = buffer.indexOf("\n\n")) >= 0) {
+      const frame = buffer.slice(0, cut);
+      buffer = buffer.slice(cut + 2);
+      let event = "message";
+      const data: string[] = [];
+      for (const line of frame.split("\n")) {
+        if (line.startsWith("event:")) event = line.slice(6).trim();
+        else if (line.startsWith("data:")) data.push(line.slice(5).trimStart());
+      }
+      if (data.length) yield { event, data: JSON.parse(data.join("\n")) };
+    }
+  }
+}

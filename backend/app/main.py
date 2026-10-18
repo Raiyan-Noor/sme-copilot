@@ -12,7 +12,10 @@ from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse
 
 from app.agent.context import ConversationStore
-from app.api import agent, audit, brief, businesses, clock, finance, financing, gateway, health, inbox, ledger
+from app.anchoring import Chain
+from app.api import (
+    agent, anchors, audit, brief, businesses, clock, finance, financing, gateway, health, inbox, ledger, trust,
+)
 from app.config import Settings, get_settings
 from app.firewall.store import UnknownFactError
 from app.ledger.schema import TenantError
@@ -23,7 +26,8 @@ PASSCODE_HEADER = "X-Passcode"
 PUBLIC_PATHS = frozenset({"/health", "/docs", "/docs/oauth2-redirect", "/redoc", "/openapi.json"})
 
 
-def create_app(settings: Settings | None = None) -> FastAPI:
+def create_app(settings: Settings | None = None, anchor_chain: Chain | None = None) -> FastAPI:
+    """`anchor_chain` replaces the testnet chain built from settings (tests)."""
     settings = settings or get_settings()
     # operationId = the route function's name, so a generated client gets readable method names.
     app = FastAPI(title="sme-copilot API", version="0.1.0", generate_unique_id_function=lambda route: route.name)
@@ -49,10 +53,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_headers=["*"],
     )
 
-    app.state.runtime = Runtime(settings)
+    app.state.runtime = Runtime(settings, anchor_chain)
     app.state.conversations = ConversationStore()
     for router in (health.router, businesses.router, ledger.router, finance.router, gateway.router, audit.router,
-                   clock.router, agent.router, brief.router, inbox.router, financing.router):
+                   clock.router, agent.router, brief.router, inbox.router, financing.router, trust.router, anchors.router):
         app.include_router(router)
     if settings.expose_test_routes:
         app.include_router(gateway.test_router)

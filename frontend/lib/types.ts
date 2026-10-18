@@ -40,6 +40,45 @@ export interface AgentTurn {
   reply: ReplyEvent;
 }
 
+export interface AnchorBatchView {
+  batch_id: string;
+  trigger: string;
+  merkle_root: string;
+  leaves: Leaf[];
+  head_seq: number;
+  head_hash: string;
+  created_on: string;
+  status: "queued" | "sent" | "confirmed";
+  attempts: number;
+  last_error: string | null;
+  tx_hash: string | null;
+  chain_id: number;
+  from_address: string | null;
+  block_number: number | null;
+  block_timestamp: number | null;
+  chain_name: string;
+  explorer_url: string | null;
+}
+
+export interface AnchorRequestResult {
+  status: "queued" | "confirmed" | "already_queued" | "up_to_date" | "not_configured" | "auto_off";
+  reason?: string | null;
+  batch?: AnchorBatchView | null;
+}
+
+export interface AnchorStatus {
+  configured: boolean;
+  reason: string | null;
+  chain_id: number;
+  chain_name: string;
+  explorer_base_url: string;
+  batch_size: number;
+  auto: boolean;
+  entries_since_last_batch: number;
+  queued: number;
+  batches: AnchorBatchView[];
+}
+
 /** What the owner is asked to sign. `payload` is signed as canonical JSON; `args` are shown to the owner. */
 export interface ApprovalRequest {
   approval_id: string;
@@ -103,6 +142,15 @@ export interface AuditPage {
   offset: number;
   limit: number;
   entries: AuditEntry[];
+}
+
+export interface AuditVerifyResult {
+  ok: boolean;
+  entries: number;
+  head: Head;
+  first_bad_seq?: number | null;
+  reason?: string | null;
+  onchain: LogAnchorCheck;
 }
 
 export interface Body_upload_email {
@@ -184,6 +232,11 @@ export interface ConversationEvent {
   type?: "conversation";
   conversation_id: string;
   today_fact_id: string;
+}
+
+export interface Counterparty {
+  id: string;
+  name: string | null;
 }
 
 export interface Decision {
@@ -347,6 +400,12 @@ export interface ForecastResponse {
   unmatched_scheduled_count: Fact | null;
 }
 
+export interface FrequencyCap {
+  max: number;
+  per: string;
+  window_days: number;
+}
+
 export interface HTTPValidationError {
   detail?: ValidationError[];
 }
@@ -444,6 +503,27 @@ export interface KpiRow {
   healthy_max: Fact | null;
 }
 
+/** One anchored hash. `ref` says where it came from (audit seq, mandate ID, Passport export), never its content. */
+export interface Leaf {
+  kind: "audit_head" | "mandate" | "passport";
+  hash: string;
+  ref: string;
+  leaf_hash: string;
+  proof: ProofStep[];
+}
+
+export interface LeafCheck {
+  status: "match" | "mismatch" | "not_anchored" | "queued" | "unavailable";
+  reason: string | null;
+  kind: "audit_head" | "mandate" | "passport";
+  hash: string;
+  recorded_hash: string | null;
+  batch_id?: string | null;
+  leaf_hash?: string | null;
+  proof?: ProofStep[];
+  onchain?: OnchainCheck | null;
+}
+
 export interface LeakDetail {
   label: string;
   fact: Fact;
@@ -457,6 +537,17 @@ export interface LeakView {
   subject: Record<string, string>;
   yearly_impact: Fact;
   details: LeakDetail[];
+}
+
+export interface LimitsView {
+  currency: string;
+  owner_key_enrolled: boolean;
+  approval_ttl_days: number;
+  standing_mandate_max_days: number;
+  t1_tools: string[];
+  t2: T2Limit[];
+  t3: T3Limit[];
+  t4_categories: string[];
 }
 
 export interface LoanApplicationRequest {
@@ -478,6 +569,15 @@ export interface LoanDraftView {
   draft_id: string;
   sha256: string;
   draft: Record<string, unknown>;
+}
+
+/**
+ * The audit log against every confirmed anchor (most recent first, up to VERIFY_MAX_BATCHES).
+ * `ok` is None when there is nothing on chain to compare with.
+ */
+export interface LogAnchorCheck {
+  ok: boolean | null;
+  batches: OnchainCheck[];
 }
 
 /** A verified, stored mandate. `record_hash` is the canonical-JSON hash of `document()`, the anchoring leaf. */
@@ -518,6 +618,26 @@ export interface NeedsYouItem {
   tool: string;
   summary: string;
   reasons: string[];
+}
+
+/**
+ * One batch checked against the chain. `match` only if the transaction is a confirmed 0-value self-transaction
+ * on the allow-listed chain whose data equals the root recomputed here.
+ */
+export interface OnchainCheck {
+  status: "match" | "mismatch" | "unavailable" | "pending";
+  rule: string | null;
+  reason: string | null;
+  batch_id: string;
+  head_seq: number;
+  anchored_root: string;
+  recomputed_root: string | null;
+  onchain_root: string | null;
+  tx_hash: string | null;
+  chain_id: number;
+  block_number: number | null;
+  block_timestamp: number | null;
+  explorer_url: string | null;
 }
 
 export interface OvernightReport {
@@ -661,9 +781,67 @@ export interface PromiseField {
   amount_minor: Untrusted_int_ | null;
 }
 
+/** One sibling on the path to the root. `side` is where the sibling sits: hash(left || right). */
+export interface ProofStep {
+  side: "left" | "right";
+  hash: string;
+}
+
 export interface ProposedAction {
   tool: string;
   args?: Record<string, ArgValue>;
+}
+
+export interface RedteamAttack {
+  id: string;
+  name: string;
+  blocked: boolean;
+  caught_by?: RedteamDefense[];
+  variants?: RedteamVariant[];
+}
+
+export interface RedteamDefense {
+  layer: string;
+  rule: string;
+  variants: number;
+}
+
+export interface RedteamProvider {
+  status: string;
+  reason?: string | null;
+  recorded_models?: Record<string, number>;
+  attacks_run?: number | null;
+  attacks_blocked?: number | null;
+  attack_variants_run?: number | null;
+  attack_variants_blocked?: number | null;
+  live_llm_variants?: number | null;
+  tasks_run?: number | null;
+  tasks_succeeded?: number | null;
+  attacks_caught_per_defense_layer?: Record<string, number>;
+  attacks?: RedteamAttack[];
+  tasks?: RedteamTask[];
+}
+
+export interface RedteamReport {
+  generated_by: string;
+  mode: string;
+  commit?: string | null;
+  data?: string | null;
+  pending_attacks?: Record<string, string>;
+  providers: Record<string, RedteamProvider>;
+}
+
+export interface RedteamTask {
+  task: string;
+  business: string;
+  kind: string;
+  succeeded: boolean;
+}
+
+export interface RedteamVariant {
+  variant: string;
+  driver: string;
+  blocked: boolean;
 }
 
 /** One overdue invoice the overnight job looked at, and what the gateway decided. */
@@ -762,6 +940,15 @@ export interface StandingMandateRequest {
   public_key: string;
 }
 
+export interface StandingMandateView {
+  mandate_id: number;
+  max_amount_minor: number;
+  allowlist: string[];
+  expiry: string;
+  signed_on: string;
+  record_hash: string;
+}
+
 /** What a T2 standing mandate delegates: a cap (never above policy.yaml) and an allow-list of IDs. */
 export interface StandingTerms {
   max_amount_minor: number;
@@ -775,6 +962,21 @@ export interface StatementRejected {
 
 export interface StatementRejectedResponse {
   detail: StatementRejected;
+}
+
+/** A T2 tool: its policy.yaml ceiling, the owner's active standing mandate (if any) and who it could cover. */
+export interface T2Limit {
+  tool: string;
+  policy_max_amount_minor: number;
+  allowlist_arg: string;
+  frequency: FrequencyCap | null;
+  active: StandingMandateView | null;
+  candidates: Counterparty[];
+}
+
+export interface T3Limit {
+  tool: string;
+  requires_out_of_band_call_script: boolean;
 }
 
 export interface ToolCallEvent {
@@ -839,12 +1041,4 @@ export interface ValidationError {
   type: string;
   input?: unknown;
   ctx?: Record<string, unknown>;
-}
-
-export interface VerifyResult {
-  ok: boolean;
-  entries: number;
-  head: Head;
-  first_bad_seq?: number | null;
-  reason?: string | null;
 }

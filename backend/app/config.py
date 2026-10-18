@@ -30,6 +30,8 @@ class Settings(BaseSettings):
     # `make seed` output; businesses found here are loaded into data_dir on first use (synthetic data only).
     seed_dir: Path = REPO_ROOT / "backend" / "data" / "generated"
     holiday_calendar: Path = REPO_ROOT / "backend" / "data" / "seed" / "holidays.yaml"
+    # Written by `make redteam`; the Trust screen shows it as is.
+    redteam_results: Path = REPO_ROOT / "docs" / "results" / "redteam.json"
     # Simulated clock start; defaults to the seed businesses' sim_today. Fast-forward state persists in data_dir.
     sim_start: date | None = None
     # Testing routes in /docs (e.g. propose an action directly, without the planner). Still fully gated.
@@ -52,6 +54,14 @@ class Settings(BaseSettings):
     anchor_chain_id: int = 11155111
     anchor_batch_size: int = Field(default=20, ge=1)
     anchor_explorer_url: str = "https://sepolia.etherscan.io"
+    # Record/replay for the anchoring RPC; defaults to LLM_REPLAY. Replay never sends (CI); record sends live and
+    # stores what the chain returned, so tests can verify real anchors offline.
+    anchor_replay: Literal["record", "replay", "off"] | None = None
+    anchor_replay_dir: Path | None = None  # defaults to llm_replay_dir (namespace rpc/)
+    # Automatic triggers (every ANCHOR_BATCH_SIZE entries, end of a demo scenario). "Anchor now" works regardless.
+    anchor_auto: bool = True
+    # Send from a worker thread so core flows never wait on the RPC. Tests turn it off to run deterministically.
+    anchor_background: bool = True
 
     @field_validator("anchor_chain_id")
     @classmethod

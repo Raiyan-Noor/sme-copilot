@@ -9,6 +9,8 @@ use it creates data_dir, restores the simulated clock, opens the audit log (conf
   persist in data_dir/clock.json, so a restart does not rewind the demo. It only moves forward.
 - Audit (invariant 7): one hash-chained log, data_dir/audit.jsonl; every mutation through the API appends to it.
 - Gateways (invariants 1, 6): one per business, state under data_dir/<business_id>/. Every action goes through one.
+- Anchoring (invariant 9): one AnchorService over the audit log, data_dir/_anchoring/anchors.sqlite; subscribed to every
+  append so it can cut a batch every ANCHOR_BATCH_SIZE entries. Sends run in the background.
 - Fact cache: keyed by business, active pack, simulated date and ledger version, so a page refresh does not
   recompute (or re-log) the same facts. Each fresh computation is logged with a hash of every fact it produced.
 """
@@ -21,6 +23,7 @@ from datetime import date
 from pathlib import Path
 
 import app.audit as audit_module
+from app.anchoring import AnchorService, Chain, create_service
 from app.audit import AuditLog
 from app.clock import SimClock
 from app.config import Settings
@@ -37,8 +40,10 @@ class ClockNotConfigured(RuntimeError):
 
 
 class Runtime:
-    def __init__(self, settings: Settings):
+    def __init__(self, settings: Settings, anchor_chain: Chain | None = None):
         self.settings = settings
+        self._anchor_chain = anchor_chain
+        self._anchors: AnchorService | None = None
         self._lock = threading.RLock()
         self._ready = False
         self._clock: SimClock | None = None
@@ -62,6 +67,7 @@ class Runtime:
             audit_module.configure(self._audit)
             if self.settings.seed_dir.is_dir():
                 bootstrap_from_seed(self.settings.seed_dir, self.data_dir, self._audit)
+            self._anchors = create_service(self.settings, self._audit, self.data_dir, self._anchor_chain)
             self._ready = True
 
     @property
@@ -73,6 +79,11 @@ class Runtime:
     def audit(self) -> AuditLog:
         self.ensure_ready()
         return self._audit
+
+    @property
+    def anchors(self) -> AnchorService:
+        self.ensure_ready()
+        return self._anchors
 
     @property
     def llm(self) -> LLMAdapter:

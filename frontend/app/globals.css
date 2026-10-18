@@ -3,6 +3,8 @@
 @import "shadcn/tailwind.css";
 /* Every color, radius and font comes from the theme file. Never add a color value here. */
 @import "../styles/theme.css";
+/* The ported design screens: layout and component classes, built only on the theme variables. */
+@import "../styles/advisor.css";
 
 @layer base {
   * {

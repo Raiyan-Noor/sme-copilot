@@ -1,5 +1,9 @@
 """Audit log: read, verify and export the hash-chained log (invariant 7). Read-only; nothing here appends except
-the record that an export happened."""
+the record that an export happened and the record of an on-chain check.
+
+Verify runs two checks. Locally, every hash and link is recomputed from the file; that alone cannot catch an insider
+who rewrites the file and recomputes every hash. So it also recomputes each anchored batch's root from the log and
+compares it with the root fetched from the testnet transaction (invariant 9)."""
 
 from typing import Annotated
 
@@ -7,6 +11,7 @@ from fastapi import APIRouter, Query
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
+from app.anchoring.service import LogAnchorCheck
 from app.api.deps import RuntimeDep
 from app.audit import AuditEntry, Head, VerifyResult
 
@@ -42,10 +47,16 @@ def get_head(rt: RuntimeDep) -> Head:
     return rt.audit.head()
 
 
-@router.get("/audit/verify", response_model=VerifyResult)
-def verify(rt: RuntimeDep) -> VerifyResult:
-    """Recompute every hash and link; reports the first entry that breaks the chain."""
-    return rt.audit.verify()
+class AuditVerifyResult(VerifyResult):
+    onchain: LogAnchorCheck
+
+
+@router.get("/audit/verify", response_model=AuditVerifyResult)
+def verify(rt: RuntimeDep) -> AuditVerifyResult:
+    """Recompute every hash and link (the first entry that breaks the chain is reported), then check the log against
+    every anchored root on chain: `onchain.ok` is false if any batch mismatches, null if nothing is anchored yet."""
+    local = rt.audit.verify()
+    return AuditVerifyResult(**local.model_dump(), onchain=rt.anchors.verify_log())
 
 
 @router.get("/audit/export", response_class=FileResponse,
