@@ -1,0 +1,181 @@
+# Skill Pack: fashion retail (clothing boutique). Format: app/packs/schema.py.
+# All benchmarks below are synthetic, chosen for the demo, and labelled as such in the UI.
+# No money amounts here: thresholds are ratios, counts and day windows (currency- and region-neutral).
+id: fashion_retail
+version: 1
+display_name: Fashion
+benchmarks_synthetic: true
+kpi_lookback_days: 90
+
+# Ordered: the first matching rule wins. Moves between the business's own accounts come first so they never count
+# as revenue. Revenue rules match inflows, transfers both directions, the rest outflows unless `direction` says
+# otherwise. Keep keywords specific: "emi" would also match "premium".
+categories:
+  internal_transfer:
+    label: Moves between own accounts
+    kind: transfer
+    match:
+      channel: [internal_transfer]
+      description: [paynest settlement, settlement to bank, cash deposit branch, deposit to bank, transfer between own accounts]
+  sales_wallet:
+    label: Mobile wallet sales
+    kind: revenue
+    digital: true
+    match: {counterparty: [wallet customer], description: [payment received, qr payment]}
+  sales_card:
+    label: Card sales
+    kind: revenue
+    digital: true
+    match: {description: [card settlement, card sales, acquirer]}
+  sales_online:
+    label: Online shop sales
+    kind: revenue
+    digital: true
+    match: {description: [online order, marketplace payout, web shop]}
+  sales_cash:
+    label: Cash sales
+    kind: revenue
+    match: {description: [cash sales, z-report, till takings]}
+  # Credit customers paying invoices. Scheduled: open receivables reach the forecast from scheduled items, so
+  # their history stays out of the weekday baseline. Not `digital`: bank transfers carry no payment fees.
+  customer_invoice:
+    label: Customer invoice payments
+    kind: revenue
+    scheduled: true
+    match: {description: [transfer from, invoice payment]}
+  apparel_stock:
+    label: Clothing stock
+    kind: cogs
+    match: {counterparty: [apparel, garment, textile, fabric, clothing, fashion house], description: [garments, apparel, fabric, collection order]}
+  accessories_stock:
+    label: Accessories and footwear
+    kind: cogs
+    match: {counterparty: [accessor, jewel, footwear, shoe, leather], description: [accessories, footwear]}
+  rent:
+    label: Rent
+    kind: operating
+    scheduled: true
+    match: {counterparty: [landlord, property, properties, realty], description: [rent]}
+  payroll:
+    label: Staff wages
+    kind: operating
+    scheduled: true
+    match: {description: [payroll, salary, wages]}
+  late_fees_penalties:
+    label: Late fees and penalties
+    kind: operating
+    match: {description: [late fee, late payment, penalty]}
+  insurance:
+    label: Insurance
+    kind: operating
+    scheduled: true
+    match: {counterparty: [insurance], description: [insurance]}
+  utilities:
+    label: Power, water and internet
+    kind: operating
+    scheduled: true
+    match:
+      counterparty: [electric, power, water, utility, broadband, internet, telecom]
+      description: [electricity, water bill, utility, broadband, internet]
+  payment_fees:
+    label: Payment fees
+    kind: operating
+    match: {description: [merchant fee, merchant service fee, platform fee, transaction fee, processing fee, settlement fee, wallet fee, mdr]}
+  software_subscriptions:
+    label: Software subscriptions
+    kind: operating
+    scheduled: true
+    match: {counterparty: [pos system, point of sale, software, cloud], description: [subscription, scheduler, pos plan, monthly plan]}
+  # Kind revenue so P&L reports net revenue (refund outflows reduce it) and a refund spike stays out of opex KPIs.
+  customer_refunds:
+    label: Customer refunds and returns
+    kind: revenue
+    match: {direction: out, channel: [refund], description: [refund, return to customer, exchange difference]}
+  tailoring:
+    label: Alterations and tailoring
+    kind: operating
+    match: {counterparty: [tailor], description: [alteration, tailoring]}
+  marketing:
+    label: Marketing and photo shoots
+    kind: operating
+    match: {description: [boost, ads, promotion, photoshoot, influencer]}
+  repairs_maintenance:
+    label: Repairs and upkeep
+    kind: operating
+    match: {description: [repair, steamer]}
+  packaging:
+    label: Bags and packaging
+    kind: operating
+    match: {description: [packaging, carrier bags, paper bags, gift box]}
+  shop_running:
+    label: Cleaning and petty cash
+    kind: operating
+    match: {description: [cleaning, supplies, petty cash]}
+  owner_drawings:
+    label: Owner drawings
+    kind: owner
+    match: {description: [owner drawings, owner draw, owner savings, personal withdrawal]}
+  loan_repayment:
+    label: Loan repayments
+    kind: transfer
+    scheduled: true
+    match: {direction: out, description: [loan repayment, loan installment]}
+
+# Fashion is far more seasonal than grocery: festival and new-season peaks, end-of-season lulls.
+seasonality:
+  months: {1: 0.85, 2: 0.80, 3: 1.00, 4: 1.10, 5: 0.95, 6: 0.85, 7: 0.80, 8: 0.90, 9: 1.05, 10: 1.15, 11: 1.20, 12: 1.30}
+  holidays:
+    major_festival: 2.30
+    minor_holiday: 1.40
+    year_end: 1.20
+
+kpis:
+  - {id: gross_margin, label: Gross margin, unit: ratio, source: ratio, numerator: [cogs], denominator: [revenue], complement: true, healthy: {min: 0.45, max: 0.65}}
+  - {id: rent_share, label: Rent as share of sales, unit: ratio, source: ratio, numerator: [rent], denominator: [revenue], healthy: {max: 0.15}}
+  - {id: payroll_share, label: Wages as share of sales, unit: ratio, source: ratio, numerator: [payroll], denominator: [revenue], healthy: {max: 0.18}}
+  - {id: payment_fee_share, label: Payment fees as share of digital sales, unit: ratio, source: ratio, numerator: [payment_fees], denominator: [sales_wallet, sales_card, sales_online], healthy: {max: 0.02}}
+  - {id: refund_share, label: Refunds as share of sales, unit: ratio, source: ratio, numerator: [customer_refunds], denominator: [revenue], healthy: {max: 0.08}}
+  - {id: digital_share, label: Digital share of sales, unit: ratio, source: ratio, numerator: [sales_wallet, sales_card, sales_online], denominator: [revenue], healthy: {min: 0.50}}
+  - {id: buffer_days, label: Cash buffer, unit: days, source: engine, metric: buffer_days, healthy: {min: 30, max: 120}}
+
+# supplier_price_creep is registered but not enabled: on ledger amounts it confuses seasonal order size with
+# price. Build prompt 14 re-enables it on unit costs from purchase lines.
+leak_detectors:
+  - detector: duplicate_subscription
+    label: Paying twice for the same software
+    params:
+      categories: [software_subscriptions]
+      groups: {pos: [pos, point of sale], bookkeeping: [bookkeeping, accounting], social: [social, scheduler], design: [design, photo editing]}
+      lookback_days: 120
+      min_months: 2
+  - detector: payment_fees
+    label: Payment fees above the usual rate
+    params: {fee_categories: [payment_fees], lookback_days: 90, max_share_of_digital: 0.02}
+  - detector: refunds_excess
+    label: Refunds above the usual rate
+    params: {refund_categories: [customer_refunds], lookback_days: 90, max_share_of_revenue: 0.08}
+  - detector: late_fees
+    label: Late fees and penalties paid
+    params: {keywords: [late fee, late payment, penalty], lookback_days: 180}
+
+# Ranking input for the financing matcher; eligibility stays with each product's own rules.
+financing_fit:
+  inventory_financing: {fit: 0.85, reason: Seasonal stock buys ahead of peaks suit stock-backed financing}
+  working_capital_loan: {fit: 0.75, reason: Bridges the gap between buying stock and the selling season}
+  nano_loan: {fit: 0.60, reason: Small amounts help with top-up orders}
+  overdraft: {fit: 0.60, reason: Covers short gaps in slow months}
+  merchant_cash_advance: {fit: 0.50, reason: Repayments flex with lumpy seasonal sales but cost more}
+  equipment_lease: {fit: 0.30, reason: Little equipment beyond fittings and displays}
+  invoice_financing: {fit: 0.20, reason: Few invoices; most customers pay at purchase}
+
+readiness:
+  factors:
+    inflow_regularity: {weight: 0.15, worst: 0.20, best: 0.80}
+    revenue_stability: {weight: 0.15, worst: 0.20, best: 0.80}
+    buffer_days: {weight: 0.30, worst: 10, best: 60}
+    collection_days: {weight: 0.15, worst: 45, best: 7}
+    payment_punctuality: {weight: 0.25, worst: 0.60, best: 1.00}
+  bands:
+    - {id: ready, label: Ready, min_score: 0.70}
+    - {id: building, label: Building, min_score: 0.45}
+    - {id: early, label: Early, min_score: 0.0}
