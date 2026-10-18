@@ -3,17 +3,54 @@
 import { useState } from "react";
 
 import { useBusiness } from "@/components/business-context";
+import { RedteamPanel } from "@/components/copilot/redteam-panel";
 import { Load, PageHeader, Section } from "@/components/data";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { api } from "@/lib/api";
+import { PREVIEW_REDTEAM } from "@/lib/mock/redteam";
 import { useApi } from "@/lib/use-api";
+import { cn } from "@/lib/utils";
 
 const PAGE = 50;
 
+const TABS = [
+  { value: "audit", label: "Audit log" },
+  { value: "redteam", label: "Red-team" },
+] as const;
+type Tab = (typeof TABS)[number]["value"];
+
 export default function TrustPage() {
+  const [tab, setTab] = useState<Tab>("audit");
+  return (
+    <div className="mx-auto w-full max-w-[880px]">
+      <PageHeader title="Trust" description="What the assistant may do, and proof of what it did" />
+      <div role="tablist" className="mb-6 flex gap-6 border-b border-border">
+        {TABS.map((t) => (
+          <button
+            key={t.value}
+            role="tab"
+            type="button"
+            aria-selected={tab === t.value}
+            onClick={() => setTab(t.value)}
+            className={cn(
+              "-mb-px border-b-2 pb-2.5 text-sm font-medium transition-colors",
+              tab === t.value ? "border-brand-primary text-text" : "border-transparent text-text-muted hover:text-text",
+            )}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+      {/* Red-team results are preview data until `make redteam` writes docs/results/redteam.json (prompt 15). */}
+      {tab === "audit" ? <AuditTab /> : <RedteamPanel results={PREVIEW_REDTEAM} />}
+    </div>
+  );
+}
+
+function AuditTab() {
   const { session } = useBusiness();
   const [kind, setKind] = useState("");
   const [offset, setOffset] = useState(0);
@@ -22,7 +59,6 @@ export default function TrustPage() {
 
   return (
     <>
-      <PageHeader title="Trust" />
       <Section title="Audit chain" description="GET /audit/verify">
         <Load state={verify}>
           {(v) => (

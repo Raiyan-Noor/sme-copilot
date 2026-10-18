@@ -1,72 +1,47 @@
 "use client";
 
-import { useBusinessKey } from "@/components/business-context";
-import { FactTable, FactValue, Load, PageHeader, Section } from "@/components/data";
-import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useBusiness, useBusinessKey } from "@/components/business-context";
+import { FactTraceProvider } from "@/components/copilot/fact-number";
+import { KpiTile } from "@/components/copilot/kpi-tile";
+import { MorningBriefMessage } from "@/components/copilot/morning-brief";
+import { Load } from "@/components/data";
 import { api } from "@/lib/api";
+import { PREVIEW_BRIEFS } from "@/lib/mock/brief";
 import { useApi } from "@/lib/use-api";
 
+/**
+ * Today: real cash figures from GET /businesses/{id}/cash, then the Morning Brief. The brief is preview data
+ * shaped like the API until its endpoint lands (build prompt 14), and is labelled as such.
+ */
 export default function TodayPage() {
-  const { id, key: cashKey } = useBusinessKey("cash");
-  const { key: kpiKey } = useBusinessKey("kpis");
-  const cash = useApi(cashKey, () => api.cash(id));
-  const kpis = useApi(kpiKey, () => api.kpis(id));
+  const { business } = useBusiness();
+  const { id, key } = useBusinessKey("cash");
+  const cash = useApi(key, () => api.cash(id));
+  const brief = business ? PREVIEW_BRIEFS[business.id] : undefined;
 
   return (
-    <>
-      <PageHeader title="Today" />
-      <Section title="Cash position" description="GET /businesses/{id}/cash">
+    <FactTraceProvider>
+      <div className="mx-auto flex w-full max-w-[720px] flex-col gap-10 pb-16">
+        <h1 className="sr-only">Today</h1>
         <Load state={cash}>
           {(c) => (
-            <FactTable
-              facts={[
-                c.balance,
-                c.buffer_days,
-                c.runway_days,
-                c.runway_date,
-                c.runway_stressed_days,
-                c.runway_stressed_date,
-                c.avg_daily_spend,
-                c.last_activity,
-                ...c.accounts,
-              ]}
-            />
+            <div className="flex flex-col gap-6">
+              <KpiTile label="Cash balance" fact={c.balance} />
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <KpiTile label="Runway" fact={c.runway_days} size="md" />
+                <KpiTile label="Cash runs short on" fact={c.runway_date} size="md" />
+              </div>
+            </div>
           )}
         </Load>
-      </Section>
-      <Section title="KPIs vs. healthy ranges" description="GET /businesses/{id}/kpis (benchmarks are synthetic)">
-        <Load state={kpis}>
-          {(k) => (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>KPI</TableHead>
-                  <TableHead>Value</TableHead>
-                  <TableHead>Healthy range</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {k.kpis.map((row) => (
-                  <TableRow key={row.kpi_id}>
-                    <TableCell>{row.label}</TableCell>
-                    <TableCell>
-                      <FactValue fact={row.value} />
-                    </TableCell>
-                    <TableCell>
-                      <FactValue fact={row.healthy_min} /> to <FactValue fact={row.healthy_max} />
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={row.status === "within" ? "secondary" : "outline"}>{row.status}</Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </Load>
-      </Section>
-    </>
+        {brief ? (
+          <MorningBriefMessage brief={brief} />
+        ) : (
+          <p className="font-advisor text-[19px] leading-[30px] text-text-muted">
+            No morning brief for this business yet.
+          </p>
+        )}
+      </div>
+    </FactTraceProvider>
   );
 }
