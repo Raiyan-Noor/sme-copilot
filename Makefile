@@ -14,9 +14,8 @@ endif
 setup:  ## venv + pip install, npm install
 	$(BOOT_PY) scripts/setup.py
 
-seed:  ## regenerate both businesses and the mailbox (deterministic)
-	@echo "make seed: not implemented yet (build prompt 1)."
-	@exit 1
+seed:  ## regenerate both businesses and the mailbox (deterministic) -> backend/data/generated/
+	"$(VENV_PY)" backend/data/seed/generate.py
 
 dev:  ## FastAPI :8000 + Next :3000
 	"$(VENV_PY)" scripts/dev.py

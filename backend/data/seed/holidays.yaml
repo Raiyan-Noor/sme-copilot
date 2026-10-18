@@ -1,0 +1,32 @@
+# Holiday calendar (config, region-neutral, fictional). Shared by the seed generator and the forecast.
+#
+#   id            generic holiday type; Skill Packs key seasonality multipliers by it (packs/schema.py)
+#   key           unique key of this occurrence (the manifest refers to it)
+#   start, end    the shopping window, ISO dates, end inclusive: the forecast applies the pack multiplier to
+#                 every day in it, and the seed generator applies the business's uplift for `id` to the same days
+#   holiday_date  the holiday itself; banks are closed (payments roll to the next business day)
+holidays:
+  - id: minor_holiday
+    key: founders_day_2026
+    name: Founders' Day
+    start: 2026-05-26
+    end: 2026-05-28
+    holiday_date: 2026-05-29
+  - id: major_festival
+    key: midyear_festival_2026
+    name: Midyear Festival
+    start: 2026-07-04
+    end: 2026-07-09
+    holiday_date: 2026-07-10
+  - id: major_festival
+    key: harvest_festival_2026
+    name: Harvest Festival
+    start: 2026-10-20
+    end: 2026-10-25
+    holiday_date: 2026-10-26
+  - id: year_end
+    key: year_end_holiday_2026
+    name: Year-End Holiday
+    start: 2026-12-26
+    end: 2026-12-30
+    holiday_date: 2026-12-31

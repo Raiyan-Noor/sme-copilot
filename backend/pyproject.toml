@@ -16,7 +16,7 @@ dependencies = [
     "pyyaml>=6.0",
     "pandas>=2.2",
     "numpy>=2.0",
-    "faker>=26",
+    "faker==40.43.0",  # pinned: seed output (and the replay cache keyed on it) must be identical everywhere
     "pynacl>=1.5",
     "openai>=1.40",
     "web3>=7.0",
