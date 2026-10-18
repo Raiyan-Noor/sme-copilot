@@ -4,8 +4,9 @@
   frontend/config/app.ts        APP_NAME, APP_TAGLINE
   frontend/components/brand/    <Logo /> and the logo asset only it renders
 
-Everywhere else in the frontend this fails on: hex/rgb/hsl color literals, the codename in UI text, and direct
-references to a logo asset. The backend must not reference the frontend's branding files at all.
+Everywhere else in the frontend this fails on: hex/rgb/hsl color literals, Tailwind's built-in palette classes
+(e.g. `bg-red-500`, `text-white`: colors that bypass the theme), the codename in UI text, and direct references to a
+logo asset. The backend must not reference the frontend's branding files at all.
 Passes trivially until the frontend exists.
 """
 
@@ -25,8 +26,15 @@ SKIP_DIRS = {"node_modules", ".next", "out", "build", "dist", "public"}
 SKIP_FILES = {"package.json", "package-lock.json", "next.config.ts", "next.config.js", "next.config.mjs",
               "tailwind.config.ts", "postcss.config.mjs", "next-env.d.ts"}
 
+_PALETTE = ("slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|"
+            "violet|purple|fuchsia|pink|rose")
+_COLOR_UTILS = ("bg|text|border(?:-[trblxyse])?|ring|ring-offset|outline|fill|stroke|from|via|to|shadow|divide|"
+                "accent|caret|decoration|placeholder")
+
 RULES = [
     ("color literal", re.compile(r"#[0-9a-fA-F]{3,8}\b(?![-\w])|\b(?:rgba?|hsla?|oklch|oklab)\(\s*[\d.]")),
+    ("Tailwind palette color", re.compile(
+        rf"(?<![\w-])(?:{_COLOR_UTILS})-(?:(?:{_PALETTE})-\d{{2,3}}|white|black)(?![\w-])")),
     ("codename in UI", re.compile(r"sme[-_ ]?copilot", re.IGNORECASE)),
     ("logo asset outside <Logo />", re.compile(r"logo[\w-]*\.(?:svg|png|jpe?g|webp|gif)", re.IGNORECASE)),
 ]

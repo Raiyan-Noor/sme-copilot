@@ -1,0 +1,144 @@
+/*
+ * BRANDING 1/3: every color, radius and font in the app lives here as a semantic CSS variable.
+ *
+ * Components use only these variables (directly, or via the Tailwind and shadcn/ui names mapped below) and never a
+ * color literal; `scripts/check_branding.py` enforces that. A brand swap edits the values in the first two blocks
+ * and nothing else. The values below are neutral placeholders until the designer's palette arrives.
+ */
+
+@custom-variant dark (&:is(.dark *));
+
+/* ---- 1. Brand tokens (placeholders) ------------------------------------------------------------------------- */
+:root {
+  --brand-primary: oklch(0.3 0 0);
+  --brand-primary-contrast: oklch(0.98 0 0);
+  --brand-accent: oklch(0.55 0 0);
+  --brand-accent-contrast: oklch(0.98 0 0);
+
+  --surface: oklch(1 0 0);
+  --surface-muted: oklch(0.96 0 0);
+  --border: oklch(0.9 0 0);
+  --text: oklch(0.2 0 0);
+  --text-muted: oklch(0.5 0 0);
+
+  --success: oklch(0.5 0.1 150);
+  --warning: oklch(0.65 0.12 80);
+  --danger: oklch(0.55 0.18 27);
+
+  --chart-1: oklch(0.3 0 0);
+  --chart-2: oklch(0.45 0 0);
+  --chart-3: oklch(0.6 0 0);
+  --chart-4: oklch(0.72 0 0);
+  --chart-5: oklch(0.84 0 0);
+
+  --radius: 0.5rem;
+  --font-body: ui-sans-serif, system-ui, sans-serif;
+  --font-code: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* ---- 2. Dark-mode tokens (placeholders; applied by a `.dark` ancestor) --------------------------------------- */
+.dark {
+  --brand-primary: oklch(0.9 0 0);
+  --brand-primary-contrast: oklch(0.2 0 0);
+  --brand-accent: oklch(0.7 0 0);
+  --brand-accent-contrast: oklch(0.2 0 0);
+
+  --surface: oklch(0.17 0 0);
+  --surface-muted: oklch(0.24 0 0);
+  --border: oklch(0.32 0 0);
+  --text: oklch(0.96 0 0);
+  --text-muted: oklch(0.7 0 0);
+
+  --success: oklch(0.7 0.12 150);
+  --warning: oklch(0.78 0.12 80);
+  --danger: oklch(0.68 0.18 27);
+}
+
+/* ---- 3. shadcn/ui variables, derived from the brand tokens. Not edited on a brand swap. ---------------------- */
+:root,
+.dark {
+  --background: var(--surface);
+  --foreground: var(--text);
+  --card: var(--surface);
+  --card-foreground: var(--text);
+  --popover: var(--surface);
+  --popover-foreground: var(--text);
+  --primary: var(--brand-primary);
+  --primary-foreground: var(--brand-primary-contrast);
+  --secondary: var(--surface-muted);
+  --secondary-foreground: var(--text);
+  --muted: var(--surface-muted);
+  --muted-foreground: var(--text-muted);
+  --accent: var(--surface-muted);
+  --accent-foreground: var(--text);
+  --destructive: var(--danger);
+  --input: var(--border);
+  --ring: var(--brand-accent);
+  --sidebar: var(--surface-muted);
+  --sidebar-foreground: var(--text);
+  --sidebar-primary: var(--brand-primary);
+  --sidebar-primary-foreground: var(--brand-primary-contrast);
+  --sidebar-accent: var(--surface);
+  --sidebar-accent-foreground: var(--text);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--brand-accent);
+}
+
+/* ---- 4. Tailwind theme: utility classes for both the semantic and the shadcn names. ------------------------- */
+@theme inline {
+  --color-brand-primary: var(--brand-primary);
+  --color-brand-primary-contrast: var(--brand-primary-contrast);
+  --color-brand-accent: var(--brand-accent);
+  --color-brand-accent-contrast: var(--brand-accent-contrast);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --font-sans: var(--font-body);
+  --font-mono: var(--font-code);
+  --font-heading: var(--font-body);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}

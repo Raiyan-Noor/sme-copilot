@@ -9,7 +9,7 @@ else
   VENV_PY := $(CURDIR)/backend/.venv/bin/python
 endif
 
-.PHONY: setup seed dev test redteam evidence anchor
+.PHONY: setup seed dev test openapi redteam evidence anchor
 
 setup:  ## venv + pip install, npm install
 	$(BOOT_PY) scripts/setup.py
@@ -21,9 +21,14 @@ dev:  ## FastAPI :8000 + Next :3000
 	"$(VENV_PY)" scripts/dev.py
 
 test: export LLM_REPLAY = replay
-test:  ## all pytest suites in replay mode + the branding check
+test:  ## all pytest suites in replay mode + the branding check + frontend types in sync with the API
 	"$(VENV_PY)" -m pytest -c backend/pyproject.toml --rootdir backend backend/tests
 	"$(VENV_PY)" scripts/check_branding.py
+	"$(VENV_PY)" scripts/gen_frontend_types.py --check
+
+openapi:  ## export docs/openapi.json and regenerate frontend/lib/types.ts from it
+	"$(VENV_PY)" scripts/export_openapi.py
+	"$(VENV_PY)" scripts/gen_frontend_types.py
 
 redteam:  ## attack + benign suites; writes docs/results/redteam.json
 	@echo "make redteam: not implemented yet (build prompt 15). No results are written until the suite exists."
