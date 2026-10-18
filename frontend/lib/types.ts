@@ -7,8 +7,37 @@ export interface Account {
   currency: string;
 }
 
+/** The gateway's decision on a proposal, straight from the gateway (not from the planner's words). */
+export interface ActionEvent {
+  type?: "action";
+  tool: string;
+  status: "executed" | "pending_approval" | "denied";
+  rule?: string | null;
+  effective_tier?: string | null;
+  approval_id?: string | null;
+  requires_out_of_band_call?: boolean;
+  untrusted_args?: string[];
+  reason: string;
+  reason_segments?: ReplySegment[];
+}
+
 export interface AdvanceRequest {
   days: number;
+  /** Run reminders and the Morning Brief after moving */
+  run_overnight?: boolean;
+}
+
+export interface AdvanceResult {
+  today: string;
+  start: string;
+  offset_days: number;
+  overnight?: OvernightReport[];
+}
+
+export interface AgentTurn {
+  conversation_id: string;
+  events: unknown[];
+  reply: ReplyEvent;
 }
 
 /** What the owner is asked to sign. `payload` is signed as canonical JSON; `args` are shown to the owner. */
@@ -46,6 +75,19 @@ export interface ArgValue {
   provenance: "trusted" | "untrusted";
 }
 
+export interface AskRequest {
+  message: string;
+  conversation_id?: string | null;
+}
+
+export interface AttachmentInfo {
+  filename: string;
+  kind: string;
+  sha256: string;
+  extraction: string;
+  hidden_runs?: number;
+}
+
 export interface AuditEntry {
   seq: number;
   date: string;
@@ -63,6 +105,10 @@ export interface AuditPage {
   entries: AuditEntry[];
 }
 
+export interface Body_upload_email {
+  file: Blob;
+}
+
 export interface Body_upload_statement {
   /** CSV statement (UTF-8) */
   file: Blob;
@@ -71,6 +117,12 @@ export interface Body_upload_statement {
   account_name?: string;
   decimal_sep?: "." | ",";
   date_format?: "%Y-%m-%d" | "%d/%m/%Y" | "%m/%d/%Y" | "%d.%m.%Y";
+}
+
+export interface BriefFirewall {
+  attempts: number;
+  rejected: string[][];
+  fallback: boolean;
 }
 
 export interface BusinessDetail {
@@ -94,6 +146,13 @@ export interface BusinessInfo {
   seed_source?: string | null;
 }
 
+/** A verification call the owner makes on a number from their own records. Generated in code, not by an LLM. */
+export interface CallScript {
+  call: string;
+  number_source: string;
+  lines: string[];
+}
+
 export interface CashPosition {
   as_of: string;
   balance: Fact;
@@ -113,6 +172,20 @@ export interface ClockState {
   offset_days: number;
 }
 
+export interface ComingUpItem {
+  id: string;
+  kind: "payable" | "receivable";
+  label: string;
+  amount: Fact;
+  due: Fact;
+}
+
+export interface ConversationEvent {
+  type?: "conversation";
+  conversation_id: string;
+  today_fact_id: string;
+}
+
 export interface Decision {
   status: "executed" | "pending_approval" | "denied";
   tool: string;
@@ -122,6 +195,56 @@ export interface Decision {
   approval?: ApprovalRequest | null;
   mandate_id?: number | null;
   result?: Record<string, unknown> | null;
+}
+
+/** Everything downstream code (sentinel, forecast feed, planner tool) may use from one email and its files. */
+export interface DocumentFields {
+  category?: "invoice" | "payment_request" | "bank_detail_change" | "purchase_order" | "payment_confirmation" | "promise_to_pay" | "overdue_notice" | "loan_offer" | "other_financial" | "not_financial" | null;
+  has_invoice_document?: boolean;
+  has_receipt?: boolean;
+  currency?: string | null;
+  amount_minor?: Untrusted_int_ | null;
+  email_amount_minor?: Untrusted_int_ | null;
+  due_date?: Untrusted_date_ | null;
+  invoice_number?: Untrusted_str_ | null;
+  invoice_number_from_document?: boolean;
+  referenced_invoice_numbers?: string[];
+  po_number?: Untrusted_str_ | null;
+  po_direction?: "incoming_from_customer" | "outgoing_to_supplier" | "supplier_confirmation" | null;
+  start_date?: Untrusted_date_ | null;
+  payment_terms_days?: Untrusted_int_ | null;
+  payee_account_token?: Untrusted_str_ | null;
+  payee_account_last4?: string | null;
+  asks_to_change_bank_details?: boolean;
+  marked_overdue?: boolean;
+  promises?: PromiseField[];
+  line_items_sum_minor?: number | null;
+  stated_total_minor?: number | null;
+  cash_tendered_minor?: number | null;
+  change_minor?: number | null;
+  model_totals_mismatch?: boolean;
+  model_instruction_flag?: boolean;
+  model_instruction_category?: string | null;
+  model_urgency?: boolean;
+  model_secrecy?: boolean;
+  extraction_status?: Record<string, string>;
+  invalid_fields?: string[];
+  review_fields?: string[];
+}
+
+export interface DoneItem {
+  tool: string;
+  status: "executed" | "pending_approval" | "denied" | "skipped";
+  rule?: string | null;
+  summary: string;
+  amount?: Fact | null;
+  date: Fact;
+}
+
+export interface ErrorEvent {
+  type?: "error";
+  kind: "llm_unavailable" | "replay_miss" | "step_limit";
+  message: string;
 }
 
 /**
@@ -161,6 +284,34 @@ export interface FactTrace {
   rows: SourceRow[];
   rows_total: number;
   missing_inputs: string[];
+}
+
+export interface FinancingMatch {
+  catalog_ref: string;
+  synthetic?: true;
+  max_installment_fact_id: string;
+  capacity_fact_ids: string[];
+  products: ProductMatch[];
+}
+
+/** Every catalog product with pass/fail and a reason per rule, the repayment-safe size, and the facts cited. */
+export interface FinancingResponse {
+  as_of: string;
+  match: FinancingMatch;
+  facts: Record<string, Fact>;
+}
+
+export interface FirewallReport {
+  attempts: number;
+  rejected?: string[][];
+  fallback?: boolean;
+}
+
+export interface Flag {
+  code: "lookalike_domain" | "display_name_spoof" | "reply_to_mismatch" | "bank_detail_change" | "first_time_payee" | "amount_anomaly" | "urgency" | "instruction_like_text" | "hidden_text" | "receipt_total_mismatch" | "duplicate_invoice" | "amount_mismatch";
+  severity: "high" | "medium";
+  detected_by: ("code" | "model")[];
+  evidence?: Record<string, string | number | boolean | null>;
 }
 
 export interface ForecastDay {
@@ -210,6 +361,61 @@ export interface HealthResponse {
   status: string;
 }
 
+export interface ImproveItem {
+  leak_id: string;
+  detector: string;
+  title: string;
+  about?: string | null;
+  text: string;
+  yearly_saving: Fact;
+  facts: Record<string, Fact>;
+}
+
+export interface InboxDetail {
+  item: InboxItem;
+  body_text: string;
+  hidden_text: string[];
+}
+
+export interface InboxItem {
+  record: InboxRecord;
+  facts: Fact[];
+}
+
+export interface InboxList {
+  total: number;
+  held: number;
+  items: InboxItem[];
+}
+
+export interface InboxRecord {
+  email_id: string;
+  source: "mailbox" | "upload";
+  received_at: string | null;
+  received_on: string | null;
+  processed_on: string;
+  raw_sha256: string;
+  from_address: string;
+  from_display_name: string;
+  reply_to_address: string | null;
+  subject: string;
+  auth: Record<string, string>;
+  attachments: AttachmentInfo[];
+  fields: DocumentFields;
+  owner_view: OwnerView;
+  sentinel: SentinelReport;
+  feed: "scheduled" | "already_scheduled" | "past_due" | "not_applicable" | "held_by_sentinel" | "counterparty_unknown" | "missing_fields";
+  scheduled_item_ids?: string[];
+}
+
+export interface InboxSyncResult {
+  processed: string[];
+  skipped_existing: number;
+  not_yet_delivered: number;
+  failed: string[];
+  held: string[];
+}
+
 export interface IngestReport {
   import_id: string;
   account_id: string;
@@ -238,6 +444,42 @@ export interface KpiRow {
   healthy_max: Fact | null;
 }
 
+export interface LeakDetail {
+  label: string;
+  fact: Fact;
+}
+
+export interface LeakView {
+  id: string;
+  detector: string;
+  label: string;
+  about: string | null;
+  subject: Record<string, string>;
+  yearly_impact: Fact;
+  details: LeakDetail[];
+}
+
+export interface LoanApplicationRequest {
+  product_id: string;
+  /** Defaults to the repayment-safe amount */
+  amount_minor?: number | null;
+}
+
+/** The draft the owner is asked to sign for, and the gateway's decision (always pending_approval or denied). */
+export interface LoanApplicationResponse {
+  draft_id: string;
+  draft_sha256: string;
+  passport_sha256: string;
+  draft: Record<string, unknown>;
+  decision: Decision;
+}
+
+export interface LoanDraftView {
+  draft_id: string;
+  sha256: string;
+  draft: Record<string, unknown>;
+}
+
 /** A verified, stored mandate. `record_hash` is the canonical-JSON hash of `document()`, the anchoring leaf. */
 export interface MandateRecord {
   id: number;
@@ -256,6 +498,35 @@ export interface MandateResult {
   mandate?: MandateRecord | null;
 }
 
+/** What the Today screen renders. Prose carries {fact:id} placeholders resolved from `facts` (invariant 4). */
+export interface MorningBrief {
+  business_id: string;
+  as_of: Fact;
+  generated_by: "llm" | "template";
+  paragraphs: string[];
+  facts: Record<string, Fact>;
+  done_overnight: DoneItem[];
+  not_done: DoneItem[];
+  needs_you: NeedsYouItem[];
+  coming_up: ComingUpItem[];
+  improve: ImproveItem | null;
+  firewall: BriefFirewall;
+}
+
+export interface NeedsYouItem {
+  approval_id: string;
+  tool: string;
+  summary: string;
+  reasons: string[];
+}
+
+export interface OvernightReport {
+  business_id: string;
+  as_of: string;
+  reminders: ReminderOutcome[];
+  brief: MorningBrief;
+}
+
 export interface OwnerKey {
   public_key: string;
   enrolled: boolean;
@@ -264,6 +535,15 @@ export interface OwnerKey {
 export interface OwnerKeyRequest {
   /** Ed25519 public key, hex */
   public_key: string;
+}
+
+/** Display-only strings for the owner's screen. Never passed to the planner (invariant 2). */
+export interface OwnerView {
+  payee_name?: string | null;
+  payee_bank_name?: string | null;
+  merchant_name?: string | null;
+  supplier_name?: string | null;
+  line_items?: unknown[][];
 }
 
 export interface PackSummary {
@@ -276,6 +556,65 @@ export interface PackSummary {
 
 export interface PackSwitch {
   pack_id: string;
+}
+
+export interface Passport {
+  schema_id?: "readiness_passport/v1";
+  synthetic_data: boolean;
+  as_of: string;
+  business_id: string;
+  business_name: string;
+  currency: string;
+  pack_ref: string;
+  catalog_ref: string;
+  band_id: string;
+  band_label: string;
+  next_band_label: string | null;
+  score_fact_id: string;
+  factors: PassportFactor[];
+  reasons: string[];
+  path_to_eligibility: PathStep[];
+  eligible_product_ids: string[];
+}
+
+/** One exported Passport: `sha256` is the SHA-256 of the canonical JSON of `document`. */
+export interface PassportExport {
+  business_id: string;
+  as_of: string;
+  sha256: string;
+  band_id: string;
+  document: Record<string, unknown>;
+}
+
+export interface PassportExportSummary {
+  business_id: string;
+  as_of: string;
+  sha256: string;
+  band_id: string;
+}
+
+export interface PassportFactor {
+  factor: string;
+  label: string;
+  explains: string;
+  weight_fact_id: string;
+  raw_fact_id: string;
+  score_fact_id: string;
+  status: "strong" | "fair" | "weak";
+  reason: string;
+}
+
+export interface PassportResponse {
+  as_of: string;
+  passport: Passport;
+  facts: Record<string, Fact>;
+}
+
+export interface PathStep {
+  kind: "readiness" | "product";
+  factor?: string | null;
+  product_id?: string | null;
+  text: string;
 }
 
 /**
@@ -297,14 +636,88 @@ export interface PnlResponse {
   periods: PnlPeriod[];
 }
 
+export interface ProductMatch {
+  product_id: string;
+  name: string;
+  lender: string;
+  type: string;
+  fit: "strong" | "moderate" | "weak";
+  fit_reason: string;
+  status: "eligible" | "not_eligible" | "not_safe";
+  eligible: boolean;
+  capped_by: "repayment_safety" | "product_max" | null;
+  rules: RuleResult[];
+  min_amount_fact_id: string;
+  max_amount_fact_id: string;
+  safe_amount_fact_id: string;
+  installment_fact_id: string;
+  total_cost_fact_id: string;
+  term_fact_id: string;
+  monthly_rate_fact_id: string;
+}
+
+export interface PromiseField {
+  date: Untrusted_date_;
+  amount_minor: Untrusted_int_ | null;
+}
+
 export interface ProposedAction {
   tool: string;
   args?: Record<string, ArgValue>;
 }
 
+/** One overdue invoice the overnight job looked at, and what the gateway decided. */
+export interface ReminderOutcome {
+  scheduled_item_id: string;
+  invoice_id: string;
+  customer_id: string | null;
+  status: "executed" | "pending_approval" | "denied" | "skipped";
+  rule?: string | null;
+  approval_id?: string | null;
+  mandate_id?: number | null;
+}
+
+export interface ReplyEvent {
+  type?: "reply";
+  text: string;
+  segments: ReplySegment[];
+  fact_ids: string[];
+  firewall: FirewallReport;
+}
+
+export interface ReplySegment {
+  text: string;
+  fact_id?: string | null;
+}
+
 export interface RowError {
   line: number;
   message: string;
+}
+
+/** One rule. `reason` is code-written text with `{fact:<id>}` placeholders and no digits outside them. */
+export interface RuleResult {
+  rule: string;
+  label: string;
+  op: ">=" | "<=";
+  passed: boolean;
+  metric_fact_id: string;
+  threshold_fact_id: string;
+  eligible_from_fact_id?: string | null;
+  reason: string;
+}
+
+export interface SentinelReport {
+  sender_status: "known" | "own_business" | "lookalike" | "unknown";
+  sender_counterparty_id?: string | null;
+  claimed_counterparty_id?: string | null;
+  payee_counterparty_id?: string | null;
+  payment_requested?: boolean;
+  flags?: Flag[];
+  risk?: "none" | "review" | "hold";
+  hold?: boolean;
+  recommended?: ("verify_by_phone_before_paying" | "do_not_pay_duplicate" | "check_amount_against_ledger" | "reimburse_line_items_only" | "treat_embedded_text_as_data" | "owner_review")[];
+  call_script?: CallScript | null;
 }
 
 /** Exactly what the owner signs. */
@@ -318,7 +731,7 @@ export interface SignedPayload {
 /** One cited source. Money is integer minor units; `text` is untrusted and owner-UI only. */
 export interface SourceRow {
   id: string;
-  kind: "transaction" | "scheduled_item" | "sale_line" | "clock" | "pack" | "unknown";
+  kind: "transaction" | "scheduled_item" | "sale_line" | "purchase_line" | "receivable" | "supplier_invoice" | "clock" | "pack" | "catalog" | "unknown";
   date?: string | null;
   amount_minor?: number | null;
   currency?: string | null;
@@ -364,6 +777,13 @@ export interface StatementRejectedResponse {
   detail: StatementRejected;
 }
 
+export interface ToolCallEvent {
+  type?: "tool_call";
+  tool: string;
+  ok: boolean;
+  fact_ids?: string[];
+}
+
 export interface Transaction {
   id: string;
   account_id: string;
@@ -387,6 +807,30 @@ export interface TransactionPage {
   offset: number;
   limit: number;
   items: Transaction[];
+}
+
+export interface Untrusted_date_ {
+  value: string;
+  provenance?: "untrusted";
+  source: string;
+  confidence: number;
+  needs_review: boolean;
+}
+
+export interface Untrusted_int_ {
+  value: number;
+  provenance?: "untrusted";
+  source: string;
+  confidence: number;
+  needs_review: boolean;
+}
+
+export interface Untrusted_str_ {
+  value: string;
+  provenance?: "untrusted";
+  source: string;
+  confidence: number;
+  needs_review: boolean;
 }
 
 export interface ValidationError {

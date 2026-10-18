@@ -166,6 +166,16 @@ class GatewayStore:
             row[0], row[1], json.loads(row[2]), SignedPayload.model_validate_json(row[3]), json.loads(row[4]), row[5]
         )
 
+    def pending_approvals(self, today: date) -> list[Approval]:
+        """Approvals still waiting for the owner's signature whose payload has not expired, oldest first."""
+        rows = self._conn.execute(
+            "SELECT id, tool, args, payload, reasons, status FROM approvals WHERE status = 'pending'"
+            " ORDER BY created_on, id"
+        ).fetchall()
+        found = [Approval(r[0], r[1], json.loads(r[2]), SignedPayload.model_validate_json(r[3]), json.loads(r[4]),
+                          r[5]) for r in rows]
+        return [a for a in found if a.payload.expiry >= today]
+
     def set_approval_status(self, approval_id: str, status: str) -> None:
         with self._lock:
             self._conn.execute("UPDATE approvals SET status = ? WHERE id = ?", (status, approval_id))

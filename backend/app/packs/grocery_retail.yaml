@@ -129,8 +129,8 @@ kpis:
   - {id: digital_share, label: Digital share of sales, unit: ratio, source: ratio, numerator: [sales_wallet, sales_card], denominator: [revenue], healthy: {min: 0.40}}
   - {id: buffer_days, label: Cash buffer, unit: days, source: engine, metric: buffer_days, healthy: {min: 14, max: 60}}
 
-# supplier_price_creep is registered but not enabled: on ledger amounts it confuses seasonal order size with
-# price. Build prompt 14 re-enables it on unit costs from purchase lines.
+# Ledger detectors read categorized statement rows; supplier_price_creep, missed_early_pay_discounts and
+# slow_moving_stock read the business's purchase lines, unprofitable_products its point-of-sale lines.
 leak_detectors:
   - detector: duplicate_subscription
     label: Paying twice for the same software
@@ -145,6 +145,18 @@ leak_detectors:
   - detector: late_fees
     label: Late fees and penalties paid
     params: {keywords: [late fee, late payment, penalty], lookback_days: 180}
+  - detector: supplier_price_creep
+    label: Supplier raising unit prices
+    params: {lookback_days: 365, min_purchases: 6, min_increase: 0.05}
+  - detector: unprofitable_products
+    label: Product sold below cost
+    params: {lookback_days: 180, min_sale_days: 14}
+  - detector: missed_early_pay_discounts
+    label: Early-payment discounts missed
+    params: {lookback_days: 365, min_invoices: 2}
+  - detector: slow_moving_stock
+    label: Stock that is not selling
+    params: {min_days_held: 30, max_sell_through: 0.5, carrying_cost_rate: 0.30}
 
 # Ranking input for the financing matcher; eligibility stays with each product's own rules.
 financing_fit:

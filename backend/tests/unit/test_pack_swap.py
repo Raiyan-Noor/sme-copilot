@@ -2,7 +2,7 @@
 leak findings, financing fit and readiness. Every leak and KPI Fact traces to rows of that ledger.
 """
 
-from datetime import date
+from datetime import date, timedelta
 
 import pytest
 
@@ -10,7 +10,7 @@ from app.engine.pack_inputs import build_engine_pack
 from app.firewall.fact import Fact
 from app.packs.benchmarks import benchmark, compute_kpis
 from app.packs.financing import financing_fit, rank_product_types
-from app.packs.leaks import run_leak_detectors
+from app.packs.leaks import find_leaks, run_leak_detectors
 from app.packs.ledger_view import UNCATEGORIZED, categorize_snapshot, frame
 from app.packs.loader import load_pack
 from app.packs.readiness import readiness_score
@@ -143,9 +143,10 @@ def test_benchmark_bounds_are_facts_from_the_pack(packs):
 
 
 def _leaks(snapshot, pack) -> dict[str, list[Fact]]:
+    """Yearly-impact fact of each finding, by detector."""
     out: dict[str, list[Fact]] = {}
-    for fact in run_leak_detectors(snapshot, pack, CLOCK):
-        out.setdefault(fact.id.split(".")[1], []).append(fact)
+    for finding in find_leaks(snapshot, pack, CLOCK):
+        out.setdefault(finding.detector, []).append(finding.impact)
     return out
 
 
@@ -166,7 +167,8 @@ def test_duplicate_subscription_catches_a_second_account_with_the_same_vendor(pa
                          "direct_debit"))
     rows.append((date(2026, 10, 1), 1_000, "Wallet customer", "PAYMENT RECEIVED", "wallet"))
     for pack in packs:
-        [fact] = run_leak_detectors(snapshot_of(rows), pack, CLOCK)
+        [finding] = find_leaks(snapshot_of(rows), pack, CLOCK)
+        fact = finding.impact
         assert fact.id.startswith("leak.duplicate_subscription.") and fact.value == 5_900 * 12
 
 
@@ -176,14 +178,21 @@ def test_one_month_of_double_billing_is_not_a_leak(packs):
     assert run_leak_detectors(snapshot_of(rows), packs[0], CLOCK) == []
 
 
-def test_price_creep_detector_stays_registered_and_param_driven(snapshot, packs):
+def test_price_creep_detector_is_param_driven_on_unit_costs(snapshot, packs):
+    from app.ledger.purchases import PurchaseLine
+
     spec = get_detector("supplier_price_creep")
     df = frame(snapshot, packs[0])
-    ctx = DetectorContext(pack=packs[0], today=TODAY, currency=CURRENCY)
-    params = spec.params_model(categories=("staples_wholesale",), min_increase=0.05)
-    [fact] = spec.fn(df, params, ctx)
-    assert {df.set_index("row_id").loc[r, "description"] for r in fact.source_row_ids} == {"ACH PAYMENT RICE"}
-    assert spec.fn(df, spec.params_model(categories=("staples_wholesale",), min_increase=0.9), ctx) == []
+    lines = tuple(PurchaseLine(id=f"P{i}-L01", invoice_id=f"P{i}", supplier_id="sup_x", product_id="RICE",
+                               invoice_date=date(2026, 5, 1) + timedelta(days=14 * i),
+                               due_date=date(2026, 6, 1) + timedelta(days=14 * i), qty=10 + 5 * (i % 2),
+                               unit_cost_minor=1000 + 20 * i, line_total_minor=(10 + 5 * (i % 2)) * (1000 + 20 * i))
+                  for i in range(9))
+    ctx = DetectorContext(pack=packs[0], today=TODAY, currency=CURRENCY, purchases=lines)
+    [finding] = spec.fn(df, spec.params_model(min_increase=0.05), ctx)
+    assert finding.subject == {"supplier_id": "sup_x", "product_id": "RICE"}
+    assert set(finding.impact.source_row_ids) == {ln.id for ln in lines}
+    assert spec.fn(df, spec.params_model(min_increase=0.9), ctx) == []
 
 
 def test_duplicate_subscription_flags_the_cheaper_vendor(snapshot, packs):
@@ -196,10 +205,14 @@ def test_duplicate_subscription_flags_the_cheaper_vendor(snapshot, packs):
 def test_leak_facts_are_money_traced_to_rows(snapshot, packs):
     ids = {t.id for t in snapshot.transactions}
     for pack in packs:
-        for fact in run_leak_detectors(snapshot, pack, CLOCK):
+        for finding in find_leaks(snapshot, pack, CLOCK):
+            fact = finding.impact
+            assert fact.id == f"{finding.id}.yearly_impact"
             assert isinstance(fact.value, int) and fact.value > 0
             assert fact.currency == CURRENCY and set(fact.source_row_ids) <= ids
             assert fact.computed_by.startswith("packs.detectors.")
+            for detail in finding.details:
+                assert detail.id.startswith(finding.id + ".") and detail.computed_by == fact.computed_by
 
 
 def test_detectors_are_deterministic(snapshot, packs):

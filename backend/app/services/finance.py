@@ -14,19 +14,26 @@ from pathlib import Path
 import yaml
 
 from app.clock import Clock
+from app.engine.common import today_fact
 from app.engine.core import core_facts
 from app.engine.pack_inputs import EnginePack, build_engine_pack
 from app.engine.pnl import pnl_by_period
+from app.engine.scheduled import scheduled_item_facts
 from app.firewall.explain import Resolver, SourceRow
 from app.firewall.store import FactStore
+from app.ledger.documents import Receivable, load_receivables_csv, supplier_invoices
 from app.ledger.pos import Product, SaleLine, load_products_csv, load_sale_lines_csv
+from app.ledger.purchases import PurchaseLine, load_purchases_csv
 from app.ledger.scheduled import ScheduledItem, load_scheduled
 from app.ledger.snapshot import LedgerSnapshot, load_snapshot
 from app.packs.benchmarks import Benchmark, benchmark, compute_kpis
+from app.packs.leaks import find_leaks
 from app.packs.ledger_view import categorize_snapshot
 from app.packs.loader import load_pack
+from app.packs.registry import Finding
 from app.packs.schema import Pack
 from app.services.businesses import BusinessInfo, business_info
+from app.services.financing import FinancingResult, financing_facts
 
 
 @dataclass(frozen=True)
@@ -38,6 +45,8 @@ class BusinessInputs:
     scheduled: tuple[ScheduledItem, ...]
     products: tuple[Product, ...]
     sale_lines: tuple[SaleLine, ...]
+    purchases: tuple[PurchaseLine, ...] = ()  # supplier invoice lines, for the purchase-based leak detectors
+    receivables: tuple[Receivable, ...] = ()  # customer invoices issued, for the Readiness Passport
 
 
 @dataclass(frozen=True)
@@ -46,6 +55,8 @@ class Computed:
     store: FactStore
     benchmarks: tuple[Benchmark, ...]
     facts_sha256: str
+    leaks: tuple[Finding, ...] = ()  # every leak finding; its facts are in `store`
+    financing: FinancingResult | None = None  # financing match and Readiness Passport; facts are in `store`
 
 
 def ledger_version(conn: sqlite3.Connection) -> tuple[int, ...]:
@@ -67,6 +78,12 @@ def load_inputs(conn: sqlite3.Connection, seed_dir: Path, holiday_calendar: Path
     if pos_dir and (pos_dir / "products.csv").exists() and (pos_dir / "sale_lines.csv").exists():
         products = load_products_csv(pos_dir / "products.csv")
         sale_lines = load_sale_lines_csv(pos_dir / "sale_lines.csv")
+    purchases: tuple[PurchaseLine, ...] = ()
+    if pos_dir and (pos_dir / "purchases.csv").exists():
+        purchases = load_purchases_csv(pos_dir / "purchases.csv")
+    receivables: tuple[Receivable, ...] = ()
+    if pos_dir and (pos_dir / "receivables.csv").exists():
+        receivables = load_receivables_csv(pos_dir / "receivables.csv")
     return BusinessInputs(
         info=info,
         pack=pack,
@@ -75,12 +92,16 @@ def load_inputs(conn: sqlite3.Connection, seed_dir: Path, holiday_calendar: Path
         scheduled=load_scheduled(conn),
         products=products,
         sale_lines=sale_lines,
+        purchases=purchases,
+        receivables=receivables,
     )
 
 
 def compute(inputs: BusinessInputs, clock: Clock) -> Computed:
-    """Core engine facts, weekly P&L, pack KPIs and benchmark bounds, all in one store."""
+    """Core engine facts, weekly P&L, pack KPIs, benchmark bounds, open scheduled items, leak findings and the
+    simulated date, all in one store: the planner's tools and the owner's explain_fact read the same facts."""
     store = FactStore()
+    store.add(today_fact(clock.today(), "services.finance.compute"))
     facts = core_facts(inputs.snapshot, inputs.engine_pack, clock, inputs.scheduled, inputs.products,
                        inputs.sale_lines)
     store.add_all(facts)
@@ -90,9 +111,18 @@ def compute(inputs: BusinessInputs, clock: Clock) -> Computed:
     engine_kpis = {"buffer_days": store.get("cash.buffer_days")}
     benchmarks, bounds = benchmark({**{f.id: f for f in kpis}, **engine_kpis}, inputs.pack)
     store.add_all(bounds)
+    store.add_all(scheduled_item_facts(inputs.scheduled, clock, inputs.snapshot.currency))
+    leaks = find_leaks(inputs.snapshot, inputs.pack, clock, products=inputs.products,
+                       sale_lines=inputs.sale_lines, purchases=inputs.purchases)
+    store.add_all(fact for finding in leaks for fact in finding.facts())
+    financing = financing_facts(
+        store=store, snapshot=inputs.snapshot, pack=inputs.pack, clock=clock, receivables=inputs.receivables,
+        supplier_invoices=supplier_invoices(inputs.purchases), business_id=inputs.info.id,
+        business_name=inputs.info.name, synthetic_data=inputs.info.synthetic)
     dump = sorted((f.model_dump(mode="json") for f in store), key=lambda d: d["id"])
     digest = hashlib.sha256(json.dumps(dump, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
-    return Computed(inputs=inputs, store=store, benchmarks=tuple(benchmarks), facts_sha256=digest)
+    return Computed(inputs=inputs, store=store, benchmarks=tuple(benchmarks), facts_sha256=digest,
+                    leaks=tuple(leaks), financing=financing)
 
 
 def resolver(inputs: BusinessInputs) -> Resolver:
@@ -100,6 +130,9 @@ def resolver(inputs: BusinessInputs) -> Resolver:
     txns = inputs.snapshot.by_id()
     scheduled = {s.id: s for s in inputs.scheduled}
     sales = {s.id: s for s in inputs.sale_lines}
+    purchases = {p.id: p for p in inputs.purchases}
+    receivables = {r.id: r for r in inputs.receivables}
+    invoices = {i.id: i for i in supplier_invoices(inputs.purchases)}
     currency = inputs.snapshot.currency
 
     def resolve(ref: str) -> SourceRow | None:
@@ -112,6 +145,20 @@ def resolver(inputs: BusinessInputs) -> Resolver:
         if (line := sales.get(ref)) is not None:
             return SourceRow(id=line.id, kind="sale_line", date=line.date, amount_minor=line.revenue_minor,
                              currency=currency, category=line.product_id)
+        if (buy := purchases.get(ref)) is not None:
+            return SourceRow(id=buy.id, kind="purchase_line", date=buy.invoice_date,
+                             amount_minor=-buy.line_total_minor, currency=currency, category=buy.product_id,
+                             text=f"{buy.invoice_id} {buy.supplier_id} x{buy.qty}")
+        if (rec := receivables.get(ref)) is not None:
+            paid = f", paid {rec.paid_on.isoformat()}" if rec.paid_on else ", unpaid"
+            return SourceRow(id=rec.id, kind="receivable", date=rec.issue_date, amount_minor=rec.amount_minor,
+                             currency=currency, category=rec.customer_id,
+                             text=f"due {rec.due_date.isoformat()}{paid}")
+        if (inv := invoices.get(ref)) is not None:
+            paid = f", paid {inv.paid_on.isoformat()}" if inv.paid_on else ", unpaid"
+            return SourceRow(id=inv.id, kind="supplier_invoice", date=inv.invoice_date,
+                             amount_minor=-inv.amount_minor, currency=currency, category=inv.supplier_id,
+                             text=f"due {inv.due_date.isoformat()}{paid}")
         return None
 
     return resolve

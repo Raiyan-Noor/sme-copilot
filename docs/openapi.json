@@ -1185,6 +1185,7 @@
           "clock"
         ],
         "summary": "Advance",
+        "description": "Move the simulated clock forward, then run the overnight job for each business (unless turned off).",
         "operationId": "advance",
         "requestBody": {
           "content": {
@@ -1202,7 +1203,823 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ClockState"
+                  "$ref": "#/components/schemas/AdvanceResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/agent/ask": {
+      "post": {
+        "tags": [
+          "agent"
+        ],
+        "summary": "Ask",
+        "description": "Ask the planner and get the whole turn at once: tool calls, gateway decisions and the checked reply.",
+        "operationId": "ask",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AskRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentTurn"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/agent/chat": {
+      "post": {
+        "tags": [
+          "agent"
+        ],
+        "summary": "Chat",
+        "description": "Ask the planner and stream the turn as server-sent events. The reply arrives whole, after the firewall.",
+        "operationId": "chat",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AskRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Server-sent events: conversation, tool_call, action, error, reply; then done.",
+            "content": {
+              "text/event-stream": {}
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/brief": {
+      "get": {
+        "tags": [
+          "brief"
+        ],
+        "summary": "Get Brief",
+        "description": "The latest Morning Brief (written by the overnight job). 404 until the first one exists.",
+        "operationId": "get_brief",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MorningBrief"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/overnight": {
+      "post": {
+        "tags": [
+          "brief"
+        ],
+        "summary": "Run Overnight Now",
+        "description": "Run the overnight job now without moving the clock: reminders through the gateway, then the brief.",
+        "operationId": "run_overnight_now",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          },
+          {
+            "name": "reminders",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true,
+              "title": "Reminders"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OvernightReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/leaks": {
+      "get": {
+        "tags": [
+          "brief"
+        ],
+        "summary": "Get Leaks",
+        "description": "Every leak finding, largest yearly impact first, with its detail facts. Open any fact with explain_fact\nto see the evidence rows.",
+        "operationId": "get_leaks",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LeakView"
+                  },
+                  "title": "Response Get Leaks"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/inbox": {
+      "get": {
+        "tags": [
+          "inbox"
+        ],
+        "summary": "List Inbox",
+        "description": "Processed messages, newest first, with sentinel flags, risk and any verification call script.",
+        "operationId": "list_inbox",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InboxList"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/inbox/sync": {
+      "post": {
+        "tags": [
+          "inbox"
+        ],
+        "summary": "Sync Inbox",
+        "description": "Deliver and process new mailbox messages (quarantined extractor, then the sentinel, then the forecast feed).",
+        "operationId": "sync_inbox",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InboxSyncResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/inbox/upload": {
+      "post": {
+        "tags": [
+          "inbox"
+        ],
+        "summary": "Upload Email",
+        "description": "Process one uploaded .eml message through the same quarantine and sentinel path.",
+        "operationId": "upload_email",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_email"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InboxItem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/inbox/{email_id}": {
+      "get": {
+        "tags": [
+          "inbox"
+        ],
+        "summary": "Inbox Detail",
+        "operationId": "inbox_detail",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          },
+          {
+            "name": "email_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Email Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InboxDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/financing": {
+      "get": {
+        "tags": [
+          "financing"
+        ],
+        "summary": "Get Financing",
+        "description": "Match every product in the synthetic catalog. The lender decides; this is not a credit decision.",
+        "operationId": "get_financing",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancingResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/passport": {
+      "get": {
+        "tags": [
+          "financing"
+        ],
+        "summary": "Get Passport",
+        "operationId": "get_passport",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PassportResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/passport/export": {
+      "post": {
+        "tags": [
+          "financing"
+        ],
+        "summary": "Export Passport",
+        "description": "Export the Passport as canonical JSON. `sha256` is recorded in the audit log for anchoring.",
+        "operationId": "export_passport",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PassportExport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/passport/exports": {
+      "get": {
+        "tags": [
+          "financing"
+        ],
+        "summary": "List Passport Exports",
+        "operationId": "list_passport_exports",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PassportExportSummary"
+                  },
+                  "title": "Response List Passport Exports"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/passport/exports/{sha256}": {
+      "get": {
+        "tags": [
+          "financing"
+        ],
+        "summary": "Get Passport Export",
+        "description": "A stored export. A file whose bytes no longer hash to its name is reported as not found.",
+        "operationId": "get_passport_export",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          },
+          {
+            "name": "sha256",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$",
+              "title": "Sha256"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PassportExport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/financing/applications": {
+      "post": {
+        "tags": [
+          "financing"
+        ],
+        "summary": "Prepare Application",
+        "description": "Prepare a draft application and ask the gateway to send it. The gateway waits for the owner's signature.",
+        "operationId": "prepare_application",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoanApplicationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanApplicationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/financing/applications/{draft_id}": {
+      "get": {
+        "tags": [
+          "financing"
+        ],
+        "summary": "Get Application Draft",
+        "description": "The exact draft an approval refers to, so the owner reads what they sign for.",
+        "operationId": "get_application_draft",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          },
+          {
+            "name": "draft_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^lad_[a-p]{24}$",
+              "title": "Draft Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanDraftView"
                 }
               }
             }
@@ -1302,6 +2119,95 @@
         ],
         "title": "Account"
       },
+      "ActionEvent": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "action",
+            "title": "Type",
+            "default": "action"
+          },
+          "tool": {
+            "type": "string",
+            "title": "Tool"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "executed",
+              "pending_approval",
+              "denied"
+            ],
+            "title": "Status"
+          },
+          "rule": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rule"
+          },
+          "effective_tier": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective Tier"
+          },
+          "approval_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approval Id"
+          },
+          "requires_out_of_band_call": {
+            "type": "boolean",
+            "title": "Requires Out Of Band Call",
+            "default": false
+          },
+          "untrusted_args": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Untrusted Args",
+            "default": []
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "reason_segments": {
+            "items": {
+              "$ref": "#/components/schemas/ReplySegment"
+            },
+            "type": "array",
+            "title": "Reason Segments",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "tool",
+          "status",
+          "reason"
+        ],
+        "title": "ActionEvent",
+        "description": "The gateway's decision on a proposal, straight from the gateway (not from the planner's words)."
+      },
       "AdvanceRequest": {
         "properties": {
           "days": {
@@ -1309,6 +2215,12 @@
             "maximum": 365.0,
             "minimum": 1.0,
             "title": "Days"
+          },
+          "run_overnight": {
+            "type": "boolean",
+            "title": "Run Overnight",
+            "description": "Run reminders and the Morning Brief after moving",
+            "default": true
           }
         },
         "type": "object",
@@ -1316,6 +2228,90 @@
           "days"
         ],
         "title": "AdvanceRequest"
+      },
+      "AdvanceResult": {
+        "properties": {
+          "today": {
+            "type": "string",
+            "format": "date",
+            "title": "Today"
+          },
+          "start": {
+            "type": "string",
+            "format": "date",
+            "title": "Start"
+          },
+          "offset_days": {
+            "type": "integer",
+            "title": "Offset Days"
+          },
+          "overnight": {
+            "items": {
+              "$ref": "#/components/schemas/OvernightReport"
+            },
+            "type": "array",
+            "title": "Overnight",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "today",
+          "start",
+          "offset_days"
+        ],
+        "title": "AdvanceResult"
+      },
+      "AgentTurn": {
+        "properties": {
+          "conversation_id": {
+            "type": "string",
+            "title": "Conversation Id"
+          },
+          "events": {
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/ConversationEvent"
+                },
+                {
+                  "$ref": "#/components/schemas/ToolCallEvent"
+                },
+                {
+                  "$ref": "#/components/schemas/ActionEvent"
+                },
+                {
+                  "$ref": "#/components/schemas/ReplyEvent"
+                },
+                {
+                  "$ref": "#/components/schemas/ErrorEvent"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "type",
+                "mapping": {
+                  "action": "#/components/schemas/ActionEvent",
+                  "conversation": "#/components/schemas/ConversationEvent",
+                  "error": "#/components/schemas/ErrorEvent",
+                  "reply": "#/components/schemas/ReplyEvent",
+                  "tool_call": "#/components/schemas/ToolCallEvent"
+                }
+              }
+            },
+            "type": "array",
+            "title": "Events"
+          },
+          "reply": {
+            "$ref": "#/components/schemas/ReplyEvent"
+          }
+        },
+        "type": "object",
+        "required": [
+          "conversation_id",
+          "events",
+          "reply"
+        ],
+        "title": "AgentTurn"
       },
       "ApprovalRequest": {
         "properties": {
@@ -1470,6 +2466,66 @@
         "title": "ArgValue",
         "description": "One action argument with where its value came from. Provenance is required: there is no default."
       },
+      "AskRequest": {
+        "properties": {
+          "message": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Message"
+          },
+          "conversation_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^conv_[a-z]{16}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversation Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "title": "AskRequest"
+      },
+      "AttachmentInfo": {
+        "properties": {
+          "filename": {
+            "type": "string",
+            "title": "Filename"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "sha256": {
+            "type": "string",
+            "title": "Sha256"
+          },
+          "extraction": {
+            "type": "string",
+            "title": "Extraction"
+          },
+          "hidden_runs": {
+            "type": "integer",
+            "title": "Hidden Runs",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "filename",
+          "kind",
+          "sha256",
+          "extraction"
+        ],
+        "title": "AttachmentInfo"
+      },
       "AuditEntry": {
         "properties": {
           "seq": {
@@ -1544,6 +2600,20 @@
         ],
         "title": "AuditPage"
       },
+      "Body_upload_email": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_email"
+      },
       "Body_upload_statement": {
         "properties": {
           "file": {
@@ -1592,6 +2662,35 @@
           "account_number"
         ],
         "title": "Body_upload_statement"
+      },
+      "BriefFirewall": {
+        "properties": {
+          "attempts": {
+            "type": "integer",
+            "title": "Attempts"
+          },
+          "rejected": {
+            "items": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "type": "array",
+            "title": "Rejected"
+          },
+          "fallback": {
+            "type": "boolean",
+            "title": "Fallback"
+          }
+        },
+        "type": "object",
+        "required": [
+          "attempts",
+          "rejected",
+          "fallback"
+        ],
+        "title": "BriefFirewall"
       },
       "BusinessDetail": {
         "properties": {
@@ -1699,6 +2798,33 @@
         ],
         "title": "BusinessInfo"
       },
+      "CallScript": {
+        "properties": {
+          "call": {
+            "type": "string",
+            "title": "Call"
+          },
+          "number_source": {
+            "type": "string",
+            "title": "Number Source"
+          },
+          "lines": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Lines"
+          }
+        },
+        "type": "object",
+        "required": [
+          "call",
+          "number_source",
+          "lines"
+        ],
+        "title": "CallScript",
+        "description": "A verification call the owner makes on a number from their own records. Generated in code, not by an LLM."
+      },
       "CashPosition": {
         "properties": {
           "as_of": {
@@ -1791,6 +2917,65 @@
           "offset_days"
         ],
         "title": "ClockState"
+      },
+      "ComingUpItem": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "payable",
+              "receivable"
+            ],
+            "title": "Kind"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "amount": {
+            "$ref": "#/components/schemas/Fact"
+          },
+          "due": {
+            "$ref": "#/components/schemas/Fact"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "label",
+          "amount",
+          "due"
+        ],
+        "title": "ComingUpItem"
+      },
+      "ConversationEvent": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "conversation",
+            "title": "Type",
+            "default": "conversation"
+          },
+          "conversation_id": {
+            "type": "string",
+            "title": "Conversation Id"
+          },
+          "today_fact_id": {
+            "type": "string",
+            "title": "Today Fact Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "conversation_id",
+          "today_fact_id"
+        ],
+        "title": "ConversationEvent"
       },
       "Decision": {
         "properties": {
@@ -1892,6 +3077,377 @@
           "tool"
         ],
         "title": "Decision"
+      },
+      "DocumentFields": {
+        "properties": {
+          "category": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "invoice",
+                  "payment_request",
+                  "bank_detail_change",
+                  "purchase_order",
+                  "payment_confirmation",
+                  "promise_to_pay",
+                  "overdue_notice",
+                  "loan_offer",
+                  "other_financial",
+                  "not_financial"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "has_invoice_document": {
+            "type": "boolean",
+            "title": "Has Invoice Document",
+            "default": false
+          },
+          "has_receipt": {
+            "type": "boolean",
+            "title": "Has Receipt",
+            "default": false
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency"
+          },
+          "amount_minor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Untrusted_int_"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "email_amount_minor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Untrusted_int_"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "due_date": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Untrusted_date_"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "invoice_number": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Untrusted_str_"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "invoice_number_from_document": {
+            "type": "boolean",
+            "title": "Invoice Number From Document",
+            "default": false
+          },
+          "referenced_invoice_numbers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Referenced Invoice Numbers",
+            "default": []
+          },
+          "po_number": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Untrusted_str_"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "po_direction": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "incoming_from_customer",
+                  "outgoing_to_supplier",
+                  "supplier_confirmation"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Po Direction"
+          },
+          "start_date": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Untrusted_date_"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "payment_terms_days": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Untrusted_int_"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "payee_account_token": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Untrusted_str_"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "payee_account_last4": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payee Account Last4"
+          },
+          "asks_to_change_bank_details": {
+            "type": "boolean",
+            "title": "Asks To Change Bank Details",
+            "default": false
+          },
+          "marked_overdue": {
+            "type": "boolean",
+            "title": "Marked Overdue",
+            "default": false
+          },
+          "promises": {
+            "items": {
+              "$ref": "#/components/schemas/PromiseField"
+            },
+            "type": "array",
+            "title": "Promises",
+            "default": []
+          },
+          "line_items_sum_minor": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Line Items Sum Minor"
+          },
+          "stated_total_minor": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stated Total Minor"
+          },
+          "cash_tendered_minor": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cash Tendered Minor"
+          },
+          "change_minor": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Minor"
+          },
+          "model_totals_mismatch": {
+            "type": "boolean",
+            "title": "Model Totals Mismatch",
+            "default": false
+          },
+          "model_instruction_flag": {
+            "type": "boolean",
+            "title": "Model Instruction Flag",
+            "default": false
+          },
+          "model_instruction_category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Instruction Category"
+          },
+          "model_urgency": {
+            "type": "boolean",
+            "title": "Model Urgency",
+            "default": false
+          },
+          "model_secrecy": {
+            "type": "boolean",
+            "title": "Model Secrecy",
+            "default": false
+          },
+          "extraction_status": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Extraction Status",
+            "default": {}
+          },
+          "invalid_fields": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Invalid Fields",
+            "default": []
+          },
+          "review_fields": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Review Fields",
+            "default": []
+          }
+        },
+        "type": "object",
+        "title": "DocumentFields",
+        "description": "Everything downstream code (sentinel, forecast feed, planner tool) may use from one email and its files."
+      },
+      "DoneItem": {
+        "properties": {
+          "tool": {
+            "type": "string",
+            "title": "Tool"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "executed",
+              "pending_approval",
+              "denied",
+              "skipped"
+            ],
+            "title": "Status"
+          },
+          "rule": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rule"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Fact"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "date": {
+            "$ref": "#/components/schemas/Fact"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tool",
+          "status",
+          "summary",
+          "date"
+        ],
+        "title": "DoneItem"
+      },
+      "ErrorEvent": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "error",
+            "title": "Type",
+            "default": "error"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "llm_unavailable",
+              "replay_miss",
+              "step_limit"
+            ],
+            "title": "Kind"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "message"
+        ],
+        "title": "ErrorEvent"
       },
       "Fact": {
         "properties": {
@@ -2050,6 +3606,170 @@
         ],
         "title": "FactTrace",
         "description": "The fact, every fact it was computed from (breadth first, each once), and the rows they cite.\n\n`rows` is capped at the requested limit, the explained fact's own rows first; `rows_total` counts them all.\n`missing_inputs` lists input IDs not computed in this request (should be empty; non-empty means a bug)."
+      },
+      "FinancingMatch": {
+        "properties": {
+          "catalog_ref": {
+            "type": "string",
+            "title": "Catalog Ref"
+          },
+          "synthetic": {
+            "type": "boolean",
+            "const": true,
+            "title": "Synthetic",
+            "default": true
+          },
+          "max_installment_fact_id": {
+            "type": "string",
+            "title": "Max Installment Fact Id"
+          },
+          "capacity_fact_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Capacity Fact Ids"
+          },
+          "products": {
+            "items": {
+              "$ref": "#/components/schemas/ProductMatch"
+            },
+            "type": "array",
+            "title": "Products"
+          }
+        },
+        "type": "object",
+        "required": [
+          "catalog_ref",
+          "max_installment_fact_id",
+          "capacity_fact_ids",
+          "products"
+        ],
+        "title": "FinancingMatch"
+      },
+      "FinancingResponse": {
+        "properties": {
+          "as_of": {
+            "type": "string",
+            "title": "As Of"
+          },
+          "match": {
+            "$ref": "#/components/schemas/FinancingMatch"
+          },
+          "facts": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Fact"
+            },
+            "type": "object",
+            "title": "Facts"
+          }
+        },
+        "type": "object",
+        "required": [
+          "as_of",
+          "match",
+          "facts"
+        ],
+        "title": "FinancingResponse",
+        "description": "Every catalog product with pass/fail and a reason per rule, the repayment-safe size, and the facts cited."
+      },
+      "FirewallReport": {
+        "properties": {
+          "attempts": {
+            "type": "integer",
+            "title": "Attempts"
+          },
+          "rejected": {
+            "items": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "type": "array",
+            "title": "Rejected",
+            "default": []
+          },
+          "fallback": {
+            "type": "boolean",
+            "title": "Fallback",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "attempts"
+        ],
+        "title": "FirewallReport"
+      },
+      "Flag": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "lookalike_domain",
+              "display_name_spoof",
+              "reply_to_mismatch",
+              "bank_detail_change",
+              "first_time_payee",
+              "amount_anomaly",
+              "urgency",
+              "instruction_like_text",
+              "hidden_text",
+              "receipt_total_mismatch",
+              "duplicate_invoice",
+              "amount_mismatch"
+            ],
+            "title": "Code"
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "high",
+              "medium"
+            ],
+            "title": "Severity"
+          },
+          "detected_by": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "code",
+                "model"
+              ]
+            },
+            "type": "array",
+            "title": "Detected By"
+          },
+          "evidence": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Evidence",
+            "default": {}
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "severity",
+          "detected_by"
+        ],
+        "title": "Flag"
       },
       "ForecastDay": {
         "properties": {
@@ -2248,6 +3968,306 @@
         ],
         "title": "HealthResponse"
       },
+      "ImproveItem": {
+        "properties": {
+          "leak_id": {
+            "type": "string",
+            "title": "Leak Id"
+          },
+          "detector": {
+            "type": "string",
+            "title": "Detector"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "about": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "About"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "yearly_saving": {
+            "$ref": "#/components/schemas/Fact"
+          },
+          "facts": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Fact"
+            },
+            "type": "object",
+            "title": "Facts"
+          }
+        },
+        "type": "object",
+        "required": [
+          "leak_id",
+          "detector",
+          "title",
+          "text",
+          "yearly_saving",
+          "facts"
+        ],
+        "title": "ImproveItem"
+      },
+      "InboxDetail": {
+        "properties": {
+          "item": {
+            "$ref": "#/components/schemas/InboxItem"
+          },
+          "body_text": {
+            "type": "string",
+            "title": "Body Text"
+          },
+          "hidden_text": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Hidden Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "item",
+          "body_text",
+          "hidden_text"
+        ],
+        "title": "InboxDetail"
+      },
+      "InboxItem": {
+        "properties": {
+          "record": {
+            "$ref": "#/components/schemas/InboxRecord"
+          },
+          "facts": {
+            "items": {
+              "$ref": "#/components/schemas/Fact"
+            },
+            "type": "array",
+            "title": "Facts"
+          }
+        },
+        "type": "object",
+        "required": [
+          "record",
+          "facts"
+        ],
+        "title": "InboxItem"
+      },
+      "InboxList": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "held": {
+            "type": "integer",
+            "title": "Held"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/InboxItem"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "held",
+          "items"
+        ],
+        "title": "InboxList"
+      },
+      "InboxRecord": {
+        "properties": {
+          "email_id": {
+            "type": "string",
+            "title": "Email Id"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "mailbox",
+              "upload"
+            ],
+            "title": "Source"
+          },
+          "received_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Received At"
+          },
+          "received_on": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Received On"
+          },
+          "processed_on": {
+            "type": "string",
+            "format": "date",
+            "title": "Processed On"
+          },
+          "raw_sha256": {
+            "type": "string",
+            "title": "Raw Sha256"
+          },
+          "from_address": {
+            "type": "string",
+            "title": "From Address"
+          },
+          "from_display_name": {
+            "type": "string",
+            "title": "From Display Name"
+          },
+          "reply_to_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reply To Address"
+          },
+          "subject": {
+            "type": "string",
+            "title": "Subject"
+          },
+          "auth": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Auth"
+          },
+          "attachments": {
+            "items": {
+              "$ref": "#/components/schemas/AttachmentInfo"
+            },
+            "type": "array",
+            "title": "Attachments"
+          },
+          "fields": {
+            "$ref": "#/components/schemas/DocumentFields"
+          },
+          "owner_view": {
+            "$ref": "#/components/schemas/OwnerView"
+          },
+          "sentinel": {
+            "$ref": "#/components/schemas/SentinelReport"
+          },
+          "feed": {
+            "type": "string",
+            "enum": [
+              "scheduled",
+              "already_scheduled",
+              "past_due",
+              "not_applicable",
+              "held_by_sentinel",
+              "counterparty_unknown",
+              "missing_fields"
+            ],
+            "title": "Feed"
+          },
+          "scheduled_item_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Scheduled Item Ids",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "email_id",
+          "source",
+          "received_at",
+          "received_on",
+          "processed_on",
+          "raw_sha256",
+          "from_address",
+          "from_display_name",
+          "reply_to_address",
+          "subject",
+          "auth",
+          "attachments",
+          "fields",
+          "owner_view",
+          "sentinel",
+          "feed"
+        ],
+        "title": "InboxRecord"
+      },
+      "InboxSyncResult": {
+        "properties": {
+          "processed": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Processed"
+          },
+          "skipped_existing": {
+            "type": "integer",
+            "title": "Skipped Existing"
+          },
+          "not_yet_delivered": {
+            "type": "integer",
+            "title": "Not Yet Delivered"
+          },
+          "failed": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Failed"
+          },
+          "held": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Held"
+          }
+        },
+        "type": "object",
+        "required": [
+          "processed",
+          "skipped_existing",
+          "not_yet_delivered",
+          "failed",
+          "held"
+        ],
+        "title": "InboxSyncResult"
+      },
       "IngestReport": {
         "properties": {
           "import_id": {
@@ -2397,6 +4417,164 @@
         ],
         "title": "KpiRow"
       },
+      "LeakDetail": {
+        "properties": {
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "fact": {
+            "$ref": "#/components/schemas/Fact"
+          }
+        },
+        "type": "object",
+        "required": [
+          "label",
+          "fact"
+        ],
+        "title": "LeakDetail"
+      },
+      "LeakView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "detector": {
+            "type": "string",
+            "title": "Detector"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "about": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "About"
+          },
+          "subject": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Subject"
+          },
+          "yearly_impact": {
+            "$ref": "#/components/schemas/Fact"
+          },
+          "details": {
+            "items": {
+              "$ref": "#/components/schemas/LeakDetail"
+            },
+            "type": "array",
+            "title": "Details"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "detector",
+          "label",
+          "about",
+          "subject",
+          "yearly_impact",
+          "details"
+        ],
+        "title": "LeakView"
+      },
+      "LoanApplicationRequest": {
+        "properties": {
+          "product_id": {
+            "type": "string",
+            "maxLength": 48,
+            "pattern": "^prd_[a-z][a-z_]*$",
+            "title": "Product Id"
+          },
+          "amount_minor": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount Minor",
+            "description": "Defaults to the repayment-safe amount"
+          }
+        },
+        "type": "object",
+        "required": [
+          "product_id"
+        ],
+        "title": "LoanApplicationRequest"
+      },
+      "LoanApplicationResponse": {
+        "properties": {
+          "draft_id": {
+            "type": "string",
+            "title": "Draft Id"
+          },
+          "draft_sha256": {
+            "type": "string",
+            "title": "Draft Sha256"
+          },
+          "passport_sha256": {
+            "type": "string",
+            "title": "Passport Sha256"
+          },
+          "draft": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Draft"
+          },
+          "decision": {
+            "$ref": "#/components/schemas/Decision"
+          }
+        },
+        "type": "object",
+        "required": [
+          "draft_id",
+          "draft_sha256",
+          "passport_sha256",
+          "draft",
+          "decision"
+        ],
+        "title": "LoanApplicationResponse",
+        "description": "The draft the owner is asked to sign for, and the gateway's decision (always pending_approval or denied)."
+      },
+      "LoanDraftView": {
+        "properties": {
+          "draft_id": {
+            "type": "string",
+            "title": "Draft Id"
+          },
+          "sha256": {
+            "type": "string",
+            "title": "Sha256"
+          },
+          "draft": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Draft"
+          }
+        },
+        "type": "object",
+        "required": [
+          "draft_id",
+          "sha256",
+          "draft"
+        ],
+        "title": "LoanDraftView"
+      },
       "MandateRecord": {
         "properties": {
           "id": {
@@ -2489,6 +4667,157 @@
         ],
         "title": "MandateResult"
       },
+      "MorningBrief": {
+        "properties": {
+          "business_id": {
+            "type": "string",
+            "title": "Business Id"
+          },
+          "as_of": {
+            "$ref": "#/components/schemas/Fact"
+          },
+          "generated_by": {
+            "type": "string",
+            "enum": [
+              "llm",
+              "template"
+            ],
+            "title": "Generated By"
+          },
+          "paragraphs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Paragraphs"
+          },
+          "facts": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Fact"
+            },
+            "type": "object",
+            "title": "Facts"
+          },
+          "done_overnight": {
+            "items": {
+              "$ref": "#/components/schemas/DoneItem"
+            },
+            "type": "array",
+            "title": "Done Overnight"
+          },
+          "not_done": {
+            "items": {
+              "$ref": "#/components/schemas/DoneItem"
+            },
+            "type": "array",
+            "title": "Not Done"
+          },
+          "needs_you": {
+            "items": {
+              "$ref": "#/components/schemas/NeedsYouItem"
+            },
+            "type": "array",
+            "title": "Needs You"
+          },
+          "coming_up": {
+            "items": {
+              "$ref": "#/components/schemas/ComingUpItem"
+            },
+            "type": "array",
+            "title": "Coming Up"
+          },
+          "improve": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ImproveItem"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "firewall": {
+            "$ref": "#/components/schemas/BriefFirewall"
+          }
+        },
+        "type": "object",
+        "required": [
+          "business_id",
+          "as_of",
+          "generated_by",
+          "paragraphs",
+          "facts",
+          "done_overnight",
+          "not_done",
+          "needs_you",
+          "coming_up",
+          "improve",
+          "firewall"
+        ],
+        "title": "MorningBrief",
+        "description": "What the Today screen renders. Prose carries {fact:id} placeholders resolved from `facts` (invariant 4)."
+      },
+      "NeedsYouItem": {
+        "properties": {
+          "approval_id": {
+            "type": "string",
+            "title": "Approval Id"
+          },
+          "tool": {
+            "type": "string",
+            "title": "Tool"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Reasons"
+          }
+        },
+        "type": "object",
+        "required": [
+          "approval_id",
+          "tool",
+          "summary",
+          "reasons"
+        ],
+        "title": "NeedsYouItem"
+      },
+      "OvernightReport": {
+        "properties": {
+          "business_id": {
+            "type": "string",
+            "title": "Business Id"
+          },
+          "as_of": {
+            "type": "string",
+            "title": "As Of"
+          },
+          "reminders": {
+            "items": {
+              "$ref": "#/components/schemas/ReminderOutcome"
+            },
+            "type": "array",
+            "title": "Reminders"
+          },
+          "brief": {
+            "$ref": "#/components/schemas/MorningBrief"
+          }
+        },
+        "type": "object",
+        "required": [
+          "business_id",
+          "as_of",
+          "reminders",
+          "brief"
+        ],
+        "title": "OvernightReport"
+      },
       "OwnerKey": {
         "properties": {
           "public_key": {
@@ -2521,6 +4850,82 @@
           "public_key"
         ],
         "title": "OwnerKeyRequest"
+      },
+      "OwnerView": {
+        "properties": {
+          "payee_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payee Name"
+          },
+          "payee_bank_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payee Bank Name"
+          },
+          "merchant_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Merchant Name"
+          },
+          "supplier_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supplier Name"
+          },
+          "line_items": {
+            "items": {
+              "prefixItems": [
+                {
+                  "type": "string"
+                },
+                {
+                  "anyOf": [
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              ],
+              "type": "array",
+              "maxItems": 2,
+              "minItems": 2
+            },
+            "type": "array",
+            "title": "Line Items",
+            "default": []
+          }
+        },
+        "type": "object",
+        "title": "OwnerView",
+        "description": "Display-only strings for the owner's screen. Never passed to the planner (invariant 2)."
       },
       "PackSummary": {
         "properties": {
@@ -2567,6 +4972,302 @@
           "pack_id"
         ],
         "title": "PackSwitch"
+      },
+      "Passport": {
+        "properties": {
+          "schema_id": {
+            "type": "string",
+            "const": "readiness_passport/v1",
+            "title": "Schema Id",
+            "default": "readiness_passport/v1"
+          },
+          "synthetic_data": {
+            "type": "boolean",
+            "title": "Synthetic Data"
+          },
+          "as_of": {
+            "type": "string",
+            "format": "date",
+            "title": "As Of"
+          },
+          "business_id": {
+            "type": "string",
+            "title": "Business Id"
+          },
+          "business_name": {
+            "type": "string",
+            "title": "Business Name"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          },
+          "pack_ref": {
+            "type": "string",
+            "title": "Pack Ref"
+          },
+          "catalog_ref": {
+            "type": "string",
+            "title": "Catalog Ref"
+          },
+          "band_id": {
+            "type": "string",
+            "title": "Band Id"
+          },
+          "band_label": {
+            "type": "string",
+            "title": "Band Label"
+          },
+          "next_band_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Band Label"
+          },
+          "score_fact_id": {
+            "type": "string",
+            "title": "Score Fact Id"
+          },
+          "factors": {
+            "items": {
+              "$ref": "#/components/schemas/PassportFactor"
+            },
+            "type": "array",
+            "title": "Factors"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Reasons"
+          },
+          "path_to_eligibility": {
+            "items": {
+              "$ref": "#/components/schemas/PathStep"
+            },
+            "type": "array",
+            "title": "Path To Eligibility"
+          },
+          "eligible_product_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Eligible Product Ids"
+          }
+        },
+        "type": "object",
+        "required": [
+          "synthetic_data",
+          "as_of",
+          "business_id",
+          "business_name",
+          "currency",
+          "pack_ref",
+          "catalog_ref",
+          "band_id",
+          "band_label",
+          "next_band_label",
+          "score_fact_id",
+          "factors",
+          "reasons",
+          "path_to_eligibility",
+          "eligible_product_ids"
+        ],
+        "title": "Passport"
+      },
+      "PassportExport": {
+        "properties": {
+          "business_id": {
+            "type": "string",
+            "title": "Business Id"
+          },
+          "as_of": {
+            "type": "string",
+            "format": "date",
+            "title": "As Of"
+          },
+          "sha256": {
+            "type": "string",
+            "title": "Sha256"
+          },
+          "band_id": {
+            "type": "string",
+            "title": "Band Id"
+          },
+          "document": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Document"
+          }
+        },
+        "type": "object",
+        "required": [
+          "business_id",
+          "as_of",
+          "sha256",
+          "band_id",
+          "document"
+        ],
+        "title": "PassportExport",
+        "description": "One exported Passport: `sha256` is the SHA-256 of the canonical JSON of `document`."
+      },
+      "PassportExportSummary": {
+        "properties": {
+          "business_id": {
+            "type": "string",
+            "title": "Business Id"
+          },
+          "as_of": {
+            "type": "string",
+            "format": "date",
+            "title": "As Of"
+          },
+          "sha256": {
+            "type": "string",
+            "title": "Sha256"
+          },
+          "band_id": {
+            "type": "string",
+            "title": "Band Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "business_id",
+          "as_of",
+          "sha256",
+          "band_id"
+        ],
+        "title": "PassportExportSummary"
+      },
+      "PassportFactor": {
+        "properties": {
+          "factor": {
+            "type": "string",
+            "title": "Factor"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "explains": {
+            "type": "string",
+            "title": "Explains"
+          },
+          "weight_fact_id": {
+            "type": "string",
+            "title": "Weight Fact Id"
+          },
+          "raw_fact_id": {
+            "type": "string",
+            "title": "Raw Fact Id"
+          },
+          "score_fact_id": {
+            "type": "string",
+            "title": "Score Fact Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "strong",
+              "fair",
+              "weak"
+            ],
+            "title": "Status"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "factor",
+          "label",
+          "explains",
+          "weight_fact_id",
+          "raw_fact_id",
+          "score_fact_id",
+          "status",
+          "reason"
+        ],
+        "title": "PassportFactor"
+      },
+      "PassportResponse": {
+        "properties": {
+          "as_of": {
+            "type": "string",
+            "title": "As Of"
+          },
+          "passport": {
+            "$ref": "#/components/schemas/Passport"
+          },
+          "facts": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Fact"
+            },
+            "type": "object",
+            "title": "Facts"
+          }
+        },
+        "type": "object",
+        "required": [
+          "as_of",
+          "passport",
+          "facts"
+        ],
+        "title": "PassportResponse"
+      },
+      "PathStep": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "readiness",
+              "product"
+            ],
+            "title": "Kind"
+          },
+          "factor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Factor"
+          },
+          "product_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Product Id"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "text"
+        ],
+        "title": "PathStep"
       },
       "PnlPeriod": {
         "properties": {
@@ -2638,6 +5339,146 @@
         ],
         "title": "PnlResponse"
       },
+      "ProductMatch": {
+        "properties": {
+          "product_id": {
+            "type": "string",
+            "title": "Product Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "lender": {
+            "type": "string",
+            "title": "Lender"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "fit": {
+            "type": "string",
+            "enum": [
+              "strong",
+              "moderate",
+              "weak"
+            ],
+            "title": "Fit"
+          },
+          "fit_reason": {
+            "type": "string",
+            "title": "Fit Reason"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "eligible",
+              "not_eligible",
+              "not_safe"
+            ],
+            "title": "Status"
+          },
+          "eligible": {
+            "type": "boolean",
+            "title": "Eligible"
+          },
+          "capped_by": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "repayment_safety",
+                  "product_max"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capped By"
+          },
+          "rules": {
+            "items": {
+              "$ref": "#/components/schemas/RuleResult"
+            },
+            "type": "array",
+            "title": "Rules"
+          },
+          "min_amount_fact_id": {
+            "type": "string",
+            "title": "Min Amount Fact Id"
+          },
+          "max_amount_fact_id": {
+            "type": "string",
+            "title": "Max Amount Fact Id"
+          },
+          "safe_amount_fact_id": {
+            "type": "string",
+            "title": "Safe Amount Fact Id"
+          },
+          "installment_fact_id": {
+            "type": "string",
+            "title": "Installment Fact Id"
+          },
+          "total_cost_fact_id": {
+            "type": "string",
+            "title": "Total Cost Fact Id"
+          },
+          "term_fact_id": {
+            "type": "string",
+            "title": "Term Fact Id"
+          },
+          "monthly_rate_fact_id": {
+            "type": "string",
+            "title": "Monthly Rate Fact Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "product_id",
+          "name",
+          "lender",
+          "type",
+          "fit",
+          "fit_reason",
+          "status",
+          "eligible",
+          "capped_by",
+          "rules",
+          "min_amount_fact_id",
+          "max_amount_fact_id",
+          "safe_amount_fact_id",
+          "installment_fact_id",
+          "total_cost_fact_id",
+          "term_fact_id",
+          "monthly_rate_fact_id"
+        ],
+        "title": "ProductMatch"
+      },
+      "PromiseField": {
+        "properties": {
+          "date": {
+            "$ref": "#/components/schemas/Untrusted_date_"
+          },
+          "amount_minor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Untrusted_int_"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "date",
+          "amount_minor"
+        ],
+        "title": "PromiseField"
+      },
       "ProposedAction": {
         "properties": {
           "tool": {
@@ -2662,6 +5503,144 @@
         ],
         "title": "ProposedAction"
       },
+      "ReminderOutcome": {
+        "properties": {
+          "scheduled_item_id": {
+            "type": "string",
+            "title": "Scheduled Item Id"
+          },
+          "invoice_id": {
+            "type": "string",
+            "title": "Invoice Id"
+          },
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "executed",
+              "pending_approval",
+              "denied",
+              "skipped"
+            ],
+            "title": "Status"
+          },
+          "rule": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rule"
+          },
+          "approval_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approval Id"
+          },
+          "mandate_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mandate Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "scheduled_item_id",
+          "invoice_id",
+          "customer_id",
+          "status"
+        ],
+        "title": "ReminderOutcome",
+        "description": "One overdue invoice the overnight job looked at, and what the gateway decided."
+      },
+      "ReplyEvent": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "reply",
+            "title": "Type",
+            "default": "reply"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "segments": {
+            "items": {
+              "$ref": "#/components/schemas/ReplySegment"
+            },
+            "type": "array",
+            "title": "Segments"
+          },
+          "fact_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Fact Ids"
+          },
+          "firewall": {
+            "$ref": "#/components/schemas/FirewallReport"
+          }
+        },
+        "type": "object",
+        "required": [
+          "text",
+          "segments",
+          "fact_ids",
+          "firewall"
+        ],
+        "title": "ReplyEvent"
+      },
+      "ReplySegment": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "fact_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fact Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "title": "ReplySegment"
+      },
       "RowError": {
         "properties": {
           "line": {
@@ -2679,6 +5658,171 @@
           "message"
         ],
         "title": "RowError"
+      },
+      "RuleResult": {
+        "properties": {
+          "rule": {
+            "type": "string",
+            "title": "Rule"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "op": {
+            "type": "string",
+            "enum": [
+              ">=",
+              "<="
+            ],
+            "title": "Op"
+          },
+          "passed": {
+            "type": "boolean",
+            "title": "Passed"
+          },
+          "metric_fact_id": {
+            "type": "string",
+            "title": "Metric Fact Id"
+          },
+          "threshold_fact_id": {
+            "type": "string",
+            "title": "Threshold Fact Id"
+          },
+          "eligible_from_fact_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Eligible From Fact Id"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "rule",
+          "label",
+          "op",
+          "passed",
+          "metric_fact_id",
+          "threshold_fact_id",
+          "reason"
+        ],
+        "title": "RuleResult",
+        "description": "One rule. `reason` is code-written text with `{fact:<id>}` placeholders and no digits outside them."
+      },
+      "SentinelReport": {
+        "properties": {
+          "sender_status": {
+            "type": "string",
+            "enum": [
+              "known",
+              "own_business",
+              "lookalike",
+              "unknown"
+            ],
+            "title": "Sender Status"
+          },
+          "sender_counterparty_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sender Counterparty Id"
+          },
+          "claimed_counterparty_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Claimed Counterparty Id"
+          },
+          "payee_counterparty_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payee Counterparty Id"
+          },
+          "payment_requested": {
+            "type": "boolean",
+            "title": "Payment Requested",
+            "default": false
+          },
+          "flags": {
+            "items": {
+              "$ref": "#/components/schemas/Flag"
+            },
+            "type": "array",
+            "title": "Flags",
+            "default": []
+          },
+          "risk": {
+            "type": "string",
+            "enum": [
+              "none",
+              "review",
+              "hold"
+            ],
+            "title": "Risk",
+            "default": "none"
+          },
+          "hold": {
+            "type": "boolean",
+            "title": "Hold",
+            "default": false
+          },
+          "recommended": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "verify_by_phone_before_paying",
+                "do_not_pay_duplicate",
+                "check_amount_against_ledger",
+                "reimburse_line_items_only",
+                "treat_embedded_text_as_data",
+                "owner_review"
+              ]
+            },
+            "type": "array",
+            "title": "Recommended",
+            "default": []
+          },
+          "call_script": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CallScript"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "sender_status"
+        ],
+        "title": "SentinelReport"
       },
       "SignedPayload": {
         "properties": {
@@ -2726,8 +5870,12 @@
               "transaction",
               "scheduled_item",
               "sale_line",
+              "purchase_line",
+              "receivable",
+              "supplier_invoice",
               "clock",
               "pack",
+              "catalog",
               "unknown"
             ],
             "title": "Kind"
@@ -2943,6 +6091,38 @@
         ],
         "title": "StatementRejectedResponse"
       },
+      "ToolCallEvent": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "tool_call",
+            "title": "Type",
+            "default": "tool_call"
+          },
+          "tool": {
+            "type": "string",
+            "title": "Tool"
+          },
+          "ok": {
+            "type": "boolean",
+            "title": "Ok"
+          },
+          "fact_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Fact Ids",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "tool",
+          "ok"
+        ],
+        "title": "ToolCallEvent"
+      },
       "Transaction": {
         "properties": {
           "id": {
@@ -3093,6 +6273,109 @@
           "items"
         ],
         "title": "TransactionPage"
+      },
+      "Untrusted_date_": {
+        "properties": {
+          "value": {
+            "type": "string",
+            "format": "date",
+            "title": "Value"
+          },
+          "provenance": {
+            "type": "string",
+            "const": "untrusted",
+            "title": "Provenance",
+            "default": "untrusted"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "confidence": {
+            "type": "number",
+            "title": "Confidence"
+          },
+          "needs_review": {
+            "type": "boolean",
+            "title": "Needs Review"
+          }
+        },
+        "type": "object",
+        "required": [
+          "value",
+          "source",
+          "confidence",
+          "needs_review"
+        ],
+        "title": "Untrusted[date]"
+      },
+      "Untrusted_int_": {
+        "properties": {
+          "value": {
+            "type": "integer",
+            "title": "Value"
+          },
+          "provenance": {
+            "type": "string",
+            "const": "untrusted",
+            "title": "Provenance",
+            "default": "untrusted"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "confidence": {
+            "type": "number",
+            "title": "Confidence"
+          },
+          "needs_review": {
+            "type": "boolean",
+            "title": "Needs Review"
+          }
+        },
+        "type": "object",
+        "required": [
+          "value",
+          "source",
+          "confidence",
+          "needs_review"
+        ],
+        "title": "Untrusted[int]"
+      },
+      "Untrusted_str_": {
+        "properties": {
+          "value": {
+            "type": "string",
+            "title": "Value"
+          },
+          "provenance": {
+            "type": "string",
+            "const": "untrusted",
+            "title": "Provenance",
+            "default": "untrusted"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "confidence": {
+            "type": "number",
+            "title": "Confidence"
+          },
+          "needs_review": {
+            "type": "boolean",
+            "title": "Needs Review"
+          }
+        },
+        "type": "object",
+        "required": [
+          "value",
+          "source",
+          "confidence",
+          "needs_review"
+        ],
+        "title": "Untrusted[str]"
       },
       "ValidationError": {
         "properties": {

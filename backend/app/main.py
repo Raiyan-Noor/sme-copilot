@@ -11,7 +11,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse
 
-from app.api import audit, businesses, clock, finance, gateway, health, ledger
+from app.agent.context import ConversationStore
+from app.api import agent, audit, brief, businesses, clock, finance, financing, gateway, health, inbox, ledger
 from app.config import Settings, get_settings
 from app.firewall.store import UnknownFactError
 from app.ledger.schema import TenantError
@@ -49,8 +50,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
 
     app.state.runtime = Runtime(settings)
+    app.state.conversations = ConversationStore()
     for router in (health.router, businesses.router, ledger.router, finance.router, gateway.router, audit.router,
-                   clock.router):
+                   clock.router, agent.router, brief.router, inbox.router, financing.router):
         app.include_router(router)
     if settings.expose_test_routes:
         app.include_router(gateway.test_router)

@@ -5,13 +5,15 @@ pack validation at load time, never at run time.
 """
 
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 
 import pandas as pd
 from pydantic import BaseModel, ConfigDict
 
 from app.firewall.fact import Fact
+from app.ledger.pos import Product, SaleLine
+from app.ledger.purchases import PurchaseLine
 from app.packs.schema import Pack
 
 
@@ -23,13 +25,41 @@ class DetectorParams(BaseModel):
 
 @dataclass(frozen=True)
 class DetectorContext:
+    """What a detector may read besides the categorized ledger: the business's own POS and purchasing records."""
+
     pack: Pack
     today: date
     currency: str
+    products: tuple[Product, ...] = ()
+    sale_lines: tuple[SaleLine, ...] = ()
+    purchases: tuple[PurchaseLine, ...] = ()
 
 
-# fn(categorized frame from ledger_view.frame, validated params, context) -> leak Facts
-DetectorFn = Callable[[pd.DataFrame, DetectorParams, DetectorContext], list[Fact]]
+@dataclass(frozen=True)
+class Finding:
+    """One leak: its yearly impact Fact (`leak.<detector>.<key>.yearly_impact`), detail Facts under the same
+    prefix, and the subject it is about as IDs from the business's own records (supplier, product, group).
+
+    Every number is a Fact with evidence rows (invariant 4). `subject` holds IDs only, never statement text, so it
+    may reach the planner (invariant 2).
+    """
+
+    detector: str
+    key: str
+    subject: dict[str, str]
+    impact: Fact
+    details: tuple[Fact, ...] = field(default=())
+
+    @property
+    def id(self) -> str:
+        return f"leak.{self.detector}.{self.key}"
+
+    def facts(self) -> list[Fact]:
+        return [self.impact, *self.details]
+
+
+# fn(categorized frame from ledger_view.frame, validated params, context) -> findings
+DetectorFn = Callable[[pd.DataFrame, DetectorParams, DetectorContext], list[Finding]]
 
 
 @dataclass(frozen=True)

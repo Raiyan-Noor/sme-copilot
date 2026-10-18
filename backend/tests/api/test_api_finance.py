@@ -46,7 +46,7 @@ def test_every_fact_traces_to_known_rows_and_facts(read_api):
         for fact in c.store:
             assert all(i in c.store for i in fact.inputs), fact.id
             for ref in fact.source_row_ids:
-                assert ref.startswith(("clock:", "pack:")) or resolve(ref) is not None, (fact.id, ref)
+                assert ref.startswith(("clock:", "pack:", "catalog:")) or resolve(ref) is not None, (fact.id, ref)
 
 
 def test_explain_walks_inputs_to_rows(read_api):
@@ -131,7 +131,7 @@ def test_facts_are_computed_and_logged_once_per_day(api):
     assert len(logged) == 1
     assert logged[0]["data"]["business_id"] == MAYA and logged[0]["data"]["facts"] > 1000
 
-    api.post("/clock/advance", json={"days": 1})
+    api.post("/clock/advance", json={"days": 1, "run_overnight": False})
     cash = api.get(f"/businesses/{MAYA}/cash").json()
     assert cash["as_of"] == "2026-10-20"
     assert api.get("/audit", params={"kind": "engine.facts_computed"}).json()["total"] == 2
