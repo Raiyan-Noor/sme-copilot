@@ -1,0 +1,33 @@
+{
+ "ran": true,
+ "mode": "replay",
+ "pytest_exit_code": 0,
+ "summary_line": "1005 passed, 118 warnings in 260.38s (0:04:20)",
+ "total": {
+  "passed": 1005
+ },
+ "by_suite": {
+  "api": {
+   "passed": 157
+  },
+  "benign": {
+   "passed": 25
+  },
+  "golden": {
+   "passed": 6
+  },
+  "policy": {
+   "passed": 116
+  },
+  "redteam": {
+   "passed": 101
+  },
+  "unit": {
+   "passed": 600
+  }
+ },
+ "checks": {
+  "branding": true,
+  "frontend_types_in_sync": true
+ }
+}

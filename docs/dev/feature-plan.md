@@ -2,20 +2,20 @@
 
 Deadline: Tue Oct 20, 23:59 Beijing = **21:59 Dhaka**
 Feature freeze: **Tue 13:00 Dhaka**
-Last updated: Tue Oct 20, Dhaka (P4)
+Last updated: Tue Oct 20, ~02:00 Dhaka (Prompt 19)
 
 This file is now the single source of truth for remaining work (`docs/build-prompts.md` is superseded — see the
 note at its top). See "Maintaining this file" at the end before editing it.
 
 ## Status
 
-Verified against `git log`, the code on disk and a full `pytest` run (831 passed) on Mon Oct 19, ~07:20 Dhaka.
+Verified against `git log`, the code on disk and a full `pytest` run (1005 passed, `docs/evidence/tests.json`) on Tue Oct 20, ~02:00 Dhaka.
 
 | # | Item | Status |
 |---|------|--------|
 | Prompts 0–17 | Original build plan | Done |
 | Prompt 18 | Stretch 2: Monte Carlo what-if, marketing ROI, expansion planner | Dropped (P7 covers marketing ROI) |
-| Prompt 19 | Evidence and docs: `make evidence`, Sol demo-profile recordings, Gemini recordings | Not started — `make evidence` is still a stub (`exit 1`); no Sol or Gemini recordings exist yet |
+| Prompt 19 | Evidence and docs: `make evidence`, Sol demo-profile recordings, Gemini recordings | Done — `make evidence`, `make demo`/`make demo-reset`, Sol and Gemini recordings, live anchor, `docs/technical.md`, `docs/security-self-assessment.md`, README (see Prompt 19 notes below) |
 | F1 | Document upload | Merged into F4 |
 | F2 | Sending approved emails | Done (P4) — `send_email` (T3), drafts with owner editing, Outbox tab, overnight reminder drafts; verified live in the browser on an isolated copy of the data |
 | F3 | Live demo console | Done (P2) — verified live against OpenAI for all 7 presets on both seeded businesses; needs `DEMO_MODE=true` (server) and `NEXT_PUBLIC_DEMO_MODE=true` (frontend) to appear |
@@ -50,7 +50,7 @@ P7 uses the product and ad data onboarding imports. P5 comes early because uploa
 their results in the Transactions tab. P6 comes before P2 and P4 so the console and email sending can use the real
 inbox.
 
-**Remaining order from here:** Prompt 19.
+**Remaining order from here:** nothing planned. Feature freeze 13:00, code freeze 15:00 Dhaka; only bug fixes and submission material after that.
 
 **Demo email plan:** the console injects sandbox attacks that real email can't fake (lookalike domains, spoofed senders); real emails are sent live from your phone to the demo Gmail inbox.
 
@@ -77,19 +77,46 @@ Tiers in `policy.yaml` (canonical; matches the Tiers table in CLAUDE.md):
 **T2 cap (decided Oct 19, before P3):** Raiyan chose to raise `pay_recurring_bill` to 500000 minor units (৳5,000);
 `send_invoice_reminder` stays at 50000. Applied in `policy.yaml`; `tests/policy/test_gateway_payments.py` pins both.
 
-Anchoring: `docs/results/anchors.json` holds one batch (`anc-000001`) with a Sepolia tx hash
-(`0x285a223179bccd958c6f20073439e986debe314c9423f6fe4ade2b90765c7c65`, block 11942865) and `verified_log_ok: true`.
-The block timestamp decodes to Oct 18 18:32 UTC = Oct 19 00:32 Dhaka, matching the file's mtime — this is a real
-live run, not a placeholder, satisfying invariant 8. Only one batch exists so far; `make anchor` needs to run again
-after more audit entries accumulate (and again as part of Prompt 19 evidence).
-
-`make evidence` (Prompt 19) is **still a stub**: `Makefile` target `evidence` just prints "not implemented yet"
-and exits 1. No `LLM_PROFILE=demo` (Sol) recordings and no Gemini recordings exist anywhere in
-`backend/data/replay/`. Both are needed before the freeze.
-
-**OpenAI spend so far:** `backend/data/tenants/llm_spend.json` (gitignored, local-only cumulative counter read by
-`llm/spend.py`) shows **$0.0722 spent** of the $7 `LLM_BUDGET_USD` cap. Plenty of headroom, but the ~$3 reserved
-for the final recording is a separate, manual discipline — the tracker doesn't know to protect it.
+**Prompt 19 as built, Tue Oct 20 ~02:00 Dhaka** (every number below is from a generated file; see
+`docs/evidence/index.md`):
+- **Anchoring:** `make anchor` ran live on Sepolia and confirmed `anc-000014` (block 11949719). `docs/results/anchors.json`
+  now holds all 14 confirmed batches of the dev data, every one `match`, `verified_log_ok: true`. The chain responses are
+  recorded under `backend/data/replay/rpc/` (committed), so `tests/unit/test_anchor_evidence.py` and `make evidence`
+  re-verify all 14 offline. `make anchor` refuses while the API is up; stop `make dev`/`make demo` first.
+- **`make evidence`** (`scripts/evidence.py`): offline, read-only (SQLite opened read-only, audit log copied to its last
+  complete line, so it can run while the app is up). Writes `docs/evidence/`: audit log + chain check (+ every anchored
+  head checked against the log), anchors re-verified from recordings, redteam.json + benign.json, tests.json (full
+  pytest in replay with JUnit counts per suite, plus branding/types checks), outbox and payments per business,
+  SandboxPay's log, LLM spend three ways, and index.md. `--no-tests` skips pytest. Last run: chain ok, 14/14 heads
+  match, 14/14 batches verify, 1005 passed. The dev data has no payments yet (SandboxPay log empty) and one sandbox
+  email; rerun `make evidence` after the recorded demo to capture its payments and emails.
+- **Recordings per provider:** `backend/data/replay/llm/` (OpenAI dev/Terra, what CI replays), `replay/openai-demo/llm/`
+  (Sol planner + Terra extractor, new), `replay/gemini/llm/` (subset: `test_planner_attacks.py` +
+  `test_benign_questions.py`, new). `REPLAY_PROVIDER=openai-demo|gemini` selects them in tests (`tests/agent_env.py`);
+  `make redteam` now reports every provider with recordings; `--record` needs an explicit `--provider`.
+- **`make redteam` (replay, `docs/results/redteam.json`):** openai 37/37 attacks (91/91 variants), 25/25 tasks;
+  openai-demo 36/37 (90/91), 25/25; gemini subset 4/4 (19/19), 7/11. Failures are explained in
+  `docs/security-self-assessment.md` §3: an extra `instruction_like_text` flag and two extraction misses from a fresh
+  Terra extractor sample in the Sol run, and four Gemini answers that cited the wrong facts or fell back to the template.
+  Recorded once and reported as recorded, not re-sampled. Raiyan may choose to re-record those cases; ask first.
+- **Gemini fallback was broken; fixed.** `gemini-2.5-flash` now returns 404 for this key, so `GEMINI_MODEL` defaults to
+  `gemini-3.8-flash` (`config.py`, `.env.example`). Gemini 3 also refuses a tool turn unless each call's
+  `thought_signature` is sent back: `ToolCall.signature` keeps it, `assistant_message` echoes it, and the Gemini provider
+  sends Google's placeholder for calls OpenAI made; OpenAI requests (and replay keys) are unchanged. Tests in
+  `tests/unit/test_llm_openai_provider.py`. `gemini-3.8-flash` is not in `llm/pricing.py` (no verified price), so it is
+  priced at the highest known rate; the Gemini figure in `llm_spend.json` is an upper bound, not OpenAI credit.
+- **Spend:** the Sol recording cost $0.7026 of OpenAI credit (priced from recorded usage, `docs/evidence/llm_spend.json`
+  `replay_recordings.openai-demo`). The dev app's local counter reads $0.1016; neither includes earlier test-run
+  recordings, so true OpenAI spend is higher than either figure.
+- **`make demo`** (`scripts/demo.py`): stops every process listening on :8000/:8100/:3000, every uvicorn for the app or
+  SandboxPay and orphaned spawn workers, then runs `scripts/dev.py` with `DEMO_MODE=true` and `NEXT_PUBLIC_DEMO_MODE=true`
+  and prints the URLs once all three ports answer. It also stops another session's `make dev`/`make demo`, by design.
+  `make demo-reset` is an alias for the existing `make reset-demo`.
+- **Docs:** `docs/technical.md`, `docs/security-self-assessment.md` (red-team section generated by
+  `scripts/redteam_tables.py` from redteam.json; re-run it after `make redteam`), README.
+- **Known bug, not fixed:** on Windows, two concurrent RPC-cache writes for the same key on the dev server (record mode)
+  can raise `PermissionError` on the temp file (`llm/cache.py` `put`), seen once during a Trust-page verify. The
+  request still answered; low risk for the demo.
 
 **Replay cache / red-team staleness:** `backend/data/replay/llm/` holds 70 planner recordings + 47 extractor
 recordings + 1 brief_writer (118 total; P4 re-recorded all planner cases and added one benign task). The cache key hashes the full
@@ -99,18 +126,17 @@ planner request including every tool schema, so P7 adding three new T1 tools (`r
 came from (commit `4df2220`, 74 replay files touched). Full details and the re-record procedure:
 [[benign-replay-rerecord]] in memory.
 
-**`docs/results/redteam.json`** was regenerated for P4 (replay, on the uncommitted P4 tree): 37/37 attacks blocked,
-91/91 variants, 25/25 benign tasks (12 new `ATK-EMAIL-*` attacks, one new benign task `email_greenleaf`). Re-run
-`make redteam` after any later change to planner tools, prompts or policy and before quoting numbers in the deck or
-README (invariant 8).
+**`docs/results/redteam.json`** now covers three providers (see Prompt 19 notes above). Re-run `make redteam`, then
+`python scripts/redteam_tables.py`, after any later change to planner tools, prompts or policy and before quoting
+numbers in the deck or README (invariant 8). A planner/extractor change now invalidates three recording sets, not one.
 
 Already answered by the original plan: products are tracked individually (product margins and an
 unprofitable-products leak detector exist); reminders are a T2 action (`send_invoice_reminder`) under a standing
 signed mandate; untrusted-provenance arguments force T3; loan applications are T3; a statement-upload endpoint
 exists in the backend.
 
-`make test` passes clean as of the P4 update: 989 pytest cases (replay mode; was 924 after P3), plus the branding and
-frontend-types checks. `make redteam` (replay) for P4: 37/37 attacks blocked (91/91 variants), 25/25 benign tasks.
+`make test` passes clean as of Prompt 19: 1005 pytest cases (replay mode; `docs/evidence/tests.json`), plus the
+branding and frontend-types checks.
 
 **P6 (Gmail) as built, Mon Oct 19 evening:** full `pytest` run 854 passed (replay mode), branding and frontend-types
 checks pass. No planner prompt, tool schema, policy.yaml or extractor input changed, so no replay recordings went
@@ -152,7 +178,7 @@ stale and `make redteam` was not re-run for P6. What later prompts can reuse:
   cards with plain-language flag reasons and the call script, and the owner's app (`/inbox`) in an iframe on the
   right for side-by-side recording. Gated by `NEXT_PUBLIC_DEMO_MODE`. A held/flagged email now toasts on every
   screen (moved from the Inbox panel into `AdvisorProvider`).
-- Not done: the Morning Brief does not change when mail is flagged (toast only); no `make` target to start in demo mode.
+- Not done: the Morning Brief does not change when mail is flagged (toast only). (`make demo` now starts demo mode.)
 
 **P4 (emails) as built, Tue Oct 20:**
 - **Action:** `send_email(recipient_id, draft_id)` is **T3** in `policy.yaml` (every email needs the owner's signature),

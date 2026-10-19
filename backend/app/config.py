@@ -47,7 +47,7 @@ class Settings(BaseSettings):
     llm_replay: Literal["record", "replay", "off"] = "replay"
     llm_budget_usd: float = Field(default=7.0, ge=0)
     llm_timeout_s: float = Field(default=60.0, gt=0)
-    gemini_model: str = "gemini-2.5-flash"
+    gemini_model: str = "gemini-3.8-flash"  # gemini-2.5-flash is no longer served to new keys (404, Oct 20)
     # Recorded responses (committed) that CI replays; also the anchoring RPC mock later.
     llm_replay_dir: Path = REPO_ROOT / "backend" / "data" / "replay"
 

@@ -1,0 +1,354 @@
+{
+ "schema": "anchors/v1",
+ "generated_by": "make anchor (scripts/anchor.py)",
+ "data": "synthetic (Maya's Corner Store, Lina's Boutique)",
+ "chain_id": 11155111,
+ "chain_name": "Sepolia",
+ "explorer_base_url": "https://sepolia.etherscan.io",
+ "merkle": "index-based SHA-256; leaf = H(0x00 || '<kind>:<hash>'), node = H(0x01 || left || right); odd node promoted unchanged (backend/app/anchoring/merkle.py)",
+ "verified_log_ok": true,
+ "batches": [
+  {
+   "batch_id": "anc-000001",
+   "trigger": "manual",
+   "merkle_root": "f54a6a3f52dad35ec8b9be950da484327fc6f270cfc71cb44fb2f0bcc9c3dcc4",
+   "tx_hash": "0x285a223179bccd958c6f20073439e986debe314c9423f6fe4ade2b90765c7c65",
+   "explorer_url": "https://sepolia.etherscan.io/tx/0x285a223179bccd958c6f20073439e986debe314c9423f6fe4ade2b90765c7c65",
+   "chain_id": 11155111,
+   "from_address": "0x945Bba9062788823114726C5c2DaA74ED339017c",
+   "block_number": 11942865,
+   "block_timestamp": 1792348332,
+   "head_seq": 194,
+   "leaves": [
+    {
+     "kind": "audit_head",
+     "hash": "b07602348e3f11b0e48bdbe1704a1f956292ff84238e8a86e4c8980d2771017b",
+     "ref": "audit #194",
+     "leaf_hash": "f54a6a3f52dad35ec8b9be950da484327fc6f270cfc71cb44fb2f0bcc9c3dcc4",
+     "proof": []
+    }
+   ],
+   "verification": "match"
+  },
+  {
+   "batch_id": "anc-000002",
+   "trigger": "batch_size",
+   "merkle_root": "02c81df1748032e90b5b4e3167c6e52affa30e92e0cdf7972f13cf2e56007d72",
+   "tx_hash": "0x9eec13912ca59b7e24c091446435e66ee27a1ae809ab16744f60c2e2ca233179",
+   "explorer_url": "https://sepolia.etherscan.io/tx/0x9eec13912ca59b7e24c091446435e66ee27a1ae809ab16744f60c2e2ca233179",
+   "chain_id": 11155111,
+   "from_address": "0x945Bba9062788823114726C5c2DaA74ED339017c",
+   "block_number": 11942966,
+   "block_timestamp": 1792349544,
+   "head_seq": 226,
+   "leaves": [
+    {
+     "kind": "audit_head",
+     "hash": "ecd892f8e9b78c468550d87d7af12c10d7c8a25b0b56477fe3b8ae27c773535d",
+     "ref": "audit #226",
+     "leaf_hash": "02c81df1748032e90b5b4e3167c6e52affa30e92e0cdf7972f13cf2e56007d72",
+     "proof": []
+    }
+   ],
+   "verification": "match"
+  },
+  {
+   "batch_id": "anc-000003",
+   "trigger": "batch_size",
+   "merkle_root": "7d5e218734f79717b03a9e46709e18d760a3f94326ab0cb6f3f348eb1e93ea4a",
+   "tx_hash": "0xc5e10b96514b7b8828bc65ca415620b38898feb4e0036a4b9c330a4b1f271ad6",
+   "explorer_url": "https://sepolia.etherscan.io/tx/0xc5e10b96514b7b8828bc65ca415620b38898feb4e0036a4b9c330a4b1f271ad6",
+   "chain_id": 11155111,
+   "from_address": "0x945Bba9062788823114726C5c2DaA74ED339017c",
+   "block_number": 11943287,
+   "block_timestamp": 1792353444,
+   "head_seq": 256,
+   "leaves": [
+    {
+     "kind": "audit_head",
+     "hash": "a2838caaf3de2b6c9cc717843a8a81952730a12feb19678caba2054abd01c758",
+     "ref": "audit #256",
+     "leaf_hash": "7d5e218734f79717b03a9e46709e18d760a3f94326ab0cb6f3f348eb1e93ea4a",
+     "proof": []
+    }
+   ],
+   "verification": "match"
+  },
+  {
+   "batch_id": "anc-000004",
+   "trigger": "batch_size",
+   "merkle_root": "b32571d9c2cc119bf83e5b282495797c8f931635ecfe936c489fb61501600133",
+   "tx_hash": "0x4c79a2a37bc5ae106b5d3086cdf69d50e371497f1de5fbc55870f3116595c3e7",
+   "explorer_url": "https://sepolia.etherscan.io/tx/0x4c79a2a37bc5ae106b5d3086cdf69d50e371497f1de5fbc55870f3116595c3e7",
+   "chain_id": 11155111,
+   "from_address": "0x945Bba9062788823114726C5c2DaA74ED339017c",
+   "block_number": 11944613,
+   "block_timestamp": 1792369548,
+   "head_seq": 289,
+   "leaves": [
+    {
+     "kind": "audit_head",
+     "hash": "bad10d7690754cd0c59cbaa18f2a99622c81b276f473f6fc7b8a05f2016bbce9",
+     "ref": "audit #289",
+     "leaf_hash": "b32571d9c2cc119bf83e5b282495797c8f931635ecfe936c489fb61501600133",
+     "proof": []
+    }
+   ],
+   "verification": "match"
+  },
+  {
+   "batch_id": "anc-000005",
+   "trigger": "batch_size",
+   "merkle_root": "5a44b3fcb5c7e50329fa7357d8c1379ff33a7d4cc375313529460ee250a7d28a",
+   "tx_hash": "0xbcba3eee16b48fa342d5d5323eedfee3e7217bba1c94cc634e494aff8df6ee65",
+   "explorer_url": "https://sepolia.etherscan.io/tx/0xbcba3eee16b48fa342d5d5323eedfee3e7217bba1c94cc634e494aff8df6ee65",
+   "chain_id": 11155111,
+   "from_address": "0x945Bba9062788823114726C5c2DaA74ED339017c",
+   "block_number": 11944623,
+   "block_timestamp": 1792369668,
+   "head_seq": 311,
+   "leaves": [
+    {
+     "kind": "audit_head",
+     "hash": "0da99f11129d062e6b762015475edbdc558675ae3867afc39c813c85523e95af",
+     "ref": "audit #311",
+     "leaf_hash": "5a44b3fcb5c7e50329fa7357d8c1379ff33a7d4cc375313529460ee250a7d28a",
+     "proof": []
+    }
+   ],
+   "verification": "match"
+  },
+  {
+   "batch_id": "anc-000006",
+   "trigger": "batch_size",
+   "merkle_root": "319f0919ba679f6b13b1c7dee6c556409b3cf7be9a2575409337604d8ac2d36d",
+   "tx_hash": "0x3495fda47d58966557ddd61fc97a2094a12853e730b51178597c730298d54378",
+   "explorer_url": "https://sepolia.etherscan.io/tx/0x3495fda47d58966557ddd61fc97a2094a12853e730b51178597c730298d54378",
+   "chain_id": 11155111,
+   "from_address": "0x945Bba9062788823114726C5c2DaA74ED339017c",
+   "block_number": 11944631,
+   "block_timestamp": 1792369764,
+   "head_seq": 333,
+   "leaves": [
+    {
+     "kind": "audit_head",
+     "hash": "7d1068bb720c651a88cf2dd7759ad17ee2944df7b88bc0733a9744e2884c3164",
+     "ref": "audit #333",
+     "leaf_hash": "319f0919ba679f6b13b1c7dee6c556409b3cf7be9a2575409337604d8ac2d36d",
+     "proof": []
+    }
+   ],
+   "verification": "match"
+  },
+  {
+   "batch_id": "anc-000007",
+   "trigger": "owner_signed",
+   "merkle_root": "7e1296a39fa4db5bd6df143f6cab5db6f0de70b0f5444aa13476bab0516c8d8f",
+   "tx_hash": "0xa50c99b216e7325f22938aedde28577301d4253152c182cb2121f2fe3a984584",
+   "explorer_url": "https://sepolia.etherscan.io/tx/0xa50c99b216e7325f22938aedde28577301d4253152c182cb2121f2fe3a984584",
+   "chain_id": 11155111,
+   "from_address": "0x945Bba9062788823114726C5c2DaA74ED339017c",
+   "block_number": 11944634,
+   "block_timestamp": 1792369800,
+   "head_seq": 338,
+   "leaves": [
+    {
+     "kind": "audit_head",
+     "hash": "e282d6d9ffa67b432da69f826dc320ae4ef8c85c4e547de9e1f34e13b696aba0",
+     "ref": "audit #338",
+     "leaf_hash": "fb12e99f8b31545c017018ac6adb70ad601a285359d1dec7a9185c3038b75ef6",
+     "proof": [
+      {
+       "side": "right",
+       "hash": "ba839a4edd4a9d763c2ea740c100ca746788f51ca7ab6042740bdc96fd89a29c"
+      }
+     ]
+    },
+    {
+     "kind": "mandate",
+     "hash": "3c5dc27f274e29392062917be988b6a31e6d0175df9c26864d97c4388a29d96d",
+     "ref": "mandate 1 (audit #338)",
+     "leaf_hash": "ba839a4edd4a9d763c2ea740c100ca746788f51ca7ab6042740bdc96fd89a29c",
+     "proof": [
+      {
+       "side": "left",
+       "hash": "fb12e99f8b31545c017018ac6adb70ad601a285359d1dec7a9185c3038b75ef6"
+      }
+     ]
+    }
+   ],
+   "verification": "match"
+  },
+  {
+   "batch_id": "anc-000008",
+   "trigger": "batch_size",
+   "merkle_root": "0b0e1a88d341e7d98da1138dc6cd63109889f7b7d5c763223e3ec920261d432d",
+   "tx_hash": "0x8c1f09b9536e665f84e8efcfdbaa61e16fc2ca5576e7ff4e39e39f3d33764b94",
+   "explorer_url": "https://sepolia.etherscan.io/tx/0x8c1f09b9536e665f84e8efcfdbaa61e16fc2ca5576e7ff4e39e39f3d33764b94",
+   "chain_id": 11155111,
+   "from_address": "0x945Bba9062788823114726C5c2DaA74ED339017c",
+   "block_number": 11944662,
+   "block_timestamp": 1792370136,
+   "head_seq": 361,
+   "leaves": [
+    {
+     "kind": "audit_head",
+     "hash": "6e1708bbe8fcc81e374afdf63a891f93e003a2fd259a97cd0763874a05f3f331",
+     "ref": "audit #361",
+     "leaf_hash": "0b0e1a88d341e7d98da1138dc6cd63109889f7b7d5c763223e3ec920261d432d",
+     "proof": []
+    }
+   ],
+   "verification": "match"
+  },
+  {
+   "batch_id": "anc-000009",
+   "trigger": "batch_size",
+   "merkle_root": "b7201f68e0f2252c44458c2670c4fcffb8c98bd5f495c4f29cd7aa93eea77d72",
+   "tx_hash": "0xe58dbf2076a6bde358305848f4843b8222f2bf94ef2b9e577702889b05c3751b",
+   "explorer_url": "https://sepolia.etherscan.io/tx/0xe58dbf2076a6bde358305848f4843b8222f2bf94ef2b9e577702889b05c3751b",
+   "chain_id": 11155111,
+   "from_address": "0x945Bba9062788823114726C5c2DaA74ED339017c",
+   "block_number": 11944663,
+   "block_timestamp": 1792370148,
+   "head_seq": 383,
+   "leaves": [
+    {
+     "kind": "audit_head",
+     "hash": "ad30fa3414f9b1a8a6bfa55e158cdc3078cc1d079ffce803ab8707e1ba627d2f",
+     "ref": "audit #383",
+     "leaf_hash": "b7201f68e0f2252c44458c2670c4fcffb8c98bd5f495c4f29cd7aa93eea77d72",
+     "proof": []
+    }
+   ],
+   "verification": "match"
+  },
+  {
+   "batch_id": "anc-000010",
+   "trigger": "batch_size",
+   "merkle_root": "3d0da35b28e40f9e7b5a4f658a334652d11ee993264033a5bd2e85866fd9d356",
+   "tx_hash": "0xa0d1ca63afdd9fd3b83dab880aa3c261b3311b0669e2f17de977ddfffecd9ab6",
+   "explorer_url": "https://sepolia.etherscan.io/tx/0xa0d1ca63afdd9fd3b83dab880aa3c261b3311b0669e2f17de977ddfffecd9ab6",
+   "chain_id": 11155111,
+   "from_address": "0x945Bba9062788823114726C5c2DaA74ED339017c",
+   "block_number": 11947200,
+   "block_timestamp": 1792401048,
+   "head_seq": 444,
+   "leaves": [
+    {
+     "kind": "audit_head",
+     "hash": "d3bafdba69192902a6910bb4341ce561f1cc28314a9b9d7ac10be826abf7f1b6",
+     "ref": "audit #444",
+     "leaf_hash": "c3b8fde429c2e312351d51b57fd058a9638c7550973426e05e9f111a71717056",
+     "proof": [
+      {
+       "side": "right",
+       "hash": "9400ae3ed58a4beffe041331d5389d28c8678490efe58bcc07e76538ecc95bb5"
+      }
+     ]
+    },
+    {
+     "kind": "skill",
+     "hash": "0dedbdcf8ca20e1b39a806ddb06abb32579b07201f7574bace4c241dac8968d6",
+     "ref": "passport None (audit #419)",
+     "leaf_hash": "9400ae3ed58a4beffe041331d5389d28c8678490efe58bcc07e76538ecc95bb5",
+     "proof": [
+      {
+       "side": "left",
+       "hash": "c3b8fde429c2e312351d51b57fd058a9638c7550973426e05e9f111a71717056"
+      }
+     ]
+    }
+   ],
+   "verification": "match"
+  },
+  {
+   "batch_id": "anc-000011",
+   "trigger": "batch_size",
+   "merkle_root": "b7d826173f19154db607ece971b06b1cce8d3e65b54d0bcc904ce1cef53509bc",
+   "tx_hash": "0x8d08d883146ce0ec447deded8dda5f5ab6855472c3fd59965fb9afc1d2f78b6c",
+   "explorer_url": "https://sepolia.etherscan.io/tx/0x8d08d883146ce0ec447deded8dda5f5ab6855472c3fd59965fb9afc1d2f78b6c",
+   "chain_id": 11155111,
+   "from_address": "0x945Bba9062788823114726C5c2DaA74ED339017c",
+   "block_number": 11949112,
+   "block_timestamp": 1792424304,
+   "head_seq": 503,
+   "leaves": [
+    {
+     "kind": "audit_head",
+     "hash": "540467597b427c414115a56dfcf2def6be0ca1c8514f34de2a1c0465b75358a0",
+     "ref": "audit #503",
+     "leaf_hash": "b7d826173f19154db607ece971b06b1cce8d3e65b54d0bcc904ce1cef53509bc",
+     "proof": []
+    }
+   ],
+   "verification": "match"
+  },
+  {
+   "batch_id": "anc-000012",
+   "trigger": "batch_size",
+   "merkle_root": "d127b1a4fbe081ce5e0f7d6ec110c53a34386ba2a0ea8eba02056f89df881129",
+   "tx_hash": "0x370a76ab9ff25f8a75e37846bea2e350cb7f35d2d464ae051a59ab476d2490ca",
+   "explorer_url": "https://sepolia.etherscan.io/tx/0x370a76ab9ff25f8a75e37846bea2e350cb7f35d2d464ae051a59ab476d2490ca",
+   "chain_id": 11155111,
+   "from_address": "0x945Bba9062788823114726C5c2DaA74ED339017c",
+   "block_number": 11949171,
+   "block_timestamp": 1792425024,
+   "head_seq": 537,
+   "leaves": [
+    {
+     "kind": "audit_head",
+     "hash": "76ec9da3b378cbef4417d051a21a893d14798cb4d69ecd197ff088f98c8ef73e",
+     "ref": "audit #537",
+     "leaf_hash": "d127b1a4fbe081ce5e0f7d6ec110c53a34386ba2a0ea8eba02056f89df881129",
+     "proof": []
+    }
+   ],
+   "verification": "match"
+  },
+  {
+   "batch_id": "anc-000013",
+   "trigger": "batch_size",
+   "merkle_root": "f6f4ecc1ef1df25ef9bf181294979f9b42666acbd60b8222f65eb8b14caa6927",
+   "tx_hash": "0x4ea64555dbcd451fa6e1c271ea5c215453381c074df7682aaa05a8cff75d5f80",
+   "explorer_url": "https://sepolia.etherscan.io/tx/0x4ea64555dbcd451fa6e1c271ea5c215453381c074df7682aaa05a8cff75d5f80",
+   "chain_id": 11155111,
+   "from_address": "0x945Bba9062788823114726C5c2DaA74ED339017c",
+   "block_number": 11949514,
+   "block_timestamp": 1792429212,
+   "head_seq": 572,
+   "leaves": [
+    {
+     "kind": "audit_head",
+     "hash": "b95127d0518688aabbb5a9d783dfcd66c2a047fe82ac72d0eda01c9da920c2c0",
+     "ref": "audit #572",
+     "leaf_hash": "f6f4ecc1ef1df25ef9bf181294979f9b42666acbd60b8222f65eb8b14caa6927",
+     "proof": []
+    }
+   ],
+   "verification": "match"
+  },
+  {
+   "batch_id": "anc-000014",
+   "trigger": "manual",
+   "merkle_root": "c619dc186bcef372d5f264e26cde88202c65da81cb6823bff24d2e530e2fe088",
+   "tx_hash": "0x153e2d7c376fdb7f285cfd68d6548b6dec677bc040863c0db7906f8d7bba8791",
+   "explorer_url": "https://sepolia.etherscan.io/tx/0x153e2d7c376fdb7f285cfd68d6548b6dec677bc040863c0db7906f8d7bba8791",
+   "chain_id": 11155111,
+   "from_address": "0x945Bba9062788823114726C5c2DaA74ED339017c",
+   "block_number": 11949719,
+   "block_timestamp": 1792431720,
+   "head_seq": 578,
+   "leaves": [
+    {
+     "kind": "audit_head",
+     "hash": "e70fc926e47bd6d1fe140b7a5d65f05e1eeb5179677a0b540b7547cf47ab46fc",
+     "ref": "audit #578",
+     "leaf_hash": "c619dc186bcef372d5f264e26cde88202c65da81cb6823bff24d2e530e2fe088",
+     "proof": []
+    }
+   ],
+   "verification": "match"
+  }
+ ]
+}

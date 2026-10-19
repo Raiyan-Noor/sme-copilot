@@ -1,0 +1,101 @@
+{
+ "note": "Three views, none of them a provider invoice. The counter is cumulative for the dev app only (test runs keep their own counters). The audit view covers the app's own log. The recording view is what the current recordings cost to make, priced from llm/pricing.py; re-recorded cases replaced older files, so it is a lower bound of everything ever spent on recordings. A model missing from llm/pricing.py (price_known 0) is priced at the highest known rate, so its figure is an upper bound.",
+ "local_counter": {
+  "file": "backend/data/tenants/llm_spend.json",
+  "spent_usd": {
+   "openai": 0.1016
+  }
+ },
+ "audit_log_llm_calls": {
+  "openai/gpt-5.6-terra": {
+   "calls": 77,
+   "cache_hit": 50,
+   "cost_microusd": 113988,
+   "cache_miss": 24,
+   "cache_off": 3,
+   "cost_usd": 0.114
+  }
+ },
+ "replay_recordings": {
+  "openai": {
+   "folder": "backend/data/replay/llm",
+   "recordings": 123,
+   "all_prices_known": true,
+   "cost_usd": 0.4368,
+   "by_role_model": {
+    "brief_writer:openai/gpt-5.6-terra": {
+     "recordings": 4,
+     "input_tokens": 3370,
+     "cached_input_tokens": 0,
+     "output_tokens": 1100,
+     "cost_microusd": 19940,
+     "price_known": 1
+    },
+    "extractor:openai/gpt-5.6-terra": {
+     "recordings": 47,
+     "input_tokens": 57377,
+     "cached_input_tokens": 35264,
+     "output_tokens": 11948,
+     "cost_microusd": 194674,
+     "price_known": 1
+    },
+    "planner:openai/gpt-5.6-terra": {
+     "recordings": 72,
+     "input_tokens": 255917,
+     "cached_input_tokens": 210393,
+     "output_tokens": 7417,
+     "cost_microusd": 222173,
+     "price_known": 1
+    }
+   }
+  },
+  "openai-demo": {
+   "folder": "backend/data/replay/openai-demo/llm",
+   "recordings": 108,
+   "all_prices_known": true,
+   "cost_usd": 0.7026,
+   "by_role_model": {
+    "extractor:openai/gpt-5.6-terra": {
+     "recordings": 39,
+     "input_tokens": 48015,
+     "cached_input_tokens": 31958,
+     "output_tokens": 10029,
+     "cost_microusd": 158871,
+     "price_known": 1
+    },
+    "planner:openai/gpt-5.6-sol": {
+     "recordings": 69,
+     "input_tokens": 248919,
+     "cached_input_tokens": 203030,
+     "output_tokens": 7091,
+     "cost_microusd": 543711,
+     "price_known": 1
+    }
+   }
+  },
+  "gemini": {
+   "folder": "backend/data/replay/gemini/llm",
+   "recordings": 71,
+   "all_prices_known": false,
+   "cost_usd": 1.3411,
+   "by_role_model": {
+    "extractor:gemini/gemini-3.8-flash": {
+     "recordings": 30,
+     "input_tokens": 19202,
+     "cached_input_tokens": 0,
+     "output_tokens": 9050,
+     "cost_microusd": 367510,
+     "price_known": 0
+    },
+    "planner:gemini/gemini-3.8-flash": {
+     "recordings": 41,
+     "input_tokens": 172182,
+     "cached_input_tokens": 0,
+     "output_tokens": 3756,
+     "cost_microusd": 973590,
+     "price_known": 0
+    }
+   }
+  }
+ }
+}

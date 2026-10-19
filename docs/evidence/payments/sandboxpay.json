@@ -1,0 +1,7 @@
+{
+ "present": true,
+ "source": "backend/data/sandboxpay/sandboxpay.sqlite",
+ "connections": [],
+ "payments": [],
+ "by_status": {}
+}

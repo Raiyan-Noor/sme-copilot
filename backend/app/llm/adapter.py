@@ -47,6 +47,7 @@ PROFILE_MODELS: dict[str, dict[str, str]] = {
     "demo": {"planner": SOL, "extractor": TERRA, "brief_writer": SOL},
 }
 GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai/"
+GEMINI_SKIP_SIGNATURE = "skip_thought_signature_validator"  # Gemini's placeholder for calls it did not make
 CACHE_NAMESPACE = "llm"
 
 T = TypeVar("T", bound=BaseModel)
@@ -92,7 +93,8 @@ class ChatResult:
         msg: dict[str, Any] = {"role": "assistant", "content": self.content}
         if self.tool_calls:
             msg["tool_calls"] = [
-                {"id": c.id, "type": "function", "function": {"name": c.name, "arguments": c.arguments}}
+                {"id": c.id, "type": "function", "function": {"name": c.name, "arguments": c.arguments},
+                 **({"extra_content": {"google": {"thought_signature": c.signature}}} if c.signature else {})}
                 for c in self.tool_calls
             ]
         return msg
@@ -117,7 +119,8 @@ class OpenAICompatProvider:
         self._client = openai.OpenAI(api_key=api_key, base_url=base_url, max_retries=0, http_client=http_client)
 
     def complete(self, model: str, request: dict[str, Any], timeout_s: float) -> Completion:
-        kwargs: dict[str, Any] = {"model": model, "messages": request["messages"], "timeout": timeout_s}
+        kwargs: dict[str, Any] = {"model": model, "messages": self._messages(request["messages"]),
+                                  "timeout": timeout_s}
         if request.get("tools"):
             kwargs["tools"] = request["tools"]
             if request.get("tool_choice") is not None:
@@ -137,6 +140,24 @@ class OpenAICompatProvider:
         except openai.APIStatusError as exc:
             raise ProviderError(_classify_status(exc), str(exc), exc.status_code) from exc
         return _normalize(resp)
+
+    def _messages(self, messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Thought signatures on assistant tool calls, per provider. Gemini needs one on every call: a call another
+        provider made (the fallback took over mid-conversation) gets Gemini's documented placeholder that skips the
+        check. OpenAI does not know the field, so it is stripped. Only the request sent changes, never the cache key."""
+        out = []
+        for m in messages:
+            if m.get("role") == "assistant" and m.get("tool_calls"):
+                calls = []
+                for call in m["tool_calls"]:
+                    sig = call.get("extra_content", {}).get("google", {}).get("thought_signature")
+                    c = {k: v for k, v in call.items() if k != "extra_content"}
+                    if self.name == "gemini":
+                        c["extra_content"] = {"google": {"thought_signature": sig or GEMINI_SKIP_SIGNATURE}}
+                    calls.append(c)
+                m = {**m, "tool_calls": calls}
+            out.append(m)
+        return out
 
 
 def _is_quota(exc: openai.APIStatusError) -> bool:
@@ -159,11 +180,19 @@ def _classify_status(exc: openai.APIStatusError) -> ErrorKind:
     return ErrorKind.BAD_REQUEST
 
 
+def _thought_signature(call: Any) -> str | None:
+    """Gemini's `extra_content.google.thought_signature` on a tool call (an extra field the SDK keeps as-is)."""
+    extra = getattr(call, "extra_content", None) or (getattr(call, "model_extra", None) or {}).get("extra_content")
+    sig = (extra or {}).get("google", {}).get("thought_signature") if isinstance(extra, dict) else None
+    return sig if isinstance(sig, str) else None
+
+
 def _normalize(resp: Any) -> Completion:
     choice = resp.choices[0]
     msg = choice.message
     calls = [
-        ToolCall(id=c.id or f"call_{i}", name=c.function.name, arguments=c.function.arguments or "{}")
+        ToolCall(id=c.id or f"call_{i}", name=c.function.name, arguments=c.function.arguments or "{}",
+                 signature=_thought_signature(c))
         for i, c in enumerate(msg.tool_calls or [])
     ]
     u = resp.usage

@@ -29,7 +29,9 @@ FIXED_PII_KEY = bytes(range(32))
 
 # Recordings per provider. OpenAI's live in the default replay dir (what CI replays); another provider's go in a
 # sibling folder, selected with REPLAY_PROVIDER, so `make redteam` can report each provider separately.
-REPLAY_PROVIDERS = ("openai", "gemini")
+# "openai-demo" is OpenAI on the demo profile (Sol planner and brief writer), the models the recorded demo uses.
+REPLAY_PROVIDERS = ("openai", "openai-demo", "gemini")
+PROVIDER_PROFILE = {"openai": "dev", "openai-demo": "demo", "gemini": "dev"}
 
 
 def replay_provider() -> str:
@@ -51,13 +53,13 @@ def llm_settings(record: bool) -> dict[str, Any]:
     from app.config import Settings
 
     provider = replay_provider()
-    out: dict[str, Any] = {"llm_replay": "record" if record else "replay"}
+    out: dict[str, Any] = {"llm_replay": "record" if record else "replay", "llm_profile": PROVIDER_PROFILE[provider]}
     if provider != "openai":
         out["llm_replay_dir"] = Settings.model_fields["llm_replay_dir"].default / provider
     if record:
         live = Settings()
-        out.update(llm_profile="dev", gemini_api_key=live.gemini_api_key,
-                   openai_api_key=live.openai_api_key if provider == "openai" else "")
+        out.update(gemini_api_key=live.gemini_api_key,
+                   openai_api_key=live.openai_api_key if provider.startswith("openai") else "")
     return out
 
 

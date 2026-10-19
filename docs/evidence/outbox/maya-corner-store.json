@@ -1,0 +1,26 @@
+{
+ "business": "maya-corner-store",
+ "emails": 1,
+ "by_transport": {
+  "sandbox": 1
+ },
+ "outbox": [
+  {
+   "id": 1,
+   "kind": "email",
+   "recipient_id": "cus_littlesteps",
+   "on_date": "2026-10-21",
+   "transport": "sandbox",
+   "about": {
+    "invoice_id": "MCS-AR-LITTLESTEPS-006",
+    "scheduled_item_id": "MCS-SCH-0002"
+   },
+   "body": "Hello Little Steps Daycare,\n\nThis is a friendly reminder that your invoice for $386.50 was due on 30 Sep 2026. If you have already paid it, thank you, and please ignore this message.\n\nKind regards,\nMaya's Corner Store",
+   "draft_id": "emd_kmaeobcclmpjbnepgankikai",
+   "draft_sha256": "ac04e122bcf91d4f60da8a08c0b937a8d44b1044c0d3daa08aa2e1ca94347e71",
+   "label": "simulated: Gmail is not the connected inbox",
+   "origin": "overnight",
+   "subject": "A friendly reminder about your open invoice"
+  }
+ ]
+}

@@ -1,0 +1,264 @@
+{
+ "present": true,
+ "chain_id": 11155111,
+ "chain_name": "Sepolia",
+ "verified_log_ok_at_anchor_time": true,
+ "batches_checked": 14,
+ "batches_ok": 14,
+ "batches": [
+  {
+   "batch_id": "anc-000001",
+   "tx_hash": "0x285a223179bccd958c6f20073439e986debe314c9423f6fe4ade2b90765c7c65",
+   "explorer_url": "https://sepolia.etherscan.io/tx/0x285a223179bccd958c6f20073439e986debe314c9423f6fe4ade2b90765c7c65",
+   "block_number": 11942865,
+   "leaves": {
+    "audit_head": 1
+   },
+   "merkle_proofs_ok": true,
+   "recorded_tx": true,
+   "data_is_root": true,
+   "value_wei": 0,
+   "self_transaction": true,
+   "succeeded": true,
+   "allow_listed_chain": true,
+   "block_matches": true,
+   "ok": true
+  },
+  {
+   "batch_id": "anc-000002",
+   "tx_hash": "0x9eec13912ca59b7e24c091446435e66ee27a1ae809ab16744f60c2e2ca233179",
+   "explorer_url": "https://sepolia.etherscan.io/tx/0x9eec13912ca59b7e24c091446435e66ee27a1ae809ab16744f60c2e2ca233179",
+   "block_number": 11942966,
+   "leaves": {
+    "audit_head": 1
+   },
+   "merkle_proofs_ok": true,
+   "recorded_tx": true,
+   "data_is_root": true,
+   "value_wei": 0,
+   "self_transaction": true,
+   "succeeded": true,
+   "allow_listed_chain": true,
+   "block_matches": true,
+   "ok": true
+  },
+  {
+   "batch_id": "anc-000003",
+   "tx_hash": "0xc5e10b96514b7b8828bc65ca415620b38898feb4e0036a4b9c330a4b1f271ad6",
+   "explorer_url": "https://sepolia.etherscan.io/tx/0xc5e10b96514b7b8828bc65ca415620b38898feb4e0036a4b9c330a4b1f271ad6",
+   "block_number": 11943287,
+   "leaves": {
+    "audit_head": 1
+   },
+   "merkle_proofs_ok": true,
+   "recorded_tx": true,
+   "data_is_root": true,
+   "value_wei": 0,
+   "self_transaction": true,
+   "succeeded": true,
+   "allow_listed_chain": true,
+   "block_matches": true,
+   "ok": true
+  },
+  {
+   "batch_id": "anc-000004",
+   "tx_hash": "0x4c79a2a37bc5ae106b5d3086cdf69d50e371497f1de5fbc55870f3116595c3e7",
+   "explorer_url": "https://sepolia.etherscan.io/tx/0x4c79a2a37bc5ae106b5d3086cdf69d50e371497f1de5fbc55870f3116595c3e7",
+   "block_number": 11944613,
+   "leaves": {
+    "audit_head": 1
+   },
+   "merkle_proofs_ok": true,
+   "recorded_tx": true,
+   "data_is_root": true,
+   "value_wei": 0,
+   "self_transaction": true,
+   "succeeded": true,
+   "allow_listed_chain": true,
+   "block_matches": true,
+   "ok": true
+  },
+  {
+   "batch_id": "anc-000005",
+   "tx_hash": "0xbcba3eee16b48fa342d5d5323eedfee3e7217bba1c94cc634e494aff8df6ee65",
+   "explorer_url": "https://sepolia.etherscan.io/tx/0xbcba3eee16b48fa342d5d5323eedfee3e7217bba1c94cc634e494aff8df6ee65",
+   "block_number": 11944623,
+   "leaves": {
+    "audit_head": 1
+   },
+   "merkle_proofs_ok": true,
+   "recorded_tx": true,
+   "data_is_root": true,
+   "value_wei": 0,
+   "self_transaction": true,
+   "succeeded": true,
+   "allow_listed_chain": true,
+   "block_matches": true,
+   "ok": true
+  },
+  {
+   "batch_id": "anc-000006",
+   "tx_hash": "0x3495fda47d58966557ddd61fc97a2094a12853e730b51178597c730298d54378",
+   "explorer_url": "https://sepolia.etherscan.io/tx/0x3495fda47d58966557ddd61fc97a2094a12853e730b51178597c730298d54378",
+   "block_number": 11944631,
+   "leaves": {
+    "audit_head": 1
+   },
+   "merkle_proofs_ok": true,
+   "recorded_tx": true,
+   "data_is_root": true,
+   "value_wei": 0,
+   "self_transaction": true,
+   "succeeded": true,
+   "allow_listed_chain": true,
+   "block_matches": true,
+   "ok": true
+  },
+  {
+   "batch_id": "anc-000007",
+   "tx_hash": "0xa50c99b216e7325f22938aedde28577301d4253152c182cb2121f2fe3a984584",
+   "explorer_url": "https://sepolia.etherscan.io/tx/0xa50c99b216e7325f22938aedde28577301d4253152c182cb2121f2fe3a984584",
+   "block_number": 11944634,
+   "leaves": {
+    "audit_head": 1,
+    "mandate": 1
+   },
+   "merkle_proofs_ok": true,
+   "recorded_tx": true,
+   "data_is_root": true,
+   "value_wei": 0,
+   "self_transaction": true,
+   "succeeded": true,
+   "allow_listed_chain": true,
+   "block_matches": true,
+   "ok": true
+  },
+  {
+   "batch_id": "anc-000008",
+   "tx_hash": "0x8c1f09b9536e665f84e8efcfdbaa61e16fc2ca5576e7ff4e39e39f3d33764b94",
+   "explorer_url": "https://sepolia.etherscan.io/tx/0x8c1f09b9536e665f84e8efcfdbaa61e16fc2ca5576e7ff4e39e39f3d33764b94",
+   "block_number": 11944662,
+   "leaves": {
+    "audit_head": 1
+   },
+   "merkle_proofs_ok": true,
+   "recorded_tx": true,
+   "data_is_root": true,
+   "value_wei": 0,
+   "self_transaction": true,
+   "succeeded": true,
+   "allow_listed_chain": true,
+   "block_matches": true,
+   "ok": true
+  },
+  {
+   "batch_id": "anc-000009",
+   "tx_hash": "0xe58dbf2076a6bde358305848f4843b8222f2bf94ef2b9e577702889b05c3751b",
+   "explorer_url": "https://sepolia.etherscan.io/tx/0xe58dbf2076a6bde358305848f4843b8222f2bf94ef2b9e577702889b05c3751b",
+   "block_number": 11944663,
+   "leaves": {
+    "audit_head": 1
+   },
+   "merkle_proofs_ok": true,
+   "recorded_tx": true,
+   "data_is_root": true,
+   "value_wei": 0,
+   "self_transaction": true,
+   "succeeded": true,
+   "allow_listed_chain": true,
+   "block_matches": true,
+   "ok": true
+  },
+  {
+   "batch_id": "anc-000010",
+   "tx_hash": "0xa0d1ca63afdd9fd3b83dab880aa3c261b3311b0669e2f17de977ddfffecd9ab6",
+   "explorer_url": "https://sepolia.etherscan.io/tx/0xa0d1ca63afdd9fd3b83dab880aa3c261b3311b0669e2f17de977ddfffecd9ab6",
+   "block_number": 11947200,
+   "leaves": {
+    "audit_head": 1,
+    "skill": 1
+   },
+   "merkle_proofs_ok": true,
+   "recorded_tx": true,
+   "data_is_root": true,
+   "value_wei": 0,
+   "self_transaction": true,
+   "succeeded": true,
+   "allow_listed_chain": true,
+   "block_matches": true,
+   "ok": true
+  },
+  {
+   "batch_id": "anc-000011",
+   "tx_hash": "0x8d08d883146ce0ec447deded8dda5f5ab6855472c3fd59965fb9afc1d2f78b6c",
+   "explorer_url": "https://sepolia.etherscan.io/tx/0x8d08d883146ce0ec447deded8dda5f5ab6855472c3fd59965fb9afc1d2f78b6c",
+   "block_number": 11949112,
+   "leaves": {
+    "audit_head": 1
+   },
+   "merkle_proofs_ok": true,
+   "recorded_tx": true,
+   "data_is_root": true,
+   "value_wei": 0,
+   "self_transaction": true,
+   "succeeded": true,
+   "allow_listed_chain": true,
+   "block_matches": true,
+   "ok": true
+  },
+  {
+   "batch_id": "anc-000012",
+   "tx_hash": "0x370a76ab9ff25f8a75e37846bea2e350cb7f35d2d464ae051a59ab476d2490ca",
+   "explorer_url": "https://sepolia.etherscan.io/tx/0x370a76ab9ff25f8a75e37846bea2e350cb7f35d2d464ae051a59ab476d2490ca",
+   "block_number": 11949171,
+   "leaves": {
+    "audit_head": 1
+   },
+   "merkle_proofs_ok": true,
+   "recorded_tx": true,
+   "data_is_root": true,
+   "value_wei": 0,
+   "self_transaction": true,
+   "succeeded": true,
+   "allow_listed_chain": true,
+   "block_matches": true,
+   "ok": true
+  },
+  {
+   "batch_id": "anc-000013",
+   "tx_hash": "0x4ea64555dbcd451fa6e1c271ea5c215453381c074df7682aaa05a8cff75d5f80",
+   "explorer_url": "https://sepolia.etherscan.io/tx/0x4ea64555dbcd451fa6e1c271ea5c215453381c074df7682aaa05a8cff75d5f80",
+   "block_number": 11949514,
+   "leaves": {
+    "audit_head": 1
+   },
+   "merkle_proofs_ok": true,
+   "recorded_tx": true,
+   "data_is_root": true,
+   "value_wei": 0,
+   "self_transaction": true,
+   "succeeded": true,
+   "allow_listed_chain": true,
+   "block_matches": true,
+   "ok": true
+  },
+  {
+   "batch_id": "anc-000014",
+   "tx_hash": "0x153e2d7c376fdb7f285cfd68d6548b6dec677bc040863c0db7906f8d7bba8791",
+   "explorer_url": "https://sepolia.etherscan.io/tx/0x153e2d7c376fdb7f285cfd68d6548b6dec677bc040863c0db7906f8d7bba8791",
+   "block_number": 11949719,
+   "leaves": {
+    "audit_head": 1
+   },
+   "merkle_proofs_ok": true,
+   "recorded_tx": true,
+   "data_is_root": true,
+   "value_wei": 0,
+   "self_transaction": true,
+   "succeeded": true,
+   "allow_listed_chain": true,
+   "block_matches": true,
+   "ok": true
+  }
+ ]
+}

@@ -1,6 +1,8 @@
 """The real OpenAI-compatible provider over a mocked HTTP transport: the SDK's own exceptions are mapped to the
 error kinds that drive fallback, and responses (content, tool calls, usage) are normalized. No network."""
 
+import json
+
 import httpx
 import pytest
 
@@ -72,3 +74,64 @@ def test_response_is_normalized_and_max_tokens_param_is_per_provider():
     assert "max_completion_tokens" not in seen
     assert out.tool_calls[0].name == "get_cash" and out.finish_reason == "tool_calls"
     assert (out.usage.input_tokens, out.usage.cached_input_tokens, out.usage.output_tokens) == (30, 10, 7)
+
+
+def gemini(handler) -> OpenAICompatProvider:
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    return OpenAICompatProvider("gemini", "g-test", base_url="https://llm.test/v1", http_client=client,
+                                max_tokens_param="max_tokens")
+
+
+def tool_call_reply(extra=None):
+    call = {"id": "c1", "type": "function", "function": {"name": "get_cash", "arguments": "{}"}, **(extra or {})}
+    return httpx.Response(200, json={
+        "id": "x", "object": "chat.completion", "created": 0, "model": "m",
+        "choices": [{"index": 0, "finish_reason": "tool_calls",
+                     "message": {"role": "assistant", "content": None, "tool_calls": [call]}}],
+        "usage": {"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2}})
+
+
+def history(*calls):
+    return {"messages": [{"role": "user", "content": "hi"}, {"role": "assistant", "content": None, "tool_calls": list(calls)},
+                         {"role": "tool", "tool_call_id": "c1", "content": "{}"}]}
+
+
+SIGNED = {"id": "c1", "type": "function", "function": {"name": "get_cash", "arguments": "{}"},
+          "extra_content": {"google": {"thought_signature": "sig-abc"}}}
+UNSIGNED = {"id": "c1", "type": "function", "function": {"name": "get_cash", "arguments": "{}"}}
+
+
+def test_gemini_thought_signature_is_kept_and_sent_back():
+    """Gemini 3 refuses a tool turn whose call lacks its thought signature; the adapter keeps it from the reply and
+    puts it back on the assistant message for the next request."""
+    from app.llm.adapter import CallInfo, ChatResult
+
+    out = gemini(lambda r: tool_call_reply({"extra_content": {"google": {"thought_signature": "sig-abc"}}})) \
+        .complete("gemini-3.8-flash", REQ, 5)
+    assert out.tool_calls[0].signature == "sig-abc"
+    info = CallInfo("planner", "gemini", "m", out.usage, 0, "live", "k", 0)
+    msg = ChatResult(None, out.tool_calls, "tool_calls", info).assistant_message()
+    assert msg["tool_calls"][0]["extra_content"] == {"google": {"thought_signature": "sig-abc"}}
+
+    seen = {}
+    gemini(lambda r: (seen.update(json.loads(r.content)), tool_call_reply())[1]).complete("m", history(SIGNED), 5)
+    assert seen["messages"][1]["tool_calls"][0]["extra_content"]["google"]["thought_signature"] == "sig-abc"
+
+
+def test_gemini_gets_the_placeholder_for_calls_another_provider_made():
+    seen = {}
+    gemini(lambda r: (seen.update(json.loads(r.content)), tool_call_reply())[1]).complete("m", history(UNSIGNED), 5)
+    assert seen["messages"][1]["tool_calls"][0]["extra_content"]["google"]["thought_signature"] == \
+        "skip_thought_signature_validator"
+
+
+def test_openai_never_sees_gemini_fields_and_unsigned_messages_are_unchanged():
+    from app.llm.adapter import CallInfo, ChatResult
+
+    seen = {}
+    provider(lambda r: (seen.update(json.loads(r.content)), tool_call_reply())[1]).complete("m", history(SIGNED), 5)
+    assert "extra_content" not in seen["messages"][1]["tool_calls"][0]
+    out = provider(lambda r: tool_call_reply()).complete("m", REQ, 5)
+    assert out.tool_calls[0].signature is None
+    info = CallInfo("planner", "openai", "m", out.usage, 0, "live", "k", 0)
+    assert "extra_content" not in ChatResult(None, out.tool_calls, "tool_calls", info).assistant_message()["tool_calls"][0]

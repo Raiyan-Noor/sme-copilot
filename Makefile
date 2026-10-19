@@ -9,7 +9,7 @@ else
   VENV_PY := $(CURDIR)/backend/.venv/bin/python
 endif
 
-.PHONY: setup seed dev test openapi redteam evidence anchor reset-demo samples validate-skill
+.PHONY: setup seed dev demo test openapi redteam evidence anchor reset-demo demo-reset samples validate-skill
 
 setup:  ## venv + pip install, npm install
 	$(BOOT_PY) scripts/setup.py
@@ -23,11 +23,16 @@ samples:  ## regenerate the onboarding demo upload folder (deterministic) -> bac
 reset-demo:  ## delete every business created by onboarding (rehearsals); seeded businesses stay
 	"$(VENV_PY)" scripts/reset_demo.py
 
+demo-reset: reset-demo  ## same as reset-demo
+
 validate-skill:  ## check a skill.md the way upload does: make validate-skill FILE=skills/bakery.skill.md
 	"$(VENV_PY)" scripts/validate_skill.py "$(FILE)"
 
 dev:  ## FastAPI :8000 + Next :3000
 	"$(VENV_PY)" scripts/dev.py
+
+demo:  ## stop stale servers, then API :8000 + SandboxPay :8100 + Next :3000 with the demo console on; prints the URLs
+	"$(VENV_PY)" scripts/demo.py
 
 test: export LLM_REPLAY = replay
 test:  ## all pytest suites in replay mode + the branding check + frontend types in sync with the API
@@ -42,9 +47,9 @@ openapi:  ## export docs/openapi.json and regenerate frontend/lib/types.ts from 
 redteam:  ## attack + benign suites (replay, per recorded provider); writes docs/results/redteam.json
 	"$(VENV_PY)" scripts/redteam.py
 
-evidence:  ## export audit log JSONL + verify chain + anchors (tx hashes) -> docs/results/
-	@echo "make evidence: not implemented yet (build prompts 6, 17, 19)."
-	@exit 1
+evidence: export LLM_REPLAY = replay
+evidence:  ## offline: audit log + chain check, anchors re-verified, red-team, tests, outboxes, payments, spend -> docs/evidence/
+	"$(VENV_PY)" scripts/evidence.py
 
 anchor:  ## anchor now against the live testnet (manual only; needs ANCHOR_* in .env) -> docs/results/anchors.json
 	"$(VENV_PY)" scripts/anchor.py

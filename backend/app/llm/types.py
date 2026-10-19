@@ -26,6 +26,10 @@ class ToolCall(BaseModel):
     id: str
     name: str
     arguments: str  # JSON text exactly as the model produced it; parse and validate before use
+    # Gemini 3's opaque thought signature for this call. Gemini refuses the next turn unless it is sent back with the
+    # call (https://ai.google.dev/gemini-api/docs/thought-signatures). None for OpenAI, so OpenAI requests (and their
+    # replay keys) are unchanged.
+    signature: str | None = None
 
     def args(self) -> Any:
         return json.loads(self.arguments)
