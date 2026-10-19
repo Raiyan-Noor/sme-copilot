@@ -1,14 +1,17 @@
 """Append-only, hash-chained JSONL audit log (invariant 7).
 
-Each line is one entry: `{seq, date, kind, data, prev_hash, hash}`. `hash` is the SHA-256 of the canonical JSON of
-the entry without `hash`, and `prev_hash` is the previous entry's `hash` (64 zeros for the first). Editing,
+Each line is one entry: `{seq, date, time?, kind, data, prev_hash, hash}`. `hash` is the SHA-256 of the canonical JSON
+of the entry without `hash`, and `prev_hash` is the previous entry's `hash` (64 zeros for the first). Editing,
 inserting, deleting or reordering any line breaks the chain from that point, which `verify()` reports.
 
 A local verify cannot catch an insider who rewrites the file and recomputes every hash; that is what on-chain
 anchoring of `head()` is for (invariant 9). Anchoring plugs in through `subscribe()`, which is called after every
 append with the new entry, and through `head()`, without changes to this module.
 
-The file is only ever opened in append mode. Dates come from the simulated clock, so logs are replayable.
+The file is only ever opened in append mode. Dates come from the simulated clock, so logs are replayable. `time`
+(HH:MM:SS) is the simulated time of day when the clock has one (`SimClock.now()`); it is hashed like every other
+field. Entries written without it (a `FixedClock`, or a log from before it existed) leave the key out entirely, so
+their hashes are unchanged.
 """
 
 import json
@@ -24,6 +27,7 @@ from app.audit.canonical import canonical_hash
 from app.clock import Clock
 
 GENESIS_HASH = "0" * 64
+_REQUIRED_FIELDS = frozenset({"seq", "date", "kind", "data", "prev_hash", "hash"})
 
 
 class AuditEntry(BaseModel):
@@ -31,14 +35,15 @@ class AuditEntry(BaseModel):
 
     seq: int
     date: str
+    time: str | None = None
     kind: str
     data: dict[str, Any]
     prev_hash: str
     hash: str
 
     def body(self) -> dict[str, Any]:
-        """The hashed part: everything except `hash`."""
-        return self.model_dump(exclude={"hash"})
+        """The hashed part: everything except `hash` (and `time` when the entry has none)."""
+        return self.model_dump(exclude={"hash"} if self.time is not None else {"hash", "time"})
 
 
 class Head(BaseModel):
@@ -97,8 +102,12 @@ class AuditLog:
                 "data": data or {},
                 "prev_hash": self._head.hash,
             }
+            now = getattr(self.clock, "now", None)
+            if now is not None:
+                body["time"] = now().strftime("%H:%M:%S")
             entry = AuditEntry(**body, hash=entry_hash(body))
-            line = json.dumps(entry.model_dump(), sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+            line = json.dumps({**body, "hash": entry.hash}, sort_keys=True, separators=(",", ":"),
+                              ensure_ascii=False)
             with self.path.open("a", encoding="utf-8") as f:
                 f.write(line + "\n")
             self._head = Head(seq=entry.seq, hash=entry.hash)
@@ -130,7 +139,7 @@ class AuditLog:
                 entry = AuditEntry(**raw)
             except Exception as exc:  # malformed line is tampering too
                 return self._bad(count, head, expected_seq, f"unparseable entry: {exc.__class__.__name__}")
-            if set(raw) != set(AuditEntry.model_fields):
+            if set(raw) - {"time"} != _REQUIRED_FIELDS:
                 return self._bad(count, head, expected_seq, "unexpected or missing fields")
             if entry.seq != expected_seq:
                 return self._bad(count, head, expected_seq, f"sequence gap: expected {expected_seq}, got {entry.seq}")

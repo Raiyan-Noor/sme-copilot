@@ -14,6 +14,7 @@ import { ApiError, setPasscode } from "@/lib/api";
 import { errorMessage } from "@/lib/errors";
 
 import { ApprovalSheet } from "./approval-sheet";
+import { BriefTab } from "./brief-tab";
 import { Conversation } from "./conversation";
 import { DemoConsole } from "./demo-console";
 import { DetailPanel } from "./detail-panel";
@@ -69,10 +70,12 @@ function Shell() {
 
   const mini = !phone && (mid ? !midOpen : userMini || panelOpen);
   const conv = a.conversations.find((c) => c.id === a.active);
-  const title = a.active === NEW_ID ? "" : a.active === BRIEF_ID ? "Morning brief" : (conv?.title ?? "");
+  const title = a.briefTab || a.active === NEW_ID ? "" : a.active === BRIEF_ID ? "Morning brief" : (conv?.title ?? "");
+  // The brief tab shows the rail's figures in its own left column, so the rail steps aside there.
+  const rail = railOpen && !a.briefTab;
   const style = {
     "--sb-w": mini ? "64px" : "248px",
-    "--right-w": panelOpen ? (wide ? "760px" : "560px") : railOpen ? "300px" : "0px",
+    "--right-w": panelOpen ? (wide ? "760px" : "560px") : rail ? "300px" : "0px",
   } as React.CSSProperties;
 
   return (
@@ -97,7 +100,7 @@ function Shell() {
             <div className="ka-col">
               <span className="ka-head__title">{title}</span>
             </div>
-            {!railOpen && !panelOpen ? (
+            {!railOpen && !panelOpen && !a.briefTab ? (
               <div className="ka-head__right">
                 <button
                   type="button"
@@ -128,9 +131,9 @@ function Shell() {
               <SquarePen size={20} strokeWidth={1.5} />
             </button>
           </header>
-          <Conversation key={a.active} />
+          {a.briefTab ? <BriefTab /> : <Conversation key={a.active} />}
         </main>
-        <Rail hidden={panelOpen || !railOpen || mid} onHide={() => setRailOpen(false)} />
+        <Rail hidden={panelOpen || !rail || mid} onHide={() => setRailOpen(false)} />
         {phone ? <TodaySheet open={today} onClose={() => setToday(false)} /> : null}
         <DetailPanel wide={wide} />
         <div className="ka-toasts">

@@ -1836,6 +1836,52 @@
         }
       }
     },
+    "/businesses/{business_id}/brief/activity": {
+      "get": {
+        "tags": [
+          "brief"
+        ],
+        "summary": "Get Brief Activity",
+        "description": "What the overnight run behind the latest brief did, from the audit log, with what still waits for the owner.\nRead-only. 404 until the first brief exists.",
+        "operationId": "get_brief_activity",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BriefActivity"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/businesses/{business_id}/overnight": {
       "post": {
         "tags": [
@@ -4988,6 +5034,168 @@
         "title": "ActionEvent",
         "description": "The gateway's decision on a proposal, straight from the gateway (not from the planner's words)."
       },
+      "ActivityRow": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "approval",
+              "payment",
+              "held",
+              "insight",
+              "done"
+            ],
+            "title": "Kind"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "waiting",
+              "done",
+              "blocked",
+              "denied",
+              "insight"
+            ],
+            "title": "State"
+          },
+          "at": {
+            "$ref": "#/components/schemas/Stamp"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail",
+            "default": ""
+          },
+          "facts": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Fact"
+            },
+            "type": "object",
+            "title": "Facts",
+            "default": {}
+          },
+          "tool": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool"
+          },
+          "approval_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Approval Ids",
+            "default": []
+          },
+          "payment_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Key"
+          },
+          "payment_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Id"
+          },
+          "email_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email Id"
+          },
+          "sender": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sender"
+          },
+          "flags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Flags",
+            "default": []
+          },
+          "rule": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rule"
+          },
+          "done_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Done Label"
+          },
+          "completed": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Stamp"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "state",
+          "at",
+          "title"
+        ],
+        "title": "ActivityRow"
+      },
       "AdBrief": {
         "properties": {
           "total_spend": {
@@ -5779,6 +5987,17 @@
             "type": "string",
             "title": "Date"
           },
+          "time": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time"
+          },
           "kind": {
             "type": "string",
             "title": "Kind"
@@ -6064,6 +6283,62 @@
           "account_number"
         ],
         "title": "Body_upload_statement"
+      },
+      "BriefActivity": {
+        "properties": {
+          "business_id": {
+            "type": "string",
+            "title": "Business Id"
+          },
+          "as_of": {
+            "$ref": "#/components/schemas/Fact"
+          },
+          "business_name": {
+            "type": "string",
+            "title": "Business Name"
+          },
+          "pack_name": {
+            "type": "string",
+            "title": "Pack Name"
+          },
+          "owner_first_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner First Name"
+          },
+          "brief_at": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Stamp"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/ActivityRow"
+            },
+            "type": "array",
+            "title": "Rows"
+          }
+        },
+        "type": "object",
+        "required": [
+          "business_id",
+          "as_of",
+          "business_name",
+          "pack_name",
+          "rows"
+        ],
+        "title": "BriefActivity"
       },
       "BriefFirewall": {
         "properties": {
@@ -12370,6 +12645,36 @@
         ],
         "title": "StageEvent",
         "description": "Progress through the planner loop. Emitted before each step starts, so the UI's line matches the wait."
+      },
+      "Stamp": {
+        "properties": {
+          "seq": {
+            "type": "integer",
+            "title": "Seq"
+          },
+          "date": {
+            "type": "string",
+            "title": "Date"
+          },
+          "time": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time"
+          }
+        },
+        "type": "object",
+        "required": [
+          "seq",
+          "date"
+        ],
+        "title": "Stamp",
+        "description": "Where a row's time comes from: one audit entry."
       },
       "StandingMandateDraft": {
         "properties": {

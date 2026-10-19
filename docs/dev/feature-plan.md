@@ -28,6 +28,7 @@ Verified against `git log`, the code on disk and a full `pytest` run (1005 passe
 | F10 | Proactive "what you didn't think of" questions from the Skill Pack | Merged into P1 |
 | F11 | Upload a custom skill.md on the opening page; open skills library | Done (P8) |
 | F12 | Chat loading messages that show what KaChing is doing | Done (P0) |
+| F13 | Morning brief as its own tab (`/brief`) with a live activity feed | Done — Expand button on the chat brief opens `/brief` (Back to chat and browser back return); the feed is `GET /businesses/{id}/brief/activity`, built read-only from the overnight run's audit entries; Approve reuses the approval sheet (emails, one at a time; a group opens the Outbox since there is no batch signing) and the Payments flow (`approve.tsx`, shared with the Payments tab); held emails are Blocked + Review only. Audit entries now carry a simulated `time` (HH:MM:SS: each simulated day begins 07:00 at fast-forward, then real time passes); older entries keep their old shape and hashes, so the existing log and its anchors still verify. Full `pytest` run: 1013 passed (Tue Oct 20). Verified in the browser on an isolated copy of the data (render, Expand/Back, Approve opening the payment approval sheet); not signed there. The live demo log predates `time`, so rows show dates until the next fast-forward |
 | — | Correcting ledger entries | Dropped |
 
 Verification notes: P0 confirmed by `frontend/components/advisor/stage-line.tsx` and commit `23d2f8e`. P1 confirmed

@@ -8,7 +8,7 @@ import pytest
 import app.audit as audit
 from app.audit import GENESIS_HASH, AuditLog, canonical_hash, canonical_json
 from app.audit.canonical import CanonicalError
-from app.clock import SimClock
+from app.clock import FixedClock, SimClock
 
 
 @pytest.fixture
@@ -96,6 +96,29 @@ def test_added_field_detected(log):
     lines[1] = json.dumps(entry) + "\n"
     _rewrite(log, lines)
     assert not log.verify().ok
+
+
+def test_time_of_day_is_recorded_and_hashed(log):
+    _fill(log, 3)
+    entries = log.entries()
+    assert all(e.time and e.time >= "07:00:00" for e in entries)
+    lines = log.path.read_text(encoding="utf-8").splitlines(keepends=True)
+    doc = json.loads(lines[1])
+    doc["time"] = "03:00:00"  # backdating an entry breaks its hash
+    lines[1] = json.dumps(doc, sort_keys=True, separators=(",", ":")) + "\n"
+    _rewrite(log, lines)
+    assert not log.verify().ok and log.verify().first_bad_seq == 1
+
+
+def test_entries_without_a_time_keep_their_old_shape_and_verify(tmp_path):
+    fixed = AuditLog(tmp_path / "fixed.jsonl", FixedClock(date(2026, 10, 18)))
+    _fill(fixed, 2)
+    assert all("time" not in json.loads(line) for line in fixed.path.read_text(encoding="utf-8").splitlines())
+    assert fixed.verify().ok
+    # A log that started without times (an older file) and continues with them still verifies end to end.
+    mixed = AuditLog(fixed.path, SimClock(date(2026, 10, 18)))
+    mixed.append("test.event", {"i": 2})
+    assert mixed.entries()[-1].time and mixed.verify().ok
 
 
 def test_export_copies_and_verifies(log, tmp_path):

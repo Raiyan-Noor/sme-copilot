@@ -11,6 +11,8 @@ from app.agent.tools import LEAK_DETAIL_LABELS, leak_subject
 from app.api.deps import BusinessId, RuntimeDep
 from app.firewall.fact import Fact
 from app.packs.leaks import detector_labels
+from app.services import brief_activity
+from app.services.brief_activity import BriefActivity
 from app.services.overnight import OvernightReport, run_overnight
 
 router = APIRouter(tags=["brief"])
@@ -37,6 +39,18 @@ def get_brief(business_id: BusinessId, rt: RuntimeDep) -> MorningBrief:
     with rt.business(business_id):
         pass
     found = brief_writer.latest(rt.data_dir / business_id)
+    if found is None:
+        raise HTTPException(404, "no brief yet: advance the clock or POST /businesses/{id}/overnight")
+    return found
+
+
+@router.get("/businesses/{business_id}/brief/activity", response_model=BriefActivity)
+def get_brief_activity(business_id: BusinessId, rt: RuntimeDep) -> BriefActivity:
+    """What the overnight run behind the latest brief did, from the audit log, with what still waits for the owner.
+    Read-only. 404 until the first brief exists."""
+    with rt.business(business_id):
+        pass
+    found = brief_activity.build(rt, business_id)
     if found is None:
         raise HTTPException(404, "no brief yet: advance the clock or POST /businesses/{id}/overnight")
     return found

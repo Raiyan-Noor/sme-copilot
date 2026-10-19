@@ -8,6 +8,7 @@ import {
   Inbox,
   Landmark,
   List,
+  Newspaper,
   PanelLeftClose,
   PanelLeftOpen,
   Plus,
@@ -51,7 +52,8 @@ export function Sidebar({
   onToggle: () => void;
   onCloseDrawer: () => void;
 }) {
-  const { conversations, active, setActive, newConversation, openPanel, toast, waiting, stack } = useAdvisor();
+  const { conversations, active, setActive, newConversation, openPanel, toast, waiting, stack, briefTab, openBriefTab } =
+    useAdvisor();
   const { businesses, business, select, session, resetSession } = useBusiness();
   const { id, key } = useBusinessKey("inbox");
   const inbox = useApi(key, () => api.inbox(id));
@@ -135,9 +137,9 @@ export function Sidebar({
             <button
               key={c.id}
               type="button"
-              className={cn("ka-nav", active === c.id && "is-active")}
+              className={cn("ka-nav", !briefTab && active === c.id && "is-active")}
               onClick={go(() => setActive(c.id))}
-              aria-current={active === c.id ? "page" : undefined}
+              aria-current={!briefTab && active === c.id ? "page" : undefined}
             >
               <span className="t">{c.id === BRIEF_ID ? "Morning brief" : c.title}</span>
             </button>
@@ -145,6 +147,17 @@ export function Sidebar({
         </div>
       )}
       <div className="ka-sb__foot">
+        <button
+          type="button"
+          className={cn("ka-nav", briefTab && "is-active")}
+          title={mini ? "Morning brief" : undefined}
+          aria-label={mini ? "Morning brief" : undefined}
+          aria-current={briefTab ? "page" : undefined}
+          onClick={go(openBriefTab)}
+        >
+          <Newspaper size={18} strokeWidth={1.5} aria-hidden />
+          {mini ? null : <span className="t">Morning brief</span>}
+        </button>
         {links.map((l) => (
           <button
             key={l.id}

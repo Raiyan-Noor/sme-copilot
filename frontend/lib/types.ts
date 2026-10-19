@@ -21,6 +21,26 @@ export interface ActionEvent {
   reason_segments?: ReplySegment[];
 }
 
+export interface ActivityRow {
+  id: string;
+  kind: "approval" | "payment" | "held" | "insight" | "done";
+  state: "waiting" | "done" | "blocked" | "denied" | "insight";
+  at: Stamp;
+  title: string;
+  detail?: string;
+  facts?: Record<string, Fact>;
+  tool?: string | null;
+  approval_ids?: string[];
+  payment_key?: string | null;
+  payment_id?: string | null;
+  email_id?: string | null;
+  sender?: string | null;
+  flags?: string[];
+  rule?: string | null;
+  done_label?: string | null;
+  completed?: Stamp | null;
+}
+
 export interface AdBrief {
   total_spend: Fact;
   losing?: CampaignLine[];
@@ -164,6 +184,7 @@ export interface AttachmentInfo {
 export interface AuditEntry {
   seq: number;
   date: string;
+  time?: string | null;
   kind: string;
   data: Record<string, unknown>;
   prev_hash: string;
@@ -225,6 +246,16 @@ export interface Body_upload_statement {
   account_name?: string;
   decimal_sep?: "." | ",";
   date_format?: "%Y-%m-%d" | "%d/%m/%Y" | "%m/%d/%Y" | "%d.%m.%Y";
+}
+
+export interface BriefActivity {
+  business_id: string;
+  as_of: Fact;
+  business_name: string;
+  pack_name: string;
+  owner_first_name?: string | null;
+  brief_at?: Stamp | null;
+  rows: ActivityRow[];
 }
 
 export interface BriefFirewall {
@@ -1386,6 +1417,13 @@ export interface StageEvent {
   type?: "stage";
   stage: "received" | "thinking" | "tool" | "action" | "firewall" | "fixing";
   tool?: string | null;
+}
+
+/** Where a row's time comes from: one audit entry. */
+export interface Stamp {
+  seq: number;
+  date: string;
+  time?: string | null;
 }
 
 /** A payload for the owner to sign: `args_hash` binds the terms, the nonce is fresh, `message` is what to sign. */

@@ -1,6 +1,6 @@
 "use client";
 
-import { Ban, ChevronRight, CircleCheck, CircleSlash, FastForward, MessageSquare } from "lucide-react";
+import { Ban, ChevronRight, CircleCheck, CircleSlash, FastForward, Maximize2, MessageSquare } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { useBusinessKey } from "@/components/business-context";
@@ -106,7 +106,7 @@ function ownUploadOnlyNew(item: InboxItem): boolean {
 }
 
 function Brief({ brief, held }: { brief: MorningBrief; held: InboxItem[] }) {
-  const { addPending, scrollRequest } = useAdvisor();
+  const { addPending, scrollRequest, openBriefTab } = useAdvisor();
   const anchor = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -123,9 +123,20 @@ function Brief({ brief, held }: { brief: MorningBrief; held: InboxItem[] }) {
     <ChatBubble
       role="copilot"
       name={
-        <>
-          Morning brief · <FactNumber fact={brief.as_of} />
-        </>
+        <span className="ka-briefname">
+          <span>
+            Morning brief · <FactNumber fact={brief.as_of} />
+          </span>
+          <button
+            type="button"
+            className="ka-ibtn ka-briefname__open"
+            aria-label="Open brief in tab"
+            title="Open brief in tab"
+            onClick={openBriefTab}
+          >
+            <Maximize2 size={16} strokeWidth={1.5} aria-hidden />
+          </button>
+        </span>
       }
       attachment={
         <div className="ka-attach" ref={anchor} style={{ scrollMarginTop: 24 }}>

@@ -139,7 +139,12 @@ class Runtime:
         path = self._clock_file()
         if path.exists():
             state = json.loads(path.read_text(encoding="utf-8"))
-            return SimClock(date.fromisoformat(state["start"]), int(state["offset_days"]))
+            clock = SimClock(date.fromisoformat(state["start"]), int(state["offset_days"]),
+                             state.get("day_began_at"))
+            if clock.day_began_at is None:  # a clock saved before it kept a time of day: the day begins now
+                clock.now()
+                self._save_clock(clock)
+            return clock
         start = self.settings.sim_start
         if start is None:
             seed_days = [p["sim_today"] for p in seed_profiles(self.settings.seed_dir)] if (
@@ -148,11 +153,13 @@ class Runtime:
                 raise ClockNotConfigured("set SIM_START or run `make seed`")
             start = date.fromisoformat(max(seed_days))
         clock = SimClock(start)
+        clock.now()  # the first simulated day begins at 07:00 now
         self._save_clock(clock)
         return clock
 
     def _save_clock(self, clock: SimClock) -> None:
-        state = {"start": clock.start.isoformat(), "offset_days": clock.offset_days}
+        state = {"start": clock.start.isoformat(), "offset_days": clock.offset_days,
+                 "day_began_at": clock.day_began_at}
         tmp = self._clock_file().with_suffix(".json.tmp")
         tmp.write_text(json.dumps(state), encoding="utf-8")
         tmp.replace(self._clock_file())

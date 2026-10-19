@@ -81,6 +81,20 @@
   /* Thin outlines for fraud and blocked states: the destructive button and the inline fraud alert. */
   --danger-line: rgba(240, 123, 112, 0.4);
   --danger-line-strong: rgba(240, 123, 112, 0.6);
+  /* Morning brief activity feed: teal for "waiting for the owner", tinted rows for waiting and blocked items,
+     amber for insights. */
+  --waiting: #5eead4;
+  --waiting-soft: rgba(45, 212, 191, 0.14);
+  --waiting-line: rgba(45, 212, 191, 0.4);
+  --waiting-fill: #2dd4bf;
+  --waiting-fill-hover: #5eead4;
+  --waiting-contrast: #042f2a;
+  --waiting-row: #15211f;
+  --waiting-row-line: #1f4d43;
+  --danger-row: #1d1517;
+  --danger-row-line: #4a2427;
+  --danger-text: #fca5a5;
+  --insight: #f5c46b;
 
   --chart-1: #02a27d;
   --chart-2: #5e9c98;

@@ -422,8 +422,10 @@ drop scaled by gross margin, and the lowest bad-case balance, so installments ne
 
 ## 14. Audit log
 
-`backend/app/audit/log.py`. One line per entry: `{seq, date, kind, data, prev_hash, hash}`, where `hash` is the
-SHA-256 of the canonical JSON of the entry without `hash`. Editing, inserting, deleting or reordering any line breaks
+`backend/app/audit/log.py`. One line per entry: `{seq, date, time?, kind, data, prev_hash, hash}`, where `hash` is
+the SHA-256 of the canonical JSON of the entry without `hash`. `time` is the simulated time of day (each simulated day
+begins at 07:00 when the clock moves to it); it is hashed like every other field, and entries written without it
+(test clocks, older logs) leave the key out, so their hashes are unchanged. Editing, inserting, deleting or reordering any line breaks
 the chain from that point, and `verify()` reports the first bad sequence number. The file is only opened in append
 mode, and nothing writes to it except `audit.append()`. PII is tokenized before it can reach the log; message bodies
 are logged as hashes.

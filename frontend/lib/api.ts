@@ -5,6 +5,7 @@
  * browser's localStorage and never sent anywhere except the API.
  */
 import type {
+  BriefActivity,
   AdvanceRequest,
   AnchorRequestResult,
   AnchorStatus,
@@ -232,6 +233,7 @@ export const api = {
 
   // Morning Brief
   brief: (id: string) => request<MorningBrief>("GET", `${biz(id)}/brief`),
+  briefActivity: (id: string) => request<BriefActivity>("GET", `${biz(id)}/brief/activity`),
 
   // Inbox (quarantined extractor + sentinel)
   inbox: (id: string) => request<InboxList>("GET", `${biz(id)}/inbox`),

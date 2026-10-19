@@ -46,6 +46,9 @@ const PANEL_ROUTE: Partial<Record<PanelView, string>> = {
 
 const NO_ENTRIES: PanelEntry[] = [];
 
+/** The Morning brief opened as its own tab (the chat message's Expand button). Panels open over it, not as routes. */
+export const BRIEF_ROUTE = "/brief";
+
 export type Msg =
   | { t: "brief" }
   | { t: "owner"; text: string; at: string }
@@ -95,6 +98,10 @@ type AdvisorValue = {
   paymentVersion: number;
   /** Bumped when a payment settles into the ledger: cash, runway and transactions reload on it. */
   ledgerVersion: number;
+  // The Morning brief tab (/brief)
+  briefTab: boolean;
+  openBriefTab: () => void;
+  closeBriefTab: () => void;
 };
 
 const AdvisorContext = createContext<AdvisorValue | null>(null);
@@ -110,6 +117,7 @@ export function AdvisorProvider({ children }: { children: React.ReactNode }) {
 
   // ---- Panels, synced with the route so every skeleton route deep-links to its view.
   const routePanel = ROUTE_PANEL[pathname];
+  const briefTab = pathname === BRIEF_ROUTE;
   const [extra, setExtra] = useState<{ route: string; entries: PanelEntry[]; tab?: TrustTab }>({
     route: pathname,
     entries: [],
@@ -125,7 +133,8 @@ export function AdvisorProvider({ children }: { children: React.ReactNode }) {
 
   const openPanel = useCallback(
     (view: PanelView, opts: Omit<PanelEntry, "view"> = {}) => {
-      const route = PANEL_ROUTE[view];
+      // On the brief tab a view opens over it, so the tab stays where it is.
+      const route = briefTab ? undefined : PANEL_ROUTE[view];
       if (route) {
         setExtra({ route, entries: [], tab: opts.tab });
         if (route !== pathname) router.push(route);
@@ -133,7 +142,7 @@ export function AdvisorProvider({ children }: { children: React.ReactNode }) {
         setExtra({ route: pathname, entries: [{ view, ...opts }], tab: current.tab });
       }
     },
-    [pathname, router, current.tab],
+    [pathname, router, current.tab, briefTab],
   );
   const pushPanel = useCallback(
     (entry: PanelEntry) => setExtra({ route: pathname, entries: [...current.entries, entry], tab: current.tab }),
@@ -254,12 +263,34 @@ export function AdvisorProvider({ children }: { children: React.ReactNode }) {
     setAskRoute(null);
   }
 
-  const setActive = useCallback((id: string) => setActiveState(id), []);
-  const newConversation = useCallback(() => setActiveState(NEW_ID), []);
+  // Picking a conversation leaves the brief tab for the chat.
+  const leaveTab = useCallback(() => {
+    if (briefTab) router.push("/");
+  }, [briefTab, router]);
+  const setActive = useCallback(
+    (id: string) => {
+      setActiveState(id);
+      leaveTab();
+    },
+    [leaveTab],
+  );
+  const newConversation = useCallback(() => {
+    setActiveState(NEW_ID);
+    leaveTab();
+  }, [leaveTab]);
   const goToWaiting = useCallback(() => {
     setActiveState(BRIEF_ID);
     setScrollRequest((n) => n + 1);
-  }, []);
+    leaveTab();
+  }, [leaveTab]);
+  const openBriefTab = useCallback(() => {
+    setExtra({ route: BRIEF_ROUTE, entries: [] });
+    router.push(BRIEF_ROUTE);
+  }, [router]);
+  const closeBriefTab = useCallback(() => {
+    setActiveState(BRIEF_ID);
+    router.push("/");
+  }, [router]);
 
   const conversationsRef = useRef(conversations);
   useEffect(() => {
@@ -367,6 +398,9 @@ export function AdvisorProvider({ children }: { children: React.ReactNode }) {
     goToWaiting,
     paymentVersion,
     ledgerVersion,
+    briefTab,
+    openBriefTab,
+    closeBriefTab,
   };
   return <AdvisorContext.Provider value={value}>{children}</AdvisorContext.Provider>;
 }

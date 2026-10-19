@@ -34,6 +34,7 @@ import type {
 } from "@/lib/types";
 import { useApi } from "@/lib/use-api";
 
+import { followPayment, paymentContext, startPayment } from "./approve";
 import { PanelFrame } from "./detail-panel";
 import { VerifyOnchain } from "./onchain";
 import { useAdvisor } from "./state";
@@ -260,16 +261,6 @@ function ConnectionCard({ status, businessId, reload }: {
         </p>
       ) : null}
     </section>
-  );
-}
-
-function approvalContext(p: PaymentView) {
-  return (
-    <>
-      Pay <strong>{p.payee_name}</strong> {money(p.amount_minor, p.currency)}
-      {p.account_last4 ? ` to the account ending ${p.account_last4} (from your own records)` : ""}. {p.source_label}.
-      Your signature covers the payee, the amount and that account: if any of them changes, it will not be paid.
-    </>
   );
 }
 
@@ -563,7 +554,7 @@ function PaymentDetail({ id, onBack }: { id: string; onBack: () => void }) {
       footer={
         <>
           {p?.status === "awaiting_approval" && p.approval_id ? (
-            <Button iconLeft={PenLine} onClick={() => openApproval({ approvalId: p.approval_id!, context: approvalContext(p) })}>
+            <Button iconLeft={PenLine} onClick={() => openApproval({ approvalId: p.approval_id!, context: paymentContext(p) })}>
               Review and sign
             </Button>
           ) : null}
@@ -696,7 +687,7 @@ function PaymentDetail({ id, onBack }: { id: string; onBack: () => void }) {
 }
 
 export function PaymentsPanel({ openId }: { openId?: string }) {
-  const { pushPanel, popPanel, openApproval, toast, paymentVersion } = useAdvisor();
+  const { pushPanel, popPanel, openApproval, addPending, toast, paymentVersion } = useAdvisor();
   const { id: businessId, key } = useBusinessKey("payments");
   const [status, setStatus] = useState<"" | Status>("");
   const [payee, setPayee] = useState("");
@@ -727,19 +718,14 @@ export function PaymentsPanel({ openId }: { openId?: string }) {
 
   const started = (p: PaymentView) => {
     reload();
-    if (p.status === "awaiting_approval" && p.approval_id) {
-      openApproval({ approvalId: p.approval_id, context: approvalContext(p) });
-    } else if (p.status === "sent") {
-      toast({ variant: "success", title: `Sent: ${p.payee_name}`, description: "Within your signed limit. Settling now." });
-    } else if (p.status === "failed" || p.status === "denied") {
-      toast({ variant: "danger", title: `Not paid: ${p.payee_name}`, description: p.rule ? ruleLabel(p.rule) : undefined });
-    }
+    followPayment(p, { openApproval, addPending, toast });
   };
 
   const pay = async (s: SuggestedPayment) => {
     setPaying(s.key);
     try {
-      started(await api.createPayment(businessId, { source: s.key }));
+      await startPayment(businessId, s.key, { openApproval, addPending, toast });
+      reload();
     } catch (e) {
       toast({ variant: "danger", title: "Could not prepare the payment", description: errorMessage(e) });
     } finally {

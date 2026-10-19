@@ -17,7 +17,7 @@ import { useAdvisor } from "./state";
 const num = (v: unknown) => (typeof v === "number" ? v : 0);
 
 /** The 30-day expected balance as a sparkline. Plotted from Fact values; the labels around it are Facts. */
-function Sparkline({ forecast, w = 252, h = 64 }: { forecast: ForecastResponse; w?: number; h?: number }) {
+export function Sparkline({ forecast, w = 252, h = 64 }: { forecast: ForecastResponse; w?: number; h?: number }) {
   const days = forecast.daily.slice(0, 30).map((d) => num(d.expected.value));
   if (days.length < 2) return null;
   const max = Math.max(...days, 1);
