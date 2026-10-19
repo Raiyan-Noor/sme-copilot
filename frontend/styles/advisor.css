@@ -616,10 +616,14 @@ a{color:var(--brand-primary)}a:hover{color:var(--brand-primary-hover)}
 .ka-mailform input:focus-visible,.ka-mailform textarea:focus-visible,.ka-mailform select:focus-visible{outline:2px solid var(--focus-ring);outline-offset:1px}
 
 /* ---- Morning brief tab (/brief): the brief's figures on the left, the overnight run's audit entries on the right. */
-.ka-briefname{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%}
-.ka-briefname__open{width:28px;height:28px;margin:-6px -6px -6px 0}
-.ka-briefname__open:hover{background:var(--surface-raised);color:var(--text)}
-.ka-bt{max-width:1180px;margin:0 auto;padding:28px 32px 48px;display:flex;flex-direction:column;gap:20px}
+.ka-briefcard{box-shadow:inset 0 0 0 1px var(--border)}
+.ka-briefcard .kc-card__head{align-items:center}
+.ka-briefcard .kc-card__eyebrow > span{display:inline-flex;align-items:center;gap:6px}
+.ka-bd{position:fixed;inset:0;z-index:35;display:flex;align-items:center;justify-content:center;padding:24px}
+.ka-bd__scrim{position:absolute;inset:0;background:var(--overlay-scrim);animation:kc-fade var(--duration-base) var(--ease-standard)}
+.ka-bd__panel{position:relative;width:min(1180px,100%);max-height:calc(100vh - 48px);overflow-y:auto;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-large);box-shadow:var(--shadow-floating);animation:kc-fade .2s ease-out}
+.ka-app.is-briefing .ka-panel{z-index:45}
+.ka-bt{padding:24px 28px 28px;display:flex;flex-direction:column;gap:20px}
 .ka-bt__head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .ka-bt__title{font-size:var(--type-page-title-size);line-height:var(--type-page-title-line);font-weight:var(--type-page-title-weight);letter-spacing:var(--type-page-title-tracking);color:var(--text);margin:0}
 .ka-bt__title .m{font-size:15px;line-height:22px;color:var(--text-muted);letter-spacing:0}
@@ -632,7 +636,8 @@ a{color:var(--brand-primary)}a:hover{color:var(--brand-primary-hover)}
 .ka-bt__tile{display:flex;flex-direction:column;gap:8px;padding:14px 16px;background:var(--surface-raised);border:1px solid var(--border);border-radius:var(--radius-medium);min-width:0}
 .ka-bt__tile .v{font-size:22px;line-height:28px;font-weight:300;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ka-bt__spark{gap:10px}
-.ka-bt__sparklink{all:unset;display:inline-flex;align-items:center;gap:4px;cursor:pointer;border-radius:var(--radius-small)}
+.ka-bt__sparklink{all:unset;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;cursor:pointer;border-radius:var(--radius-small)}
+.ka-bt__spark .ka-spark__row > .kc-caption{white-space:nowrap}
 .ka-bt__sparklink:hover{color:var(--text)}
 .ka-bt__sparklink:focus-visible{outline:2px solid var(--focus-ring);outline-offset:2px}
 .ka-bt__audit{margin-top:auto;padding-top:8px}
@@ -670,7 +675,9 @@ a{color:var(--brand-primary)}a:hover{color:var(--brand-primary-hover)}
 @media (prefers-reduced-motion:reduce){.ka-bt__live{animation:none}}
 @media (max-width:1100px){.ka-bt__card{grid-template-columns:minmax(0,1fr)}.ka-bt__left{border-right:0;border-bottom:1px solid var(--border)}}
 @media (max-width:760px){
-  .ka-bt{padding:16px 16px 40px}
+  .ka-bd{padding:0}
+  .ka-bd__panel{max-height:100vh;height:100%;border-radius:0;border:0}
+  .ka-bt{padding:16px}
   .ka-bt__row{grid-template-columns:40px 34px minmax(0,1fr)}
   .ka-bt__status{grid-column:3;flex-wrap:nowrap}
   .ka-bt__text .d{white-space:normal}

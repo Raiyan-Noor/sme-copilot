@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  ArrowLeft,
   ArrowUpRight,
   Banknote,
   Calculator,
@@ -15,6 +14,7 @@ import {
   ShieldAlert,
   Sparkles,
   TrendingUp,
+  X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -272,12 +272,12 @@ function Summary({ feed, waitingCount }: { feed: BriefActivity; waitingCount: nu
 }
 
 /**
- * The Morning brief as its own tab (/brief): the same brief's numbers on the left, and on the right what the
- * overnight run did, read back from the audit log (GET /brief/activity). Every time shown is an audit entry's time.
- * The chat message stays as it is; this is an addition opened from its Expand button.
+ * The Morning brief, expanded: a wide dialog over the conversation (deep link /brief), opened from the brief card in
+ * the chat. The brief's numbers on the left; on the right what the overnight run did, read back from the audit log
+ * (GET /brief/activity). Every time shown is an audit entry's time. Panels and the approval sheet open above it.
  */
-export function BriefTab() {
-  const { closeBriefTab, resolved, paymentVersion, ledgerVersion, addPending } = useAdvisor();
+export function BriefDialog() {
+  const { closeBriefTab, resolved, paymentVersion, ledgerVersion, addPending, approval, stack } = useAdvisor();
   const { id, key } = useBusinessKey("brief-tab");
   const [nonce, setNonce] = useState(0);
   const settled = Object.keys(resolved).length;
@@ -294,6 +294,16 @@ export function BriefTab() {
     return () => window.clearInterval(t);
   }, []);
 
+  // Esc closes the dialog, unless the approval sheet or a panel above it takes the key first.
+  const covered = !!approval || stack.length > 0;
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !covered) closeBriefTab();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [covered, closeBriefTab]);
+
   useEffect(() => {
     if (feed) addPending(feed.rows.flatMap((r) => r.approval_ids ?? []));
   }, [feed, addPending]);
@@ -306,8 +316,9 @@ export function BriefTab() {
   const owner = feed?.owner_first_name || "you";
 
   return (
-    <div className="ka-scroll">
-      <div className="ka-bt">
+    <div className="ka-bd">
+      <div className="ka-bd__scrim" onClick={closeBriefTab} aria-hidden />
+      <div className="ka-bd__panel ka-bt" role="dialog" aria-modal="true" aria-label="Morning brief">
         <header className="ka-bt__head">
           <h1 className="ka-bt__title">
             Morning brief
@@ -319,9 +330,9 @@ export function BriefTab() {
               </span>
             ) : null}
           </h1>
-          <Button variant="ghost" size="sm" iconLeft={ArrowLeft} onClick={closeBriefTab}>
-            Back to chat
-          </Button>
+          <button type="button" className="ka-ibtn" aria-label="Close" title="Close" onClick={closeBriefTab}>
+            <X size={20} strokeWidth={1.5} />
+          </button>
         </header>
 
         {missing ? (

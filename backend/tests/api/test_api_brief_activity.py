@@ -87,7 +87,7 @@ def test_approve_in_the_tab_uses_the_same_approval_handler_as_the_outbox(env):
 
     # Frontend: the tab's Approve opens the Outbox's approval sheet (or the Outbox itself for a group) and the
     # Payments flow; only the approval sheet ever submits an approval's signature.
-    tab = (FRONTEND / "components/advisor/brief-tab.tsx").read_text(encoding="utf-8")
+    tab = (FRONTEND / "components/advisor/brief-dialog.tsx").read_text(encoding="utf-8")
     outbox = (FRONTEND / "components/advisor/panel-outbox.tsx").read_text(encoding="utf-8")
     payments = (FRONTEND / "components/advisor/panel-payments.tsx").read_text(encoding="utf-8")
     assert "openApproval({ approvalId" in tab and "openApproval({ approvalId" in outbox

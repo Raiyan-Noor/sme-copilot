@@ -1,6 +1,15 @@
 "use client";
 
-import { Ban, ChevronRight, CircleCheck, CircleSlash, FastForward, Maximize2, MessageSquare } from "lucide-react";
+import {
+  Ban,
+  ChevronRight,
+  CircleCheck,
+  CircleSlash,
+  FastForward,
+  Maximize2,
+  MessageSquare,
+  Newspaper,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { useBusinessKey } from "@/components/business-context";
@@ -123,23 +132,13 @@ function Brief({ brief, held }: { brief: MorningBrief; held: InboxItem[] }) {
     <ChatBubble
       role="copilot"
       name={
-        <span className="ka-briefname">
-          <span>
-            Morning brief · <FactNumber fact={brief.as_of} />
-          </span>
-          <button
-            type="button"
-            className="ka-ibtn ka-briefname__open"
-            aria-label="Open brief in tab"
-            title="Open brief in tab"
-            onClick={openBriefTab}
-          >
-            <Maximize2 size={16} strokeWidth={1.5} aria-hidden />
-          </button>
-        </span>
+        <>
+          Morning brief · <FactNumber fact={brief.as_of} />
+        </>
       }
       attachment={
         <div className="ka-attach" ref={anchor} style={{ scrollMarginTop: 24 }}>
+          <BriefCard brief={brief} held={held.length} onOpen={openBriefTab} />
           {held.map((item) => (
             <HeldAlert key={item.record.email_id} item={item} />
           ))}
@@ -159,6 +158,33 @@ function Brief({ brief, held }: { brief: MorningBrief; held: InboxItem[] }) {
         </span>
       ))}
     </ChatBubble>
+  );
+}
+
+/** The brief as a card in the conversation; its button expands the full brief and the overnight activity feed. */
+function BriefCard({ brief, held, onOpen }: { brief: MorningBrief; held: number; onOpen: () => void }) {
+  const toSign = brief.needs_you.length;
+  const parts = [
+    toSign ? `${toSign} waiting for your signature` : "nothing waiting for your signature",
+    held ? `${held} held as possible fraud` : null,
+  ].filter(Boolean);
+  return (
+    <Card
+      padding="sm"
+      className="ka-briefcard"
+      eyebrow={
+        <>
+          <Newspaper size={16} strokeWidth={1.5} aria-hidden /> Morning brief
+        </>
+      }
+      title="What I did overnight"
+      description={`Every step from the audit log, with its time: ${parts.join(", ")}.`}
+      action={
+        <Button variant="secondary" size="sm" iconLeft={Maximize2} onClick={onOpen} aria-label="Open the full morning brief">
+          Open brief
+        </Button>
+      }
+    />
   );
 }
 
