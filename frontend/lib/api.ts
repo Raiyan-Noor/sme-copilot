@@ -63,6 +63,7 @@ import type {
   StandingMandateDraftRequest,
   StandingMandateRequest,
   TransactionPage,
+  TransactionRow,
 } from "@/lib/types";
 
 export const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000").replace(/\/+$/, "");
@@ -99,6 +100,18 @@ export class ApiError extends Error {
 }
 
 type Query = Record<string, string | number | undefined | null>;
+
+export type TransactionQuery = {
+  date_from?: string;
+  date_to?: string;
+  category?: string;
+  account_id?: string;
+  search?: string;
+  direction?: "in" | "out";
+  order?: "asc" | "desc";
+  offset?: number;
+  limit?: number;
+};
 
 function authHeaders(): Record<string, string> {
   return { [PASSCODE_HEADER]: getPasscode() || memoryPasscode };
@@ -166,18 +179,19 @@ export const api = {
   deleteBusiness: (id: string) => request<ResetResult>("DELETE", biz(id)),
 
   // Ledger
-  transactions: (
-    id: string,
-    q: {
-      date_from?: string;
-      date_to?: string;
-      category?: string;
-      account_id?: string;
-      order?: "asc" | "desc";
-      offset?: number;
-      limit?: number;
-    } = {},
-  ) => request<TransactionPage>("GET", `${biz(id)}/transactions`, { query: q }),
+  transactions: (id: string, q: TransactionQuery = {}) =>
+    request<TransactionPage>("GET", `${biz(id)}/transactions`, { query: q }),
+  transaction: (id: string, rowId: string) =>
+    request<TransactionRow>("GET", `${biz(id)}/transactions/${enc(rowId)}`),
+  exportTransactions: async (id: string, q: TransactionQuery = {}): Promise<Blob> => {
+    const url = new URL(API_URL + `${biz(id)}/transactions/export`);
+    for (const [k, v] of Object.entries(q)) {
+      if (v !== undefined && v !== null && v !== "") url.searchParams.set(k, String(v));
+    }
+    const res = await fetch(url, { headers: authHeaders(), cache: "no-store" });
+    if (!res.ok) throw new ApiError(res.status, res.statusText);
+    return res.blob();
+  },
   uploadStatement: (id: string, form: FormData) =>
     request<IngestReport>("POST", `${biz(id)}/statements`, { body: form }),
 
@@ -247,23 +261,7 @@ export const api = {
   advanceClock: (body: AdvanceRequest) => request<AdvanceResult>("POST", "/clock/advance", { body }),
 };
 
-/**
- * Ask the planner and read its turn as server-sent events (POST, so not EventSource). Yields each event as the
- * backend emits it: conversation, tool_call, action, error, reply, then done. The reply arrives whole, after the
- * Numeric Firewall; it is never streamed token by token.
- */
-export async function* chatStream(
-  businessId: string,
-  body: AskRequest,
-  signal?: AbortSignal,
-): AsyncGenerator<{ event: string; data: unknown }> {
-  const res = await fetch(`${API_URL}${biz(businessId)}/agent/chat`, {
-    method: "POST",
-    headers: { ...authHeaders(), "Content-Type": "application/json", Accept: "text/event-stream" },
-    body: JSON.stringify(body),
-    cache: "no-store",
-    signal,
-  });
+async function* sseFrames(res: Response): AsyncGenerator<{ event: string; data: unknown }> {
   if (!res.ok || !res.body) {
     const text = await res.text();
     let detail: unknown = res.statusText;
@@ -293,4 +291,41 @@ export async function* chatStream(
       if (data.length) yield { event, data: JSON.parse(data.join("\n")) };
     }
   }
+}
+
+/**
+ * Ask the planner and read its turn as server-sent events (POST, so not EventSource). Yields each event as the
+ * backend emits it: conversation, tool_call, action, error, reply, then done. The reply arrives whole, after the
+ * Numeric Firewall; it is never streamed token by token.
+ */
+export async function* chatStream(
+  businessId: string,
+  body: AskRequest,
+  signal?: AbortSignal,
+): AsyncGenerator<{ event: string; data: unknown }> {
+  const res = await fetch(`${API_URL}${biz(businessId)}/agent/chat`, {
+    method: "POST",
+    headers: { ...authHeaders(), "Content-Type": "application/json", Accept: "text/event-stream" },
+    body: JSON.stringify(body),
+    cache: "no-store",
+    signal,
+  });
+  yield* sseFrames(res);
+}
+
+/**
+ * New ledger rows as they're ingested, polled server-side from the same ledger version the engine caches on
+ * (GET, so a plain fetch-and-read works like EventSource would, but with the passcode header EventSource can't
+ * send). Yields `transaction` (one new row) and `balance` (the new running total) events.
+ */
+export async function* transactionStream(
+  businessId: string,
+  signal?: AbortSignal,
+): AsyncGenerator<{ event: string; data: unknown }> {
+  const res = await fetch(`${API_URL}${biz(businessId)}/transactions/stream`, {
+    headers: { ...authHeaders(), Accept: "text/event-stream" },
+    cache: "no-store",
+    signal,
+  });
+  yield* sseFrames(res);
 }

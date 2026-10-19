@@ -13,19 +13,21 @@ import type { ActionEvent, Decision, ReplyEvent, StageEvent } from "@/lib/types"
 
 import type { Stage } from "./stage-line";
 
-export type PanelView = "cash" | "financing" | "inbox" | "trust" | "email" | "trace";
+export type PanelView = "cash" | "financing" | "inbox" | "trust" | "email" | "trace" | "transactions";
 export type TrustTab = "limits" | "audit" | "anchors" | "redteam";
-export type PanelEntry = { view: PanelView; tab?: TrustTab; emailId?: string; fact?: FactRef };
+export type PanelEntry = { view: PanelView; tab?: TrustTab; emailId?: string; fact?: FactRef; txId?: string };
 
 /** The routes from the skeleton, each opening the matching view of the one conversation-first screen. */
 const ROUTE_PANEL: Record<string, PanelView> = {
   "/cash-flow": "cash",
+  "/transactions": "transactions",
   "/financing": "financing",
   "/inbox": "inbox",
   "/trust": "trust",
 };
 const PANEL_ROUTE: Partial<Record<PanelView, string>> = {
   cash: "/cash-flow",
+  transactions: "/transactions",
   financing: "/financing",
   inbox: "/inbox",
   trust: "/trust",

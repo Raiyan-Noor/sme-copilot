@@ -309,6 +309,45 @@
             }
           },
           {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Matches description or counterparty",
+              "title": "Search"
+            },
+            "description": "Matches description or counterparty"
+          },
+          {
+            "name": "direction",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "in",
+                    "out"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Direction"
+            }
+          },
+          {
             "name": "order",
             "in": "query",
             "required": false,
@@ -353,6 +392,262 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TransactionPage"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/transactions/export": {
+      "get": {
+        "tags": [
+          "ledger"
+        ],
+        "summary": "Export Transactions",
+        "description": "The current filtered view as CSV, exactly as shown (no re-fetch needed to match what the owner sees).",
+        "operationId": "export_transactions",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          },
+          {
+            "name": "date_from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date From"
+            }
+          },
+          {
+            "name": "date_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date To"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Category"
+            }
+          },
+          {
+            "name": "account_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Account Id"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Search"
+            }
+          },
+          {
+            "name": "direction",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "in",
+                    "out"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Direction"
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "type": "string",
+              "default": "desc",
+              "title": "Order"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The filtered view as CSV",
+            "content": {
+              "text/csv": {}
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/transactions/stream": {
+      "get": {
+        "tags": [
+          "ledger"
+        ],
+        "summary": "Stream Transactions",
+        "description": "Poll the ledger's version (already the engine's fact-cache key) and push any newly inserted rows.\n\nNo new write path or broadcaster: a new row only ever arrives through the existing ingest/execution code, which\nbumps `ledger_version`. Polling keeps this endpoint simple and side-effect free if nobody is listening.",
+        "operationId": "stream_transactions",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Server-sent events: a `transaction` event per new row since the connection opened, from a statement import or (once built) a settled payment.",
+            "content": {
+              "text/event-stream": {}
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/transactions/{row_id}": {
+      "get": {
+        "tags": [
+          "ledger"
+        ],
+        "summary": "Get Transaction",
+        "description": "One row, for the detail drawer. 404 if no such row (e.g. a stale link into a different business).",
+        "operationId": "get_transaction",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          },
+          {
+            "name": "row_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Row Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionRow"
                 }
               }
             }
@@ -9487,7 +9782,43 @@
         ],
         "title": "ToolCallEvent"
       },
-      "Transaction": {
+      "TransactionPage": {
+        "properties": {
+          "pack_ref": {
+            "type": "string",
+            "title": "Pack Ref"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/TransactionRow"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "pack_ref",
+          "total",
+          "offset",
+          "limit",
+          "items"
+        ],
+        "title": "TransactionPage"
+      },
+      "TransactionRow": {
         "properties": {
           "id": {
             "type": "string",
@@ -9580,6 +9911,10 @@
             ],
             "title": "Balance Minor"
           },
+          "running_balance_minor": {
+            "type": "integer",
+            "title": "Running Balance Minor"
+          },
           "import_id": {
             "type": "string",
             "title": "Import Id"
@@ -9587,6 +9922,18 @@
           "source_line": {
             "type": "integer",
             "title": "Source Line"
+          },
+          "source": {
+            "type": "string",
+            "const": "import",
+            "title": "Source",
+            "default": "import"
+          },
+          "status": {
+            "type": "string",
+            "const": "settled",
+            "title": "Status",
+            "default": "settled"
           }
         },
         "type": "object",
@@ -9597,46 +9944,12 @@
           "amount_minor",
           "currency",
           "description",
+          "running_balance_minor",
           "import_id",
           "source_line"
         ],
-        "title": "Transaction"
-      },
-      "TransactionPage": {
-        "properties": {
-          "pack_ref": {
-            "type": "string",
-            "title": "Pack Ref"
-          },
-          "total": {
-            "type": "integer",
-            "title": "Total"
-          },
-          "offset": {
-            "type": "integer",
-            "title": "Offset"
-          },
-          "limit": {
-            "type": "integer",
-            "title": "Limit"
-          },
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/Transaction"
-            },
-            "type": "array",
-            "title": "Items"
-          }
-        },
-        "type": "object",
-        "required": [
-          "pack_ref",
-          "total",
-          "offset",
-          "limit",
-          "items"
-        ],
-        "title": "TransactionPage"
+        "title": "TransactionRow",
+        "description": "A ledger row as shown to the owner: the raw row plus what the tab needs that the row alone doesn't carry."
       },
       "Untrusted_date_": {
         "properties": {

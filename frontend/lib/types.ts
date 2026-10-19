@@ -1213,7 +1213,16 @@ export interface ToolCallEvent {
   fact_ids?: string[];
 }
 
-export interface Transaction {
+export interface TransactionPage {
+  pack_ref: string;
+  total: number;
+  offset: number;
+  limit: number;
+  items: TransactionRow[];
+}
+
+/** A ledger row as shown to the owner: the raw row plus what the tab needs that the row alone doesn't carry. */
+export interface TransactionRow {
   id: string;
   account_id: string;
   posted_on: string;
@@ -1226,16 +1235,11 @@ export interface Transaction {
   channel?: string | null;
   category?: string | null;
   balance_minor?: number | null;
+  running_balance_minor: number;
   import_id: string;
   source_line: number;
-}
-
-export interface TransactionPage {
-  pack_ref: string;
-  total: number;
-  offset: number;
-  limit: number;
-  items: Transaction[];
+  source?: "import";
+  status?: "settled";
 }
 
 export interface Untrusted_date_ {

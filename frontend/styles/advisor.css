@@ -243,6 +243,8 @@ a:hover{color:var(--brand-primary-hover)}
 .kc-trace--total{border-bottom:0;border-top:1px solid var(--border-strong);margin-top:-1px;padding-top:16px}
 .kc-trace--total .kc-trace__label{font-weight:500;font-size:15px}
 .kc-trace--total .kc-trace__value{font-weight:300;font-size:22px;line-height:28px}
+.kc-trace--click{width:100%;text-align:left;background:none;border-width:0 0 1px;border-style:dashed;cursor:pointer;border-radius:8px;font-family:inherit}
+.kc-trace--click:hover{background:var(--surface-raised)}
 
 /* == chat-bubble (design/components/chat-bubble/chat-bubble.css) */
 .kc-chat{display:flex;gap:14px;align-items:flex-start;max-width:100%}
@@ -475,6 +477,16 @@ a{color:var(--brand-primary)}a:hover{color:var(--brand-primary-hover)}
 .ka-mail__hdr dd{margin:0;overflow-wrap:anywhere}
 .ka-mail p{margin:0}
 .ka-flag{background:var(--danger-soft);border-radius:3px;padding:0 2px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.ka-tx-filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.ka-tx-filters input,.ka-tx-filters select{height:36px;padding:0 10px;border-radius:var(--radius-small);border:1px solid var(--border);background:var(--surface-raised);color:var(--text);font:inherit;font-size:13px;min-width:0}
+.ka-tx-filters input::placeholder{color:var(--text-muted)}
+.ka-tx-filters input:focus,.ka-tx-filters select:focus{outline:2px solid var(--focus-ring);outline-offset:1px}
+.ka-tx-search{flex:1;min-width:160px}
+@keyframes ka-tx-new{from{background:var(--brand-primary-soft)}to{background:transparent}}
+.kc-table__row--new{animation:ka-tx-new 2.4s ease-out}
+.ka-tx-detail{display:grid;grid-template-columns:120px minmax(0,1fr);gap:8px 12px;font-size:14px;line-height:20px}
+.ka-tx-detail dt{color:var(--text-muted)}
+.ka-tx-detail dd{margin:0;overflow-wrap:anywhere}
 .ka-flag sup,.ka-flagn{font-size:10px;font-weight:600;color:var(--danger);margin-left:2px}
 .ka-flags{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
 .ka-flags li{display:grid;grid-template-columns:20px minmax(0,1fr);gap:2px 8px;padding:12px 0;border-top:1px solid var(--border)}

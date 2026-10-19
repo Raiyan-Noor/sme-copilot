@@ -122,6 +122,7 @@ export function Table<R>({
   rows,
   rowKey,
   onRowClick,
+  rowClassName,
   density = "regular",
   empty = "Nothing here yet.",
 }: {
@@ -129,6 +130,7 @@ export function Table<R>({
   rows: R[];
   rowKey: (row: R) => string;
   onRowClick?: (row: R) => void;
+  rowClassName?: (row: R) => string | undefined;
   density?: "regular" | "compact";
   empty?: React.ReactNode;
 }) {
@@ -156,7 +158,7 @@ export function Table<R>({
               <tr
                 key={rowKey(r)}
                 onClick={onRowClick ? () => onRowClick(r) : undefined}
-                className={onRowClick ? "kc-table__row--click" : undefined}
+                className={cn(onRowClick && "kc-table__row--click", rowClassName?.(r))}
               >
                 {columns.map((c) => (
                   <td
@@ -284,21 +286,28 @@ export function TraceStep({
   source,
   op,
   emphasis = false,
+  onClick,
 }: {
   label: React.ReactNode;
   value: React.ReactNode;
   source?: React.ReactNode;
   op?: string;
   emphasis?: boolean;
+  onClick?: () => void;
 }) {
+  const Tag = onClick ? "button" : "div";
   return (
-    <div className={cn("kc-trace", emphasis && "kc-trace--total")}>
+    <Tag
+      type={onClick ? "button" : undefined}
+      className={cn("kc-trace", emphasis && "kc-trace--total", onClick && "kc-trace--click")}
+      onClick={onClick}
+    >
       <span className="kc-trace__op">{op ?? ""}</span>
       <div className="kc-trace__main">
         <div className="kc-trace__label">{label}</div>
         {source ? <div className="kc-trace__source">{source}</div> : null}
       </div>
       <span className="kc-trace__value">{value}</span>
-    </div>
+    </Tag>
   );
 }

@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { CashPanel } from "./panel-cash";
 import { FinancingPanel } from "./panel-financing";
 import { EmailPanel, InboxPanel } from "./panel-inbox";
+import { TransactionsPanel } from "./panel-transactions";
 import { TrustPanel } from "./panel-trust";
 import { useAdvisor, type PanelEntry } from "./state";
 import { TraceView } from "./trace-view";
@@ -95,10 +96,13 @@ function View({ entry }: { entry: PanelEntry }) {
       return <TrustPanel tab={entry.tab ?? "limits"} />;
     case "trace":
       return <TracePanel entry={entry} />;
+    case "transactions":
+      return <TransactionsPanel openId={entry.txId} />;
   }
 }
 
-const entryKey = (e: PanelEntry) => `${e.view}:${e.tab ?? ""}:${e.emailId ?? ""}:${e.fact?.id ?? ""}`;
+const entryKey = (e: PanelEntry) =>
+  `${e.view}:${e.tab ?? ""}:${e.emailId ?? ""}:${e.fact?.id ?? ""}:${e.txId ?? ""}`;
 
 /** The detail panel: one view at a time, sliding in over the rail; drill-downs stack with a back button. */
 export function DetailPanel({ wide }: { wide: boolean }) {
@@ -114,7 +118,7 @@ export function DetailPanel({ wide }: { wide: boolean }) {
       style={{ "--panel-w": wide ? "760px" : "560px" } as React.CSSProperties}
       aria-hidden={!open}
     >
-      {shown ? <View key={`${shown.view}:${shown.emailId ?? ""}:${shown.fact?.id ?? ""}`} entry={shown} /> : null}
+      {shown ? <View key={entryKey(shown)} entry={shown} /> : null}
     </aside>
   );
 }

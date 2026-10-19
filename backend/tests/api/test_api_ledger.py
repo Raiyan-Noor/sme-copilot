@@ -1,7 +1,9 @@
 """Ledger transactions and statement upload: all-or-nothing, idempotent, PII tokenized, every upload logged."""
 
+import asyncio
 import sqlite3
 
+from app.api.ledger import _transaction_events
 from tests.api.conftest import MAYA
 
 STATEMENT = (
@@ -81,3 +83,76 @@ def test_upload_limits(api):
     assert _upload(api, STATEMENT, account_number="").status_code == 422
     huge = "date,description,amount\n" + "2026-10-18,X,1.00\n" * 400_000
     assert _upload(api, huge).status_code == 413
+
+
+def test_transaction_rows_carry_running_balance_source_and_status(read_api):
+    asc = read_api.get(f"/businesses/{MAYA}/transactions", params={"order": "asc", "limit": 500}).json()["items"]
+    running = 0
+    for row in asc:
+        running += row["amount_minor"]
+        assert row["running_balance_minor"] == running
+        assert row["source"] == "import"
+        assert row["status"] == "settled"
+
+
+def test_transaction_search_and_direction_filters(read_api):
+    rent = read_api.get(f"/businesses/{MAYA}/transactions", params={"search": "rent", "limit": 500}).json()
+    assert rent["total"] > 0
+    assert all("rent" in (t["description"] + (t["counterparty"] or "")).lower() for t in rent["items"])
+
+    money_in = read_api.get(f"/businesses/{MAYA}/transactions", params={"direction": "in", "limit": 500}).json()
+    assert money_in["total"] > 0 and all(t["amount_minor"] >= 0 for t in money_in["items"])
+    money_out = read_api.get(f"/businesses/{MAYA}/transactions", params={"direction": "out", "limit": 500}).json()
+    assert money_out["total"] > 0 and all(t["amount_minor"] < 0 for t in money_out["items"])
+    everything = read_api.get(f"/businesses/{MAYA}/transactions", params={"limit": 500}).json()
+    assert money_in["total"] + money_out["total"] == everything["total"]
+
+
+def test_get_one_transaction_and_404(read_api):
+    first = read_api.get(f"/businesses/{MAYA}/transactions", params={"limit": 1}).json()["items"][0]
+    row = read_api.get(f"/businesses/{MAYA}/transactions/{first['id']}").json()
+    assert row["id"] == first["id"] and row["running_balance_minor"] == first["running_balance_minor"]
+    assert read_api.get(f"/businesses/{MAYA}/transactions/no-such-row").status_code == 404
+
+
+def test_transactions_csv_export_matches_filtered_view(read_api):
+    page = read_api.get(f"/businesses/{MAYA}/transactions",
+                        params={"category": "rent", "order": "asc", "limit": 500}).json()
+    r = read_api.get(f"/businesses/{MAYA}/transactions/export", params={"category": "rent", "order": "asc"})
+    assert r.status_code == 200
+    assert r.headers["content-type"].startswith("text/csv")
+    lines = r.text.strip().splitlines()
+    assert len(lines) - 1 == len(page["items"])  # header + one row per transaction
+    assert lines[0].split(",")[0] == "posted_on"
+
+
+class _FakeRequest:
+    """A test client buffers a StreamingResponse to completion before returning it, which can never happen for an
+    endpoint that polls forever. Drive the generator directly instead, with a stand-in for FastAPI's `Request`."""
+
+    async def is_disconnected(self) -> bool:
+        return False
+
+
+def test_transactions_stream_sends_a_new_row_on_upload(api):
+    rt = api.app.state.runtime
+
+    async def run() -> list[str]:
+        frames: list[str] = []
+
+        async def consume() -> None:
+            async for frame in _transaction_events(rt, MAYA, _FakeRequest(), poll_seconds=0.05):
+                frames.append(frame)
+                if frame.startswith("event: balance"):  # always the last frame of a batch
+                    return
+
+        async def upload_soon() -> None:
+            await asyncio.sleep(0.1)
+            await asyncio.to_thread(_upload, api, STATEMENT)
+
+        await asyncio.wait_for(asyncio.gather(consume(), upload_soon()), timeout=5)
+        return frames
+
+    frames = asyncio.run(run())
+    assert any(f.startswith("event: transaction") for f in frames)
+    assert any(f.startswith("event: balance") for f in frames)

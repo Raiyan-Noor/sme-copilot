@@ -10,11 +10,14 @@ import { factLabel, money, shortDate } from "@/lib/format";
 import type { FactTrace } from "@/lib/types";
 import { useApi } from "@/lib/use-api";
 
+import { useAdvisor } from "./state";
+
 /**
  * "Where this number comes from": the fact, the facts it was computed from (each one opens its own trace) and the
  * ledger rows behind it, straight from GET /facts/{id}/explain. Nothing here recomputes a figure.
  */
 export function TraceView({ fact }: { fact: FactRef }) {
+  const { pushPanel } = useAdvisor();
   const { business, session } = useBusiness();
   const id = business?.id;
   const trace = useApi<FactTrace>(id ? `trace:${session}:${id}:${fact.id}` : null, () =>
@@ -57,6 +60,7 @@ export function TraceView({ fact }: { fact: FactRef }) {
               label={r.text || r.category || r.kind}
               source={[shortDate(r.date), r.category, r.id].filter(Boolean).join(" · ")}
               value={r.amount_minor !== null && r.amount_minor !== undefined ? money(r.amount_minor, r.currency) : ""}
+              onClick={r.kind === "transaction" ? () => pushPanel({ view: "transactions", txId: r.id }) : undefined}
             />
           ))}
           <TraceStep emphasis label="This figure" value={fact.display} />
