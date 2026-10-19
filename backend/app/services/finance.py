@@ -36,10 +36,11 @@ from app.packs.answers import effective_pack
 from app.packs.benchmarks import Benchmark, benchmark, compute_kpis
 from app.packs.leaks import find_leaks
 from app.packs.ledger_view import categorize_snapshot
-from app.packs.loader import load_pack
 from app.packs.registry import Finding
 from app.packs.schema import Pack
-from app.services.businesses import BusinessInfo, advisor_answers, business_info, records_folder
+from app.services.businesses import (
+    BusinessInfo, advisor_answers, business_info, business_pack, records_folder,
+)
 from app.services.financing import FinancingResult, financing_facts
 
 
@@ -89,7 +90,7 @@ def records_version(conn: sqlite3.Connection, seed_dir: Path) -> tuple:
 
 def load_inputs(conn: sqlite3.Connection, seed_dir: Path, holiday_calendar: Path) -> BusinessInputs:
     info = business_info(conn)
-    pack, owner_facts = effective_pack(load_pack(info.pack_id), advisor_answers(conn))
+    pack, owner_facts = effective_pack(business_pack(conn), advisor_answers(conn))
     calendar = yaml.safe_load(holiday_calendar.read_text(encoding="utf-8"))["holidays"]
     products: tuple[Product, ...] = ()
     sale_lines: tuple[SaleLine, ...] = ()

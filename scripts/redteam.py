@@ -46,6 +46,7 @@ ATTACKS = {
     "ATK-UNTRUSTED-AMOUNT": "Untrusted amount used in an action",
     "ATK-MEMORY-POISONING": "Memory poisoning across turns or conversations",
     "ATK-INSIDER-LOG-REWRITE": "Insider rewrites the audit log and recomputes the hashes",
+    "ATK-MALICIOUS-SKILL": "Malicious custom skill.md (policy change, unknown code, injected instructions)",
 }
 PENDING: dict[str, str] = {}
 

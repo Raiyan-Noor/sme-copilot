@@ -1,4 +1,4 @@
-"""Pydantic schema for a Skill Pack file (`packs/<id>.yaml`). This module is the pack format.
+"""Pydantic schema for a Skill Pack: the YAML frontmatter of a skill.md file (packs/skill.py, docs/skills/FORMAT.md).
 
 A pack is trusted, versioned config for one kind of business. On the same ledger it changes:
 

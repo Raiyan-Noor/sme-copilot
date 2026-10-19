@@ -25,6 +25,8 @@ from app.ledger.ingest import ingest_statement
 from app.ledger.scheduled import load_scheduled_csv
 from app.ledger.schema import create_tenant, get_meta, open_tenant, tenant_path
 from app.packs.loader import load_pack
+from app.packs.schema import Pack
+from app.packs.skill import PackError, Skill, parse_cached
 
 META_NAME = "business_name"
 META_PACK = "pack_id"
@@ -33,6 +35,8 @@ META_SEED = "seed_source"
 META_ONBOARDED = "onboarded"
 META_ANSWERS = "advisor_answers"  # JSON {question id: value or null}, from onboarding
 META_INBOX = "inbox_connection"  # sandbox | gmail
+META_SKILL = "custom_skill_sha256"  # set when the business runs an uploaded skill (services/skills.py)
+SKILL_FILE = "skill.skill.md"
 
 
 class BusinessInfo(BaseModel):
@@ -99,9 +103,38 @@ def list_businesses(data_dir: Path) -> list[BusinessInfo]:
     return found
 
 
+def custom_skill(conn: sqlite3.Connection) -> Skill | None:
+    """The uploaded skill this business activated, from its own folder; None if it runs only built-in skills.
+
+    The file is checked against the hash recorded at activation, so a skill swapped on disk is refused, not run.
+    """
+    sha = get_meta(conn, META_SKILL)
+    if not sha:
+        return None
+    try:
+        skill = parse_cached((tenant_dir(conn) / SKILL_FILE).read_text(encoding="utf-8"))
+    except OSError as e:
+        raise PackError(f"the business's skill file is missing: {e}") from None
+    if skill.sha256 != sha:
+        raise PackError("the business's skill file does not match the skill it activated")
+    return skill
+
+
+def business_pack(conn: sqlite3.Connection) -> Pack:
+    """The Skill Pack this business runs: its activated custom skill, or a built-in pack."""
+    pack_id = business_info(conn).pack_id
+    skill = custom_skill(conn)
+    if skill is not None and skill.pack.id == pack_id:
+        return skill.pack
+    return load_pack(pack_id)
+
+
 def set_pack(conn: sqlite3.Connection, pack_id: str) -> None:
-    """Switch the active Skill Pack. Raises PackError for an unknown pack (only bundled packs resolve)."""
-    load_pack(pack_id)
+    """Switch the active Skill Pack: a built-in pack, or back to the business's own activated skill. Raises
+    PackError for anything else."""
+    skill = custom_skill(conn)
+    if skill is None or skill.pack.id != pack_id:
+        load_pack(pack_id)
     set_meta(conn, META_PACK, pack_id)
 
 

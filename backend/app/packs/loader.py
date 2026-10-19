@@ -1,80 +1,67 @@
-"""Load and validate Skill Packs from `packs/*.yaml`.
+"""Load the built-in Skill Packs: the skill.md files listed in BUILTIN_FILES, from the repo's skills/ library.
 
-Validation happens once, at load: the Pydantic schema, then every referenced detector must be registered and its
-params must validate against that detector's params model, and every category a detector names must exist in
-the pack, and every onboarding answer that sets a detector param must be a valid value for it. A bad pack fails
-loudly here instead of producing wrong numbers later.
+Every skill, built-in or uploaded, compiles through packs/skill.py: the Pydantic schema, then every referenced
+detector must be registered and its params must validate against that detector's params model, every category a
+detector names must exist in the pack, and every onboarding answer that sets a detector param must be a valid value
+for it. A bad pack fails loudly here instead of producing wrong numbers later.
+
+Only the files named below are built in; the other skills in the library (community examples) are uploaded like any
+custom skill. A business that activated an uploaded skill resolves it through services/businesses.business_pack.
 """
 
 from functools import lru_cache
 from pathlib import Path
 
-import yaml
-from pydantic import ValidationError
-
-from app.packs.registry import get_detector
+from app.config import REPO_ROOT
 from app.packs.schema import Pack
+from app.packs.skill import PackError, Skill, SkillError, parse_cached
 
-PACKS_DIR = Path(__file__).resolve().parent
-_ID_FIELDS = ("categories", "fee_categories", "refund_categories")
+__all__ = ["BUILTIN_FILES", "SKILLS_DIR", "PackError", "SkillError", "builtin_skill", "builtin_skills",
+           "list_pack_ids", "load_pack", "load_pack_file", "load_skill_file"]
+
+SKILLS_DIR = REPO_ROOT / "skills"
+BUILTIN_FILES = ("fashion.skill.md", "general.skill.md", "grocery.skill.md")
 
 
-class PackError(ValueError):
-    """A pack file is missing, unparseable or invalid."""
-
-
-def _check_detectors(pack: Pack) -> None:
-    for cfg in pack.leak_detectors:
-        try:
-            spec = get_detector(cfg.detector)
-        except KeyError as e:
-            raise PackError(f"pack {pack.id}: {e.args[0]}") from None
-        try:
-            params = spec.params_model.model_validate(cfg.params)
-        except ValidationError as e:
-            raise PackError(f"pack {pack.id}: bad params for detector {cfg.detector}: {e}") from None
-        for field in _ID_FIELDS:
-            unknown = set(getattr(params, field, ())) - set(pack.categories)
-            if unknown:
-                raise PackError(f"pack {pack.id}: detector {cfg.detector} names unknown categories {sorted(unknown)}")
-        for q in pack.advisor_questions:
-            if q.effect.detector != cfg.detector:
-                continue
-            if q.effect.param not in spec.params_model.model_fields:
-                raise PackError(f"pack {pack.id}: question {q.id} sets unknown param {cfg.detector}.{q.effect.param}")
-            for option in q.options:
-                if option.value is None:
-                    continue
-                try:
-                    spec.params_model.model_validate({**cfg.params, q.effect.param: option.value})
-                except ValidationError as e:
-                    raise PackError(f"pack {pack.id}: question {q.id} option {option.label!r} is not a valid "
-                                    f"{cfg.detector}.{q.effect.param}: {e}") from None
+def load_skill_file(path: Path) -> Skill:
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as e:
+        raise PackError(f"cannot read skill {path.name}: {e}") from None
+    try:
+        return parse_cached(text)
+    except SkillError as e:
+        raise SkillError([f"{path.name}: {m}" for m in e.errors]) from None
 
 
 def load_pack_file(path: Path) -> Pack:
-    """Parse and fully validate one pack file. The file stem must equal the pack ID."""
-    try:
-        doc = yaml.safe_load(path.read_text(encoding="utf-8"))
-    except (OSError, yaml.YAMLError) as e:
-        raise PackError(f"cannot read pack {path.name}: {e}") from None
-    try:
-        pack = Pack.model_validate(doc)
-    except ValidationError as e:
-        raise PackError(f"invalid pack {path.name}: {e}") from None
-    if pack.id != path.stem:
-        raise PackError(f"pack file {path.name} declares id {pack.id!r}; it must match the file name")
-    _check_detectors(pack)
-    return pack
-
-
-def list_pack_ids() -> list[str]:
-    return sorted(p.stem for p in PACKS_DIR.glob("*.yaml"))
+    """Parse and fully validate one skill file; the pack the app runs."""
+    return load_skill_file(path).pack
 
 
 @lru_cache
+def builtin_skills() -> dict[str, Skill]:
+    """Built-in skills by pack ID."""
+    found: dict[str, Skill] = {}
+    for name in BUILTIN_FILES:
+        skill = load_skill_file(SKILLS_DIR / name)
+        if skill.pack.id in found:
+            raise PackError(f"two built-in skills declare the pack id {skill.pack.id!r}")
+        found[skill.pack.id] = skill
+    return found
+
+
+def list_pack_ids() -> list[str]:
+    return sorted(builtin_skills())
+
+
+def builtin_skill(pack_id: str) -> Skill:
+    """A built-in skill by pack ID. Only IDs of the built-in files resolve (no path input)."""
+    skills = builtin_skills()
+    if pack_id not in skills:
+        raise PackError(f"unknown pack {pack_id!r}; available: {sorted(skills)}")
+    return skills[pack_id]
+
+
 def load_pack(pack_id: str) -> Pack:
-    """Load a bundled pack by ID. Only IDs of files shipped in this directory resolve (no path input)."""
-    if pack_id not in list_pack_ids():
-        raise PackError(f"unknown pack {pack_id!r}; available: {list_pack_ids()}")
-    return load_pack_file(PACKS_DIR / f"{pack_id}.yaml")
+    return builtin_skill(pack_id).pack

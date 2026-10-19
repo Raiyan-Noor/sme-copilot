@@ -17,6 +17,7 @@ import type {
   NewBusiness,
   OnboardingView,
   ResetResult,
+  SkillPreview,
   Skip,
   StartingPoint,
   UploadResult,
@@ -136,6 +137,12 @@ export const api = {
   switchPack: (id: string, body: PackSwitch) => request<BusinessInfo>("PUT", `${biz(id)}/pack`, { body }),
 
   // Onboarding from zero
+  skills: () => request<SkillPreview[]>("GET", "/skills"),
+  previewSkill: (file: File) => {
+    const form = new FormData();
+    form.append("file", file, file.name);
+    return request<SkillPreview>("POST", "/skills/preview", { body: form });
+  },
   startOnboarding: (body: NewBusiness) => request<BusinessInfo>("POST", "/onboarding", { body }),
   resetOnboarding: () => request<ResetResult>("POST", "/onboarding/reset"),
   onboarding: (id: string) => request<OnboardingView>("GET", `${biz(id)}/onboarding`),

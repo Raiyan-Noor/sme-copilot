@@ -43,11 +43,12 @@ import type {
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
+import { type SkillChoice, SkillPicker } from "./skill-picker";
 import { StageLine } from "./stage-line";
 
 type Step =
+  | "skill"
   | "name"
-  | "type"
   | "currency"
   | "cash"
   | "bills"
@@ -61,8 +62,8 @@ type Step =
   | "done";
 
 const ORDER: Step[] = [
+  "skill",
   "name",
-  "type",
   "currency",
   "cash",
   "bills",
@@ -75,7 +76,6 @@ const ORDER: Step[] = [
   "finishing",
   "done",
 ];
-const TYPES = ["Clothing or fashion shop", "Grocery or corner store", "Something else"];
 const CURRENCIES = ["USD", "EUR", "GBP", "INR", "BDT"];
 const MANDATE_DAYS = 30;
 const KIND_LABEL: Record<UploadResult["kind"], string> = {
@@ -103,16 +103,16 @@ function uploadRank(f: File): number {
 }
 
 /**
- * Onboarding from zero (feature plan P1): a new business set up in a short chat, one question at a time, driven by
- * its Skill Pack. Files go through the same ingestion, quarantine and sentinel as everywhere else; starter limits
+ * Onboarding from zero (feature plans P1 and P8): a new business set up in a short chat, one question at a time,
+ * driven by the skill the owner picks first (built-in, or their own uploaded skill.md, previewed before use). Files go through the same ingestion, quarantine and sentinel as everywhere else; starter limits
  * are signed in this browser (invariant 6); every figure is a Fact (invariant 4).
  */
 export function Onboarding() {
   const router = useRouter();
   const { select, resetSession } = useBusiness();
-  const [step, setStep] = useState<Step>("name");
+  const [step, setStep] = useState<Step>("skill");
   const [name, setName] = useState("");
-  const [type, setType] = useState("");
+  const [skill, setSkill] = useState<SkillChoice | null>(null);
   const [biz, setBiz] = useState<BusinessInfo | null>(null);
   const [view, setView] = useState<OnboardingView | null>(null);
   const [said, setSaid] = useState<Partial<Record<Step | string, string>>>({});
@@ -147,8 +147,10 @@ export function Onboarding() {
     run(async () => {
       const created = await api.startOnboarding({
         name,
-        business_type: type,
+        business_type: skill?.name || "shop",
         currency: cur,
+        pack_id: skill?.pack_id ?? null,
+        skill_sha256: skill?.skill_sha256 ?? null,
       });
       setBiz(created);
       setView(await api.onboarding(created.id));
@@ -185,37 +187,37 @@ export function Onboarding() {
       <div className="ka-scroll">
         <div className="ka-col ka-msgs ka-onb__msgs" role="log" aria-label="Set up a new business">
           <ChatBubble role="copilot" name={APP_NAME}>
-            Hi, I am {APP_NAME}. Let us set up your business; it takes about two minutes. First, what is your business
-            called?
+            Hi, I am {APP_NAME}. Let us set up your business; it takes about two minutes. First, pick a skill: it teaches
+            me how your kind of business runs, what to look at and what to ask you.
           </ChatBubble>
+          {step === "skill" ? (
+            <SkillPicker
+              onPick={(c) => {
+                setSkill(c);
+                say("skill", c.skill_sha256 ? `Use my own skill: ${c.name}` : c.name);
+                setStep("name");
+              }}
+            />
+          ) : (
+            <Owner text={said.skill} />
+          )}
+
+          {at("name") ? (
+            <ChatBubble role="copilot" name={APP_NAME}>
+              Good choice. What is your business called?
+            </ChatBubble>
+          ) : null}
           {step === "name" ? (
             <TextAsk
               placeholder="Business name"
               onSubmit={(v) => {
                 setName(v);
                 say("name", v);
-                setStep("type");
-              }}
-            />
-          ) : (
-            <Owner text={said.name} />
-          )}
-
-          {at("type") ? (
-            <ChatBubble role="copilot" name={APP_NAME}>
-              What kind of business is {name}? I use this to pick the right Skill Pack: what to look at and what to ask.
-            </ChatBubble>
-          ) : null}
-          {step === "type" ? (
-            <TypeAsk
-              onPick={(v) => {
-                setType(v);
-                say("type", v);
                 setStep("currency");
               }}
             />
           ) : at("currency") ? (
-            <Owner text={said.type} />
+            <Owner text={said.name} />
           ) : null}
 
           {at("currency") ? (
@@ -492,12 +494,6 @@ function Chips({ options, onPick, disabled }: { options: string[]; onPick: (v: s
       ))}
     </div>
   );
-}
-
-function TypeAsk({ onPick }: { onPick: (v: string) => void }) {
-  const [other, setOther] = useState(false);
-  if (other) return <TextAsk placeholder="In your words: what do you sell?" onSubmit={onPick} />;
-  return <Chips options={TYPES} onPick={(v) => (v === "Something else" ? setOther(true) : onPick(v))} />;
 }
 
 function CashAsk({

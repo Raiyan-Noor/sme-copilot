@@ -1,4 +1,5 @@
-# Skill Pack: fashion retail (clothing boutique). Format: app/packs/schema.py.
+---
+# Skill Pack: fashion retail (clothing boutique). Format: docs/skills/FORMAT.md.
 # All benchmarks below are synthetic, chosen for the demo, and labelled as such in the UI.
 # No money amounts here: thresholds are ratios, counts and day windows (currency- and region-neutral).
 id: fashion_retail
@@ -276,3 +277,28 @@ advisor_questions:
       - {label: Two months, value: 60}
       - {label: Not sure}
     effect: {fact: supplier_terms_days, unit: days}
+signature: "ed25519:FX+aW/ycTcw3WabpVg5y+X1L3OWqq47NLbW/CDeM+z76vnsqo+JGAmT1U3mPzHU3I4ukZZK5MBWVJ231DpdOBw=="
+---
+
+# Fashion
+
+For clothing boutiques, shoe and accessory shops and tailors: shops whose stock is seasonal, whose sales peak around
+festivals, and who often sell online and through marketplaces as well as in store.
+
+## What this skill watches
+
+- **Returns.** Returns quietly eat fashion margins. The skill flags products that come back more than the rate you
+  told it is normal.
+- **Ad campaigns.** Return on ad spend per campaign and channel, and campaigns that cost more than they bring in.
+- **Seasonal and slow stock.** Stock bought for a season that does not sell through.
+- **Margins per product, supplier prices and payment terms.** Products sold below cost, unit prices that creep up,
+  and early-payment discounts missed.
+- **Fees and bills.** Card, wallet and marketplace fees, refunds above normal, duplicate software and late fees.
+
+## What it asks you
+
+Your bank or wallet statement and your product list (both needed), sales per product and ad spend (optional), and
+the questions an experienced fashion advisor would ask: returns, festival stock, marketplace commissions and
+supplier credit terms.
+
+Benchmarks in this skill are synthetic and labelled as such.

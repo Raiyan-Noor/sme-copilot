@@ -2354,7 +2354,7 @@
           "onboarding"
         ],
         "summary": "Start Onboarding",
-        "description": "Create a new business with its own ledger. Its type picks the Skill Pack (general pack if nothing matches).",
+        "description": "Create a new business with its own ledger. Its Skill Pack is the uploaded skill or built-in pack the owner\npicked; otherwise its type picks one (the general pack if nothing matches).",
         "operationId": "start_onboarding",
         "requestBody": {
           "content": {
@@ -2932,6 +2932,74 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/FinishResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/skills": {
+      "get": {
+        "tags": [
+          "skills"
+        ],
+        "summary": "Get Skills",
+        "description": "The built-in skills, each with its badge and what it asks and watches.",
+        "operationId": "get_skills",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SkillPreview"
+                  },
+                  "type": "array",
+                  "title": "Response Get Skills"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/skills/preview": {
+      "post": {
+        "tags": [
+          "skills"
+        ],
+        "summary": "Preview Skill",
+        "description": "Validate an uploaded skill.md and show what it would do. A refused file lists every error found.",
+        "operationId": "preview_skill",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_preview_skill"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SkillPreview"
                 }
               }
             }
@@ -4065,6 +4133,21 @@
           "file"
         ],
         "title": "Body_post_upload"
+      },
+      "Body_preview_skill": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "description": "A skill.md file"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_preview_skill"
       },
       "Body_upload_email": {
         "properties": {
@@ -6215,7 +6298,8 @@
             "enum": [
               "audit_head",
               "mandate",
-              "passport"
+              "passport",
+              "skill"
             ],
             "title": "Kind"
           },
@@ -6279,7 +6363,8 @@
             "enum": [
               "audit_head",
               "mandate",
-              "passport"
+              "passport",
+              "skill"
             ],
             "title": "Kind"
           },
@@ -6858,6 +6943,32 @@
             "minLength": 3,
             "title": "Currency",
             "default": "USD"
+          },
+          "pack_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pack Id",
+            "description": "A built-in skill the owner picked"
+          },
+          "skill_sha256": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skill Sha256",
+            "description": "An uploaded skill the owner previewed (POST /skills/preview)"
           }
         },
         "type": "object",
@@ -8656,6 +8767,201 @@
         ],
         "title": "SignedPayload",
         "description": "Exactly what the owner signs."
+      },
+      "SkillKpi": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "unit": {
+            "type": "string",
+            "title": "Unit"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "unit"
+        ],
+        "title": "SkillKpi"
+      },
+      "SkillPreview": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "rejected"
+            ],
+            "title": "Status"
+          },
+          "filename": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Filename"
+          },
+          "sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sha256"
+          },
+          "badge": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "verified",
+                  "community"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Badge"
+          },
+          "builtin": {
+            "type": "boolean",
+            "title": "Builtin",
+            "default": false
+          },
+          "pack_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pack Id"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "business_types": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Business Types",
+            "default": []
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "default": ""
+          },
+          "data_needs": {
+            "items": {
+              "$ref": "#/components/schemas/DataNeed"
+            },
+            "type": "array",
+            "title": "Data Needs",
+            "default": []
+          },
+          "questions": {
+            "items": {
+              "$ref": "#/components/schemas/AdvisorQuestion"
+            },
+            "type": "array",
+            "title": "Questions",
+            "default": []
+          },
+          "detectors": {
+            "items": {
+              "$ref": "#/components/schemas/SkillRule"
+            },
+            "type": "array",
+            "title": "Detectors",
+            "default": []
+          },
+          "kpis": {
+            "items": {
+              "$ref": "#/components/schemas/SkillKpi"
+            },
+            "type": "array",
+            "title": "Kpis",
+            "default": []
+          },
+          "notices": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notices",
+            "default": []
+          },
+          "errors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Errors",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "SkillPreview",
+        "description": "What the owner sees before activating a skill. Text is the skill's own wording: owner view only, never sent to\nthe planner (invariant 2). `description` is Markdown, rendered as plain text by the client (no HTML)."
+      },
+      "SkillRule": {
+        "properties": {
+          "detector": {
+            "type": "string",
+            "title": "Detector"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          }
+        },
+        "type": "object",
+        "required": [
+          "detector",
+          "label"
+        ],
+        "title": "SkillRule"
       },
       "Skip": {
         "properties": {

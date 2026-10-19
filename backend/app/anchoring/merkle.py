@@ -2,7 +2,7 @@
 
 Choice: **index-based** (ordered) hashing with RFC 6962-style domain separation, not sorted-pair hashing.
 
-- Leaf:  `H(0x00 || utf8("<kind>:<hash hex>"))`. The kind (`audit_head`, `mandate`, `passport`) is bound into the
+- Leaf:  `H(0x00 || utf8("<kind>:<hash hex>"))`. The kind (`audit_head`, `mandate`, `passport`, `skill`) is bound into the
   leaf, so a Passport hash cannot be passed off as a mandate, and a leaf can never be confused with an inner node.
 - Node:  `H(0x01 || left || right)`, children in leaf order. Order matters, so a proof records each sibling's side.
 - Odd count: at any level with an odd number of nodes, the last node is **promoted unchanged** to the next level.
@@ -19,7 +19,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-LeafKind = Literal["audit_head", "mandate", "passport"]
+LeafKind = Literal["audit_head", "mandate", "passport", "skill"]
 HEX64 = r"^[0-9a-f]{64}$"
 
 LEAF_PREFIX = b"\x00"

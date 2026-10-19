@@ -1,10 +1,10 @@
-# Skill Pack: general shop. The fallback when onboarding cannot match the owner's business to a specialist pack.
-# Format: app/packs/schema.py. Derived from the grocery pack with generic stock categories and questions.
+---
+# Skill Pack: grocery retail (corner store, mini-mart). Format: docs/skills/FORMAT.md.
 # All benchmarks below are synthetic, chosen for the demo, and labelled as such in the UI.
 # No money amounts here: thresholds are ratios, counts and day windows (currency- and region-neutral).
-id: general_retail
+id: grocery_retail
 version: 1
-display_name: General shop
+display_name: Grocery
 benchmarks_synthetic: true
 kpi_lookback_days: 90
 
@@ -39,10 +39,18 @@ categories:
     kind: revenue
     scheduled: true
     match: {description: [transfer from, invoice payment]}
-  stock_purchases:
-    label: Stock purchases
+  fresh_produce:
+    label: Fresh produce and dairy
     kind: cogs
-    match: {counterparty: [wholesale, distributor, trading, supplier, traders, imports], description: [stock purchase, wholesale, restock, goods purchase]}
+    match: {counterparty: [vegetable, produce, fruit, dairy, fish, meat, poultry], description: [produce, dairy]}
+  staples_wholesale:
+    label: Staples (rice, flour, oil)
+    kind: cogs
+    match: {counterparty: [rice, flour, grain, wholesale, distributor, trading], description: [rice, flour, lentil, cooking oil, sugar]}
+  beverages_snacks:
+    label: Beverages and snacks
+    kind: cogs
+    match: {counterparty: [beverage, bottling, drinks, snack, confectioner], description: [beverage, soft drink, snacks]}
   rent:
     label: Rent
     kind: operating
@@ -161,7 +169,7 @@ financing_fit:
   nano_loan: {fit: 0.75, reason: Small amounts match short restocking gaps}
   overdraft: {fit: 0.70, reason: Covers short gaps between supplier payments and sales}
   equipment_lease: {fit: 0.60, reason: Useful for fridges and freezers}
-  merchant_cash_advance: {fit: 0.35, reason: Daily sweeps are costly on thin margins}
+  merchant_cash_advance: {fit: 0.35, reason: Daily sweeps are costly on thin grocery margins}
   invoice_financing: {fit: 0.10, reason: Few invoices; most customers pay at the till}
 
 readiness:
@@ -176,9 +184,10 @@ readiness:
     - {id: building, label: Building, min_score: 0.50}
     - {id: early, label: Early, min_score: 0.0}
 
-# Onboarding: no keywords. This pack is what onboarding falls back to.
-business_types: []
+# Onboarding: words in the owner's own description that pick this pack.
+business_types: [grocery, grocer, corner store, mini mart, minimart, supermarket, convenience, kirana, general store, food shop, bakery, dairy]
 
+# What onboarding asks for, one at a time. Ads are optional for a grocery, so they are not asked for by default.
 data_needs:
   - id: bank_statement
     kind: bank
@@ -189,29 +198,23 @@ data_needs:
     unlocks: "your cash buffer and the leaks hiding in your bills"
   - id: products
     kind: products
-    required: false
-    ask: "If you sell products, upload your product list with cost price, sale price and stock (CSV)."
-    why: "The total hides which products make money and which lose it."
+    required: true
+    ask: "Upload your product list with cost price, sale price and stock (CSV from your shop system or a spreadsheet)."
+    why: "Grocery margins are thin and differ a lot between staples and fresh goods, so the total hides the products that lose money."
     label: your product list
     unlocks: "margins per product and stock that is about to run out"
   - id: product_sales
     kind: sales
     required: false
     ask: "Upload your sales per product (date, product, quantity, amount). Three months is plenty."
-    why: "Sales per product show what sells, and what sits on the shelf."
+    why: "Sales per product show what sells fast, what sits on the shelf, and what is about to run out."
     label: your sales per product
     unlocks: "your best and worst sellers"
-  - id: ad_spend
-    kind: ad_spend
-    required: false
-    ask: "Do you run Facebook, Instagram or Google ads? If so, upload your ad spend export so I can check they are paying off."
-    why: "Ads that do not pay for themselves are a common hidden cost."
-    label: your ad spend export
-    unlocks: "whether each ad campaign is paying for itself"
 
+# What an experienced grocery advisor asks, which owners often do not think of. Option labels are UI text.
 advisor_questions:
   - id: credit_sales
-    ask: "Do customers buy on credit and pay later? Roughly what share of your sales?"
+    ask: "Do regular customers buy on credit (baki) and pay later? Roughly what share of your sales?"
     why: "Credit sales are money you have earned but do not have yet. I will keep them in your cash plan."
     options:
       - {label: No credit, value: 0}
@@ -220,6 +223,15 @@ advisor_questions:
       - {label: More than 25%, value: 0.30}
       - {label: Not sure}
     effect: {fact: credit_sales_share, unit: ratio}
+  - id: spoilage
+    ask: "How much fresh stock (milk, bread, vegetables) do you throw away because it expired?"
+    why: "Spoilage is a silent cost in grocery. The more you throw away, the sooner I flag stock that is not selling."
+    options:
+      - {label: Very little, value: 45}
+      - {label: Some every week, value: 30}
+      - {label: A lot, value: 14}
+      - {label: Not sure}
+    effect: {detector: slow_moving_stock, param: min_days_held}
   - id: early_pay_discounts
     ask: "Do any suppliers give a discount if you pay early?"
     why: "A small early-payment discount is worth more than most savings accounts. I will watch the deadlines for you."
@@ -237,3 +249,27 @@ advisor_questions:
       - {label: About 2%, value: 0.02}
       - {label: Not sure}
     effect: {detector: payment_fees, param: max_share_of_digital}
+signature: "ed25519:tP6QqXkfg5G5oLKeFov6lTR4bK7D0Lj6hGmU4f5rYNdWQ4+eX4Lu0j/RQ6pWJGuk2EkfnCmtCPwp2QciPXXjDg=="
+---
+
+# Grocery
+
+For corner stores, mini-marts and neighbourhood grocers: shops that sell staples, fresh produce, dairy, drinks and
+snacks every day, mostly at the till, with thin margins and stock that can spoil.
+
+## What this skill watches
+
+- **Margins per product.** Staples, fresh goods and drinks earn very different margins; the total hides the
+  products sold below cost.
+- **Spoilage and slow stock.** Fresh stock that sits on the shelf turns into waste. The skill flags stock that is not
+  selling, sooner if you tell it you throw a lot away.
+- **Supplier prices and early-payment discounts.** Unit prices that creep up, and discounts missed by paying late.
+- **Payment fees.** Mobile-wallet and card fees above the rate you agreed.
+- **Bills.** Paying twice for the same software, and late fees.
+
+## What it asks you
+
+Your bank or wallet statement and your product list (both needed), sales per product (optional), and four questions
+an experienced grocery advisor would ask: customer credit (baki), spoilage, early-payment discounts and wallet fees.
+
+Benchmarks in this skill are synthetic and labelled as such.

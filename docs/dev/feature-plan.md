@@ -22,7 +22,7 @@ The original build plan (prompts 0–17) is fully built, including Prompt 16 (sc
 | F8 | Real Gmail inbox via OAuth (read + send approved emails) | Prompt ready (P6) |
 | F9 | Ad advisor: discuss which product to advertise more | Prompt ready (P7) |
 | F10 | Proactive "what you didn't think of" questions from the Skill Pack | Merged into P1 |
-| F11 | Upload a custom skill.md on the opening page; open skills library | Prompt ready (P8) |
+| F11 | Upload a custom skill.md on the opening page; open skills library | Done (P8) |
 | F12 | Chat loading messages that show what KaChing is doing | Prompt ready (P0) |
 | — | Correcting ledger entries | Dropped |
 

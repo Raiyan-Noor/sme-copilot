@@ -15,7 +15,7 @@ from app.agent.context import ConversationStore
 from app.anchoring import Chain
 from app.api import (
     agent, anchors, audit, brief, businesses, clock, finance, financing, gateway, health, inbox, ledger, onboarding,
-    trust,
+    skills, trust,
 )
 from app.config import Settings, get_settings
 from app.firewall.store import UnknownFactError
@@ -59,7 +59,7 @@ def create_app(settings: Settings | None = None, anchor_chain: Chain | None = No
     app.state.conversations = ConversationStore()
     for router in (health.router, businesses.router, ledger.router, finance.router, gateway.router, audit.router,
                    clock.router, agent.router, brief.router, inbox.router, financing.router, trust.router, anchors.router,
-                   onboarding.router):
+                   onboarding.router, skills.router):
         app.include_router(router)
     if settings.expose_test_routes:
         app.include_router(gateway.test_router)

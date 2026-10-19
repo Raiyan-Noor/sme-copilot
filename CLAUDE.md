@@ -85,7 +85,7 @@ backend/app/
   api/                 routes; thin, no business logic
   ledger/              schema, ingestion (CSV statements, receipts via extractor), PII tokenization
   engine/              P&L, margins, buffer days, forecast, financing match + safe sizing, passport, leaks
-  packs/               loader + grocery_retail.yaml, fashion_retail.yaml + detector functions
+  packs/               skill.md compiler + loader, schema, detector registry and functions (skills/ holds the files)
   firewall/            Fact model, fact store, placeholder renderer, digit check
   agent/               planner loop, tool registry (read tools + propose_action), conversation state
   gateway/             policy.yaml, policy engine, mandate verification, nonce store
@@ -104,6 +104,7 @@ frontend/
   config/app.ts        BRANDING 2/3: APP_NAME, APP_TAGLINE
   components/brand/    BRANDING 3/3: <Logo /> and the logo asset only it renders
   lib/                 api.ts (typed client), types.ts (mirrors docs/openapi.json)
+skills/                skill.md library: built-in grocery, fashion, general (signed) + community examples
 docs/                  design brief, build prompts, technical doc, security self-assessment
 ```
 
@@ -115,6 +116,7 @@ make seed         # regenerate both businesses and the mailbox (deterministic)
 make dev          # FastAPI :8000 + Next :3000
 make test         # all pytest suites in replay mode + the branding check
 make redteam      # attack + benign suites; writes docs/results/redteam.json
+make validate-skill FILE=...  # check a skill.md the way an upload does
 make evidence     # export audit log JSONL + verify chain + anchors (tx hashes) → docs/results/
 make anchor       # anchor now against the live testnet (manual only; needs ANCHOR_* in .env)
 ```

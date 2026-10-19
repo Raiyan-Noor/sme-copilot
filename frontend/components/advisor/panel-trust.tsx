@@ -432,6 +432,7 @@ function AnchorsTab() {
                   `log up to #${b.head_seq}`,
                   n("mandate") ? `${n("mandate")} signed ${n("mandate") === 1 ? "limit" : "limits"}` : "",
                   n("passport") ? `${n("passport")} ${n("passport") === 1 ? "passport" : "passports"}` : "",
+                  n("skill") ? `${n("skill")} ${n("skill") === 1 ? "skill" : "skills"}` : "",
                 ].filter(Boolean);
                 return (
                   <div>

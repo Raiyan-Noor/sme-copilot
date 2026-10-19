@@ -14,8 +14,7 @@ from app.api.deps import BusinessId, RuntimeDep
 from app.ledger.ingest import IngestReport, RowError, StatementError, ingest_statement
 from app.ledger.snapshot import Transaction, load_snapshot
 from app.packs.ledger_view import categorize_snapshot
-from app.packs.loader import load_pack
-from app.services.businesses import business_info
+from app.services.businesses import business_pack
 
 router = APIRouter(tags=["ledger"])
 
@@ -53,7 +52,7 @@ def get_transactions(
 ) -> TransactionPage:
     """Ledger rows, categorized by the active Skill Pack. Amounts are signed integer minor units."""
     with rt.business(business_id) as conn:
-        pack = load_pack(business_info(conn).pack_id)
+        pack = business_pack(conn)
         snapshot = categorize_snapshot(load_snapshot(conn), pack)
     rows = [t for t in snapshot.transactions
             if (date_from is None or t.posted_on >= date_from) and (date_to is None or t.posted_on <= date_to)

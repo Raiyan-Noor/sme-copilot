@@ -1,4 +1,4 @@
-"""Skill Pack validation: both bundled packs load, and bad packs fail at load time, not at run time."""
+"""Skill Pack validation: the built-in skills load, and bad packs fail at load time, not at run time."""
 
 from pathlib import Path
 
@@ -6,21 +6,25 @@ import pytest
 import yaml
 
 from app.engine.pack_inputs import build_engine_pack
-from app.packs.loader import PACKS_DIR, PackError, list_pack_ids, load_pack, load_pack_file
+from app.packs.loader import SKILLS_DIR, PackError, list_pack_ids, load_pack, load_pack_file, load_skill_file
 from app.packs.registry import DetectorParams, detector, registered_names
+from app.packs.skill import skill_content
 
 
-def _doc(pack_id: str = "grocery_retail") -> dict:
-    return yaml.safe_load((PACKS_DIR / f"{pack_id}.yaml").read_text(encoding="utf-8"))
+def _doc(name: str = "grocery") -> dict:
+    _, front, _ = skill_content((SKILLS_DIR / f"{name}.skill.md").read_text(encoding="utf-8"))
+    doc = yaml.safe_load(front)
+    doc.pop("signature", None)
+    return doc
 
 
-def _write(tmp_path: Path, doc: dict, name: str = "grocery_retail") -> Path:
-    path = tmp_path / f"{name}.yaml"
-    path.write_text(yaml.safe_dump(doc, sort_keys=False), encoding="utf-8")
+def _write(tmp_path: Path, doc: dict, name: str = "grocery") -> Path:
+    path = tmp_path / f"{name}.skill.md"
+    path.write_text(f"---\n{yaml.safe_dump(doc, sort_keys=False)}---\n\n# Test\n", encoding="utf-8")
     return path
 
 
-def test_bundled_packs_load():
+def test_builtin_packs_load():
     assert list_pack_ids() == ["fashion_retail", "general_retail", "grocery_retail"]
     for pack_id in list_pack_ids():
         pack = load_pack(pack_id)
@@ -106,9 +110,9 @@ def test_extra_top_level_keys_are_rejected(tmp_path):
     _mutate_and_expect(tmp_path, lambda d: d.update(actions=["pay_anyone"]), "actions")
 
 
-def test_file_name_must_match_pack_id(tmp_path):
-    with pytest.raises(PackError, match="must match the file name"):
-        load_pack_file(_write(tmp_path, _doc(), name="other_pack"))
+def test_unchanged_doc_round_trips(tmp_path):
+    # Unsigned, so the copy runs with planner-safe labels; its own wording is unchanged.
+    assert load_skill_file(_write(tmp_path, _doc())).authored == load_pack("grocery_retail")
 
 
 def test_detector_names_are_unique():

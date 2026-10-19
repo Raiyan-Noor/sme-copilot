@@ -17,6 +17,9 @@ class NewBusiness(BaseModel):
     name: str = Field(min_length=1, max_length=60)
     business_type: str = Field(min_length=1, max_length=80, description="The owner's own words; picks the Skill Pack")
     currency: str = Field(default="USD", min_length=3, max_length=3)
+    pack_id: str | None = Field(default=None, max_length=64, description="A built-in skill the owner picked")
+    skill_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$",
+                                     description="An uploaded skill the owner previewed (POST /skills/preview)")
 
 
 class StartingPoint(BaseModel):
@@ -47,8 +50,10 @@ class ResetResult(BaseModel):
 
 @router.post("/onboarding", response_model=BusinessInfo)
 def start_onboarding(body: NewBusiness, rt: RuntimeDep) -> BusinessInfo:
-    """Create a new business with its own ledger. Its type picks the Skill Pack (general pack if nothing matches)."""
-    return ob.create_business(rt, body.name, body.business_type, body.currency.upper())
+    """Create a new business with its own ledger. Its Skill Pack is the uploaded skill or built-in pack the owner
+    picked; otherwise its type picks one (the general pack if nothing matches)."""
+    return ob.create_business(rt, body.name, body.business_type, body.currency.upper(), pack_id=body.pack_id,
+                              skill_sha256=body.skill_sha256)
 
 
 @router.post("/onboarding/reset", response_model=ResetResult)

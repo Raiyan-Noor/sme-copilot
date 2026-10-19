@@ -1,8 +1,11 @@
+# Build from the repo root (docker-compose.yml sets the context): the backend needs the skills/ library too.
 FROM python:3.12-slim
 
 WORKDIR /app
-COPY pyproject.toml ./
-COPY app ./app
+COPY backend/pyproject.toml ./
+COPY backend/app ./app
+# app/config.py resolves the repo root two levels above app/, which is / here, so the built-in skills go to /skills.
+COPY skills /skills
 RUN pip install --no-cache-dir .
 
 EXPOSE 8000

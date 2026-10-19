@@ -9,7 +9,7 @@ else
   VENV_PY := $(CURDIR)/backend/.venv/bin/python
 endif
 
-.PHONY: setup seed dev test openapi redteam evidence anchor reset-demo samples
+.PHONY: setup seed dev test openapi redteam evidence anchor reset-demo samples validate-skill
 
 setup:  ## venv + pip install, npm install
 	$(BOOT_PY) scripts/setup.py
@@ -22,6 +22,9 @@ samples:  ## regenerate the onboarding demo upload folder (deterministic) -> bac
 
 reset-demo:  ## delete every business created by onboarding (rehearsals); seeded businesses stay
 	"$(VENV_PY)" scripts/reset_demo.py
+
+validate-skill:  ## check a skill.md the way upload does: make validate-skill FILE=skills/bakery.skill.md
+	"$(VENV_PY)" scripts/validate_skill.py "$(FILE)"
 
 dev:  ## FastAPI :8000 + Next :3000
 	"$(VENV_PY)" scripts/dev.py

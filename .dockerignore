@@ -1,0 +1,6 @@
+# Docker build context is the repo root (docker-compose.yml). Send only what the backend image copies.
+*
+!backend/pyproject.toml
+!backend/app
+!skills
+**/__pycache__

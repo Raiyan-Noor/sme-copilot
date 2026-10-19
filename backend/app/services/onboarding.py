@@ -51,7 +51,7 @@ from app.packs.schema import AdvisorQuestion, DataNeed, Pack
 from app.quarantine.mime import Attachment, RawEmail
 from app.services.businesses import (
     META_ANSWERS, META_INBOX, META_NAME, META_ONBOARDED, META_PACK, META_SYNTHETIC, BusinessInfo, advisor_answers,
-    business_info, records_folder, set_meta,
+    business_info, business_pack, records_folder, set_meta,
 )
 
 FALLBACK_PACK = "general_retail"
@@ -135,14 +135,27 @@ def _business_id(data_dir: Path, name: str) -> str:
             return candidate
 
 
-def create_business(rt, name: str, business_type: str, currency: str) -> BusinessInfo:
+def create_business(rt, name: str, business_type: str, currency: str, *, pack_id: str | None = None,
+                    skill_sha256: str | None = None) -> BusinessInfo:
+    """A new business with its own ledger. Its Skill Pack is, in order: an uploaded skill the owner previewed
+    (`skill_sha256`), a built-in pack the owner picked (`pack_id`), or the pack matching the owner's words."""
+    from app.services import skills
+
     name = " ".join(name.split())
     if not NAME.match(name):
         raise OnboardingError("the business name may use letters, digits, spaces and . , ' & - only (up to 60)")
     if currency not in CURRENCY_EXPONENT:
         raise OnboardingError(f"unsupported currency {currency!r}")
     rt.ensure_ready()
-    pack_id = match_pack(business_type)
+    skill = skills.staged(rt, skill_sha256) if skill_sha256 else None
+    if skill is not None and (builtin := skills.builtin_id(skill)):
+        skill, pack_id = None, builtin
+    if skill is not None:
+        pack_id = skill.pack.id
+    elif pack_id is not None:
+        load_pack(pack_id)
+    chosen = pack_id is not None
+    pack_id = pack_id or match_pack(business_type)
     business_id = _business_id(rt.data_dir, name)
     conn = create_tenant(tenant_path(rt.data_dir, business_id), business_id, currency)
     try:
@@ -152,12 +165,16 @@ def create_business(rt, name: str, business_type: str, currency: str) -> Busines
         set_meta(conn, META_SYNTHETIC, "true")
         set_meta(conn, META_ONBOARDED, "true")
         _save_state(conn, OnboardingState())
+        if skill is not None:
+            skills.activate(rt, conn, business_id, skill)
         info = business_info(conn)
     finally:
         conn.close()
     _write_contacts(rt, business_id, {"owner": {"name": "the owner"}})
     rt.audit.append("onboarding.business_created", {"business_id": business_id, "pack_id": pack_id,
-                                                     "currency": currency, "matched_from_type": pack_id != FALLBACK_PACK})
+                                                     "currency": currency, "skill_chosen": chosen,
+                                                     "custom_skill": skill.sha256 if skill else None,
+                                                     "matched_from_type": not chosen and pack_id != FALLBACK_PACK})
     return info
 
 
@@ -242,7 +259,7 @@ def set_starting_point(rt, business_id: str, cash_minor: int | None, bills: list
 
 
 def _bill_category(rt, conn: sqlite3.Connection, kind: str) -> str:
-    pack = load_pack(business_info(conn).pack_id)
+    pack = business_pack(conn)
     if kind == "loan" and "loan_repayment" in pack.categories:
         return "loan_repayment"
     for preferred in ("rent", "utilities"):
@@ -266,7 +283,7 @@ def _add_months(d: date, n: int) -> date:
 def answer(rt, business_id: str, question_id: str, option: int) -> float | None:
     """Store the owner's pick. Only an option the pack offers can be stored (the value comes from the pack)."""
     with _onboarded(rt, business_id) as conn:
-        pack = load_pack(business_info(conn).pack_id)
+        pack = business_pack(conn)
         q = next((q for q in pack.advisor_questions if q.id == question_id), None)
         if q is None or not 0 <= option < len(q.options):
             raise OnboardingError("unknown question or option")
@@ -281,7 +298,7 @@ def answer(rt, business_id: str, question_id: str, option: int) -> float | None:
 
 def skip_need(rt, business_id: str, need_id: str) -> None:
     with _onboarded(rt, business_id) as conn:
-        pack = load_pack(business_info(conn).pack_id)
+        pack = business_pack(conn)
         if need_id not in {n.id for n in pack.data_needs}:
             raise OnboardingError("unknown data need")
         state = _state(conn)
@@ -313,7 +330,7 @@ def _record_upload(rt, business_id: str, result: UploadResult) -> UploadResult:
         state = _state(conn)
         state.uploads.append(result)
         if result.status == "imported":
-            pack = load_pack(business_info(conn).pack_id)
+            pack = business_pack(conn)
             done = {n.id for n in pack.data_needs if n.kind == result.kind}
             state.skipped = [s for s in state.skipped if s not in done]
         _save_state(conn, state)
@@ -445,7 +462,7 @@ def approve_document(rt, business_id: str, email_id: str) -> dict:
             if not any(s["id"] == supplier_id for s in contacts.setdefault("suppliers", [])):
                 contacts["suppliers"].append({"id": supplier_id, "name": who, "bank_accounts": []})
                 _write_contacts(rt, business_id, contacts, conn)
-            pack = load_pack(business_info(conn).pack_id)
+            pack = business_pack(conn)
             category = next(c for c, v in pack.categories.items() if v.kind == "cogs")
             due = f.due_date.value if f.due_date else today + timedelta(days=30)
             item_id = f"UPL-{email_id.upper()}"
@@ -510,7 +527,7 @@ def contact_proposals(rt, business_id: str) -> list[ContactProposal]:
     from app.services.inbox import load_inbox
 
     with rt.business(business_id) as conn:
-        pack = load_pack(business_info(conn).pack_id)
+        pack = business_pack(conn)
         contacts = _read_contacts(rt, business_id, conn)
         snapshot = load_snapshot(conn)
     known = {c["id"] for group in ("suppliers", "customers", "payees") for c in contacts.get(group, [])}
@@ -702,7 +719,7 @@ def skipped_hints(rt, business_id: str) -> list[str]:
         info = business_info(conn)
         if not info.onboarded:
             return []
-        return could_also_check(load_pack(info.pack_id), _state(conn).skipped)
+        return could_also_check(business_pack(conn), _state(conn).skipped)
 
 
 def view(rt, business_id: str) -> OnboardingView:
@@ -712,7 +729,7 @@ def view(rt, business_id: str) -> OnboardingView:
             raise OnboardingError("this business was not created by onboarding")
         state, answers = _state(conn), advisor_answers(conn)
         inbox = get_meta(conn, META_INBOX)
-    pack = load_pack(info.pack_id)
+        pack = business_pack(conn)
     store = FactStore()
     summary = _summary(rt, business_id, info, pack, answers, state, store)
     mandates = suggest_mandates(rt, business_id, store)
@@ -811,9 +828,9 @@ def finish(rt, business_id: str) -> FinishResult:
         _save_state(conn, state)
         info = business_info(conn)
         inbox = get_meta(conn, META_INBOX)
+        pack = business_pack(conn)
     report = run_overnight(rt, business_id, reminders=False)
     computed = rt.facts(business_id)
-    pack = load_pack(info.pack_id)
     todo = []
     if computed.leaks:
         todo.append("Look at the biggest leak in your brief and decide what to do about it.")
@@ -854,11 +871,15 @@ def delete_business(rt, business_id: str) -> None:
 
 
 def reset(rt) -> list[str]:
-    """Delete every business created by onboarding, for a clean rehearsal. Returns the deleted IDs."""
+    """Delete every business created by onboarding and every staged skill upload, for a clean rehearsal. Returns the
+    deleted business IDs."""
     from app.services.businesses import list_businesses
 
     rt.ensure_ready()
+    from app.services.skills import clear_staged
+
     gone = [b.id for b in list_businesses(rt.data_dir) if b.onboarded]
     for business_id in gone:
         delete_business(rt, business_id)
+    clear_staged(rt)
     return gone

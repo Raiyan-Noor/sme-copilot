@@ -198,6 +198,11 @@ export interface Body_post_upload {
   file: Blob;
 }
 
+export interface Body_preview_skill {
+  /** A skill.md file */
+  file: Blob;
+}
+
 export interface Body_upload_email {
   file: Blob;
 }
@@ -602,7 +607,7 @@ export interface KpiRow {
 
 /** One anchored hash. `ref` says where it came from (audit seq, mandate ID, Passport export), never its content. */
 export interface Leaf {
-  kind: "audit_head" | "mandate" | "passport";
+  kind: "audit_head" | "mandate" | "passport" | "skill";
   hash: string;
   ref: string;
   leaf_hash: string;
@@ -612,7 +617,7 @@ export interface Leaf {
 export interface LeafCheck {
   status: "match" | "mismatch" | "not_anchored" | "queued" | "unavailable";
   reason: string | null;
-  kind: "audit_head" | "mandate" | "passport";
+  kind: "audit_head" | "mandate" | "passport" | "skill";
   hash: string;
   recorded_hash: string | null;
   batch_id?: string | null;
@@ -725,6 +730,10 @@ export interface NewBusiness {
   /** The owner's own words; picks the Skill Pack */
   business_type: string;
   currency?: string;
+  /** A built-in skill the owner picked */
+  pack_id?: string | null;
+  /** An uploaded skill the owner previewed (POST /skills/preview) */
+  skill_sha256?: string | null;
 }
 
 export interface OnboardingState {
@@ -1058,6 +1067,40 @@ export interface SignedPayload {
   args_hash: string;
   nonce: string;
   expiry: string;
+}
+
+export interface SkillKpi {
+  id: string;
+  label: string;
+  unit: string;
+}
+
+/**
+ * What the owner sees before activating a skill. Text is the skill's own wording: owner view only, never sent to
+ * the planner (invariant 2). `description` is Markdown, rendered as plain text by the client (no HTML).
+ */
+export interface SkillPreview {
+  status: "ok" | "rejected";
+  filename?: string | null;
+  sha256?: string | null;
+  badge?: "verified" | "community" | null;
+  builtin?: boolean;
+  pack_id?: string | null;
+  version?: number | null;
+  display_name?: string | null;
+  business_types?: string[];
+  description?: string;
+  data_needs?: DataNeed[];
+  questions?: AdvisorQuestion[];
+  detectors?: SkillRule[];
+  kpis?: SkillKpi[];
+  notices?: string[];
+  errors?: string[];
+}
+
+export interface SkillRule {
+  detector: string;
+  label: string;
 }
 
 export interface Skip {
