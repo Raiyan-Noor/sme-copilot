@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowRight, ChevronDown, Menu, PanelRightOpen, SquarePen } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { useEffect, useState, useSyncExternalStore } from "react";
 
 import { Logo } from "@/components/brand/Logo";
@@ -15,6 +16,7 @@ import { errorMessage } from "@/lib/errors";
 import { ApprovalSheet } from "./approval-sheet";
 import { Conversation } from "./conversation";
 import { DetailPanel } from "./detail-panel";
+import { Onboarding } from "./onboarding";
 import { Rail, TodaySheet } from "./rail";
 import { Sidebar } from "./sidebar";
 import { AdvisorProvider, BRIEF_ID, NEW_ID, useAdvisor } from "./state";
@@ -192,6 +194,9 @@ function Gate({ children }: { children: React.ReactNode }) {
 
 function PerBusiness() {
   const { business } = useBusiness();
+  const pathname = usePathname();
+  // Start fresh: a new business is set up full-screen, outside any existing business's view.
+  if (pathname === "/start") return <Onboarding />;
   // A business switch starts a fresh day view: its own brief, conversations and approvals.
   return (
     <AdvisorProvider key={business?.id ?? "none"}>

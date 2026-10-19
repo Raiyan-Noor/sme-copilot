@@ -6,6 +6,10 @@ cited (no digit outside a `{fact:<id>}` placeholder, no unknown fact ID). A reje
 that fails too, or the LLM is unavailable, the brief is template text built here from the same bundle, so the owner
 never sees a digit the LLM wrote.
 
+Product and ad insights (best and worst margins, slow movers, stock about to run out, campaigns losing money, best
+channel) are structured sections built in code from engine facts, shown next to the prose; they are not part of the
+LLM bundle. `could_also_check` lists what the owner skipped at onboarding and what adding it would unlock.
+
 The brief reports actions exactly as the gateway decided them: `executed_actions` lists only gateway decisions with
 status `executed`. Everything else is "not done" with the rule that fired, or "waiting for your approval".
 """
@@ -21,6 +25,8 @@ from pydantic import BaseModel
 from app.agent.context import Profile, safe_label
 from app.agent.tools import LEAK_DETAIL_LABELS, leak_subject
 from app.audit import AuditLog
+from app.engine.ads import campaign_prefix
+from app.engine.products import margin_fact_id
 from app.engine.scheduled import scheduled_prefix
 from app.firewall.digit_check import check_output
 from app.firewall.fact import Fact
@@ -109,6 +115,36 @@ class ImproveItem(BaseModel):
     facts: dict[str, Fact]
 
 
+class ProductLine(BaseModel):
+    product_id: str
+    name: str
+    margin: Fact | None = None
+    days_of_cover: Fact | None = None
+
+
+class ProductBrief(BaseModel):
+    best_margin: ProductLine | None = None
+    worst_margin: ProductLine | None = None
+    slow_movers: list[ProductLine] = []
+    stockout_risk: list[ProductLine] = []
+
+
+class CampaignLine(BaseModel):
+    campaign_id: str
+    campaign: str
+    channel: str
+    spend: Fact
+    attributed_sales: Fact | None = None
+    roas: Fact | None = None
+
+
+class AdBrief(BaseModel):
+    total_spend: Fact
+    losing: list[CampaignLine] = []
+    best_channel: str | None = None
+    best_channel_roas: Fact | None = None
+
+
 class BriefFirewall(BaseModel):
     attempts: int
     rejected: list[list[str]]
@@ -129,6 +165,9 @@ class MorningBrief(BaseModel):
     coming_up: list[ComingUpItem]
     improve: ImproveItem | None
     firewall: BriefFirewall
+    products: ProductBrief | None = None
+    ads: AdBrief | None = None
+    could_also_check: list[str] = []
 
 
 class _Cite:
@@ -224,7 +263,7 @@ def build(computed: Computed, profile: Profile, today: date, reminders: list[Rem
                    for d in leak.details}
         improve_bundle = _compact({"finding": safe_label(title), "about": about, "yearly_impact": impact,
                                    "details": details})
-        text = f"{safe_label(title)}" + (f" ({about})" if about else "") + f": about {impact} a year."
+        text = f"{safe_label(title)}" + (f" ({about})" if about else "") + f": about {impact}."
         improve = ImproveItem(leak_id=leak.id, detector=leak.detector, title=safe_label(title), about=about,
                               text=text, yearly_saving=leak.impact,
                               facts={f.id: f for f in leak.facts()})
@@ -250,6 +289,63 @@ def build(computed: Computed, profile: Profile, today: date, reminders: list[Rem
         firewall=BriefFirewall(attempts=0, rejected=[], fallback=True),
     )
     return bundle, brief
+
+
+def product_brief(computed: Computed) -> ProductBrief | None:
+    """Best and worst margins, slow movers and stock about to run out, from the engine's product facts."""
+    insights, store = computed.products, computed.store
+    names = {p.id: safe_label(p.name) for p in computed.inputs.products}
+    margin_ids = {p.id: margin_fact_id(p.id) for p in computed.inputs.products}
+
+    def line(pid: str | None) -> ProductLine | None:
+        if pid is None:
+            return None
+        get = lambda fid: store.get(fid) if fid and fid in store else None  # noqa: E731
+        return ProductLine(product_id=pid, name=names.get(pid, safe_label(pid)), margin=get(margin_ids.get(pid)),
+                           days_of_cover=get(insights.cover_fact.get(pid)))
+
+    brief = ProductBrief(best_margin=line(insights.best_margin), worst_margin=line(insights.worst_margin),
+                         slow_movers=[line(p) for p in insights.slow_movers[:5]],
+                         stockout_risk=[line(p) for p in insights.stockout_risk[:5]])
+    empty = not (brief.best_margin or brief.worst_margin or brief.slow_movers or brief.stockout_risk)
+    return None if empty else brief
+
+
+def ad_brief(computed: Computed) -> AdBrief | None:
+    """Campaigns whose attributed sales are below their spend, and the channel with the best return."""
+    ads, store = computed.ads, computed.store
+    if not ads.campaigns or "ads.total_spend" not in store:
+        return None
+    get = lambda fid: store.get(fid) if fid in store else None  # noqa: E731
+    by_id = {c.id: c for c in ads.campaigns}
+    losing = []
+    for cid in ads.losing:
+        c, pre = by_id[cid], campaign_prefix(cid)
+        losing.append(CampaignLine(campaign_id=cid, campaign=safe_label(c.name), channel=safe_label(c.channel),
+                                   spend=store.get(f"{pre}.spend"), attributed_sales=get(f"{pre}.attributed_sales"),
+                                   roas=get(f"{pre}.roas")))
+    return AdBrief(total_spend=store.get("ads.total_spend"), losing=losing,
+                   best_channel=safe_label(ads.best_channel) if ads.best_channel else None,
+                   best_channel_roas=get(ads.channel_fact.get(ads.best_channel, "")) if ads.best_channel else None)
+
+
+def _section_facts(brief: MorningBrief) -> dict[str, Fact]:
+    facts: dict[str, Fact] = {}
+    if brief.products:
+        p = brief.products
+        for line in [p.best_margin, p.worst_margin, *p.slow_movers, *p.stockout_risk]:
+            for fact in (line.margin, line.days_of_cover) if line else ():
+                if fact is not None:
+                    facts[fact.id] = fact
+    if brief.ads:
+        facts[brief.ads.total_spend.id] = brief.ads.total_spend
+        for c in brief.ads.losing:
+            for fact in (c.spend, c.attributed_sales, c.roas):
+                if fact is not None:
+                    facts[fact.id] = fact
+        if brief.ads.best_channel_roas:
+            facts[brief.ads.best_channel_roas.id] = brief.ads.best_channel_roas
+    return facts
 
 
 def template_paragraphs(b: dict[str, Any]) -> list[str]:
@@ -279,7 +375,7 @@ def template_paragraphs(b: dict[str, Any]) -> list[str]:
     leak = b.get("biggest_leak")
     if leak:
         out.append(f"One thing to improve: {leak['finding']}" + (f" ({leak['about']})" if leak.get("about") else "")
-                   + f", about {leak['yearly_impact']} a year.")
+                   + f", about {leak['yearly_impact']}.")
     return out
 
 
@@ -294,9 +390,12 @@ def _paragraphs(text: str) -> list[str]:
 
 
 def write(llm: Any, computed: Computed, profile: Profile, today: date, reminders: list[ReminderOutcome],
-          pending: list[Approval], audit: AuditLog) -> MorningBrief:
+          pending: list[Approval], audit: AuditLog, could_also_check: list[str] = ()) -> MorningBrief:
     """Build the bundle, ask the brief writer, firewall the draft (one re-prompt), else use the template."""
     bundle, brief = build(computed, profile, today, reminders, pending)
+    brief = brief.model_copy(update={"products": product_brief(computed), "ads": ad_brief(computed),
+                                     "could_also_check": list(could_also_check)})
+    brief = brief.model_copy(update={"facts": {**brief.facts, **_section_facts(brief)}})
     known = FactStore()
     known.add_all(brief.facts.values())
     messages: list[dict[str, Any]] = [
@@ -328,7 +427,7 @@ def write(llm: Any, computed: Computed, profile: Profile, today: date, reminders
     if text is not None:
         render(text, known)  # re-checks the firewall: there is no path around it
         brief = brief.model_copy(update={"generated_by": "llm", "paragraphs": _paragraphs(text)})
-    for p in brief.paragraphs:
+    for p in brief.paragraphs + brief.could_also_check:
         render(p, known)
     brief = brief.model_copy(update={"firewall": BriefFirewall(attempts=attempts, rejected=rejected,
                                                                fallback=text is None)})

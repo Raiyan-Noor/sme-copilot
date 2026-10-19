@@ -31,6 +31,10 @@ class SandboxBank:
         self._lock = threading.Lock()
         self._conn.executescript(SCHEMA)
 
+    def close(self) -> None:
+        with self._lock:
+            self._conn.close()
+
     def _record(self, kind: str, today: date, details: dict) -> dict:
         with self._lock:
             cur = self._conn.execute(

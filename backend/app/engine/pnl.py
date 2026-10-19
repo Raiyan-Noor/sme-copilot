@@ -11,7 +11,7 @@ from datetime import date
 from typing import Literal
 
 from app.clock import Clock
-from app.engine.common import a_date, count, in_window, line_of, money, ratio, slug, window
+from app.engine.common import CLOCK_SOURCE, a_date, count, in_window, line_of, money, ratio, slug, window
 from app.engine.pack_inputs import EnginePack
 from app.firewall.fact import Fact
 from app.ledger.snapshot import LedgerSnapshot, Transaction
@@ -39,7 +39,7 @@ def _lines(rows: list[Transaction], pack: EnginePack, currency: str, prefix: str
 
     def ids(ts: list[Transaction]) -> list[str]:
         # A zero line cites every row it scanned, so "nothing here" is still traceable.
-        return [t.id for t in ts] or [t.id for t in rows]
+        return [t.id for t in ts] or [t.id for t in rows] or [CLOCK_SOURCE]
 
     rev, cogs, opex = by_line["revenue"], by_line["cogs"], by_line["operating"]
     revenue, cost = total(rev), -total(cogs)

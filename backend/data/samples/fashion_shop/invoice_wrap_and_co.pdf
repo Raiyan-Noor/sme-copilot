@@ -1,0 +1,67 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R /F2 6 0 R >> >> >>
+endobj
+4 0 obj
+<< /Length 1581 >>
+stream
+BT 0 0 0 rg 0 Tr /F2 18 Tf 50 740 Td (Wrap & Co Packaging) Tj ET
+BT 0 0 0 rg 0 Tr /F1 9 Tf 50 722 Td (2 Mill Road) Tj ET
+BT 0 0 0 rg 0 Tr /F1 9 Tf 50 709 Td (hello@wrapandco.example) Tj ET
+BT 0 0 0 rg 0 Tr /F2 18 Tf 400 740 Td (INVOICE) Tj ET
+BT 0 0 0 rg 0 Tr /F1 10 Tf 400 720 Td (Invoice no: WC-0932) Tj ET
+BT 0 0 0 rg 0 Tr /F1 10 Tf 400 706 Td (Date: 2026-10-13) Tj ET
+BT 0 0 0 rg 0 Tr /F1 10 Tf 400 692 Td (Due: 2026-10-27) Tj ET
+BT 0 0 0 rg 0 Tr /F2 10 Tf 50 660 Td (Bill to) Tj ET
+BT 0 0 0 rg 0 Tr /F1 10 Tf 50 646 Td (Rosa & Thread) Tj ET
+BT 0 0 0 rg 0 Tr /F1 10 Tf 50 633 Td (12 Market Lane) Tj ET
+BT 0 0 0 rg 0 Tr /F1 10 Tf 50 620 Td (accounts@rosathread.example) Tj ET
+BT 0 0 0 rg 0 Tr /F2 10 Tf 50 590 Td (Description) Tj ET
+BT 0 0 0 rg 0 Tr /F2 10 Tf 330 590 Td (Qty) Tj ET
+BT 0 0 0 rg 0 Tr /F2 10 Tf 390 590 Td (Unit price) Tj ET
+BT 0 0 0 rg 0 Tr /F2 10 Tf 480 590 Td (Amount) Tj ET
+BT 0 0 0 rg 0 Tr /F1 10 Tf 50 574 Td (Paper carrier bags, large) Tj ET
+BT 0 0 0 rg 0 Tr /F1 10 Tf 330 574 Td (500) Tj ET
+BT 0 0 0 rg 0 Tr /F1 10 Tf 390 574 Td ($0.09) Tj ET
+BT 0 0 0 rg 0 Tr /F1 10 Tf 480 574 Td ($45.00) Tj ET
+BT 0 0 0 rg 0 Tr /F1 10 Tf 50 558 Td (Gift boxes) Tj ET
+BT 0 0 0 rg 0 Tr /F1 10 Tf 330 558 Td (120) Tj ET
+BT 0 0 0 rg 0 Tr /F1 10 Tf 390 558 Td ($0.35) Tj ET
+BT 0 0 0 rg 0 Tr /F1 10 Tf 480 558 Td ($42.00) Tj ET
+BT 0 0 0 rg 0 Tr /F2 11 Tf 390 532 Td (Total due) Tj ET
+BT 0 0 0 rg 0 Tr /F2 11 Tf 480 532 Td ($87.00) Tj ET
+BT 0 0 0 rg 0 Tr /F1 9 Tf 50 498 Td (Payment terms: 14 days.) Tj ET
+BT 0 0 0 rg 0 Tr /F1 9 Tf 50 478 Td (Pay to: Wrap & Co Packaging) Tj ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+6 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>
+endobj
+7 0 obj
+<< /Title (Invoice WC-0932) /Producer (synthetic seed generator) >>
+endobj
+xref
+0 8
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000121 00000 n 
+0000000257 00000 n 
+0000001890 00000 n 
+0000001987 00000 n 
+0000002089 00000 n 
+trailer
+<< /Size 8 /Root 1 0 R /Info 7 0 R >>
+startxref
+2172
+%%EOF

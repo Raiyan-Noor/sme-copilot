@@ -30,7 +30,7 @@ from app.config import Settings
 from app.gateway import Gateway
 from app.llm.adapter import LLMAdapter
 from app.services.businesses import bootstrap_from_seed, business_info, open_business, seed_profiles
-from app.services.finance import Computed, compute, ledger_version, load_inputs
+from app.services.finance import Computed, compute, ledger_version, load_inputs, records_version
 
 FACT_CACHE_SIZE = 16
 
@@ -151,11 +151,21 @@ class Runtime:
                 self._gateways[business_id] = gw
             return gw
 
+    def forget(self, business_id: str) -> None:
+        """Drop a deleted business's gateway and cached facts (onboarding reset)."""
+        with self._lock:
+            gw = self._gateways.pop(business_id, None)
+            if gw is not None:
+                gw.close()
+            for key in [k for k in self._facts if k[0] == business_id]:
+                self._facts.pop(key)
+
     # Facts
     def facts(self, business_id: str) -> Computed:
         """Every fact for the business as of the simulated today, computed once per ledger version."""
         with self.business(business_id) as conn, self._lock:
-            key = (business_id, business_info(conn).pack_id, self.clock.today(), ledger_version(conn))
+            key = (business_id, business_info(conn).pack_id, self.clock.today(), ledger_version(conn),
+                   records_version(conn, self.settings.seed_dir))
             cached = self._facts.get(key)
             if cached is not None:
                 return cached

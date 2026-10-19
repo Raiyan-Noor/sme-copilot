@@ -292,7 +292,9 @@ class BillsArgs(BaseModel):
 
 # Scheduled items from the business's own records. Anything else (e.g. due dates the extractor read from an email)
 # is untrusted: its IDs are not trusted and its facts force owner approval when used in an action (invariant 3).
-TRUSTED_SCHEDULE_SOURCES = frozenset({"contract", "invoice", "estimate"})
+# owner_entered: bills the owner typed in at onboarding. Amounts read from uploaded documents keep an untrusted
+# source even after the owner approves them (services/onboarding.DOCUMENT_SOURCE).
+TRUSTED_SCHEDULE_SOURCES = frozenset({"contract", "invoice", "estimate", "owner_entered"})
 
 
 def _scheduled_entry(ctx: TurnContext, item, id_key: str, party_key: str) -> dict[str, Any]:
@@ -349,6 +351,9 @@ LEAK_DETAIL_LABELS = {
     "since": "since", "missed": "discounts missed", "invoices": "invoices paid after the deadline",
     "discount_rate": "discount offered", "stock_value": "stock value", "units_on_hand": "units on hand",
     "units_bought": "units bought", "sell_through": "share sold", "days_held": "time held",
+    "spend": "ad spend", "attributed_sales": "sales from the ads", "roas": "return on ad spend",
+    "return_rate": "return rate", "returned": "units returned", "sold": "units sold", "refunded": "refunded",
+    "healthy_rate": "expected return rate",
 }
 
 
@@ -362,6 +367,8 @@ def leak_subject(finding, products, names: dict[str, str]) -> str | None:
         parts.append(safe_label(product.name if product else pid))
     if (group := finding.subject.get("group")):
         parts.append(safe_label(group.replace("_", " ")))
+    if (campaign := finding.subject.get("campaign")):
+        parts.append(safe_label(campaign))
     return ", ".join(parts) or None
 
 

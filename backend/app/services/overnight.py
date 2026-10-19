@@ -21,6 +21,7 @@ from app.agent.context import load_profile
 from app.agent.tools import TRUSTED_SCHEDULE_SOURCES
 from app.gateway import ArgValue, Gateway, ProposedAction
 from app.services.finance import Computed
+from app.services.onboarding import skipped_hints
 
 REMINDER_TOOL = "send_invoice_reminder"
 
@@ -67,7 +68,7 @@ def run_overnight(rt, business_id: str, *, reminders: bool = True) -> OvernightR
     outcomes = overdue_reminders(computed, gateway) if reminders else []
     profile = load_profile(computed, rt.settings.seed_dir)
     brief = brief_writer.write(rt.llm, computed, profile, today, outcomes, gateway.store.pending_approvals(today),
-                               rt.audit)
+                               rt.audit, could_also_check=skipped_hints(rt, business_id))
     brief_writer.save(rt.data_dir / business_id, brief)
     rt.audit.append("overnight.finished", {
         "business_id": business_id, "as_of": today.isoformat(),

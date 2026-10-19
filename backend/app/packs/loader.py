@@ -2,7 +2,8 @@
 
 Validation happens once, at load: the Pydantic schema, then every referenced detector must be registered and its
 params must validate against that detector's params model, and every category a detector names must exist in
-the pack. A bad pack fails loudly here instead of producing wrong numbers later.
+the pack, and every onboarding answer that sets a detector param must be a valid value for it. A bad pack fails
+loudly here instead of producing wrong numbers later.
 """
 
 from functools import lru_cache
@@ -36,6 +37,19 @@ def _check_detectors(pack: Pack) -> None:
             unknown = set(getattr(params, field, ())) - set(pack.categories)
             if unknown:
                 raise PackError(f"pack {pack.id}: detector {cfg.detector} names unknown categories {sorted(unknown)}")
+        for q in pack.advisor_questions:
+            if q.effect.detector != cfg.detector:
+                continue
+            if q.effect.param not in spec.params_model.model_fields:
+                raise PackError(f"pack {pack.id}: question {q.id} sets unknown param {cfg.detector}.{q.effect.param}")
+            for option in q.options:
+                if option.value is None:
+                    continue
+                try:
+                    spec.params_model.model_validate({**cfg.params, q.effect.param: option.value})
+                except ValidationError as e:
+                    raise PackError(f"pack {pack.id}: question {q.id} option {option.label!r} is not a valid "
+                                    f"{cfg.detector}.{q.effect.param}: {e}") from None
 
 
 def load_pack_file(path: Path) -> Pack:

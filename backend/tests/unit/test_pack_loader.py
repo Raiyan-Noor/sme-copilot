@@ -21,7 +21,7 @@ def _write(tmp_path: Path, doc: dict, name: str = "grocery_retail") -> Path:
 
 
 def test_bundled_packs_load():
-    assert list_pack_ids() == ["fashion_retail", "grocery_retail"]
+    assert list_pack_ids() == ["fashion_retail", "general_retail", "grocery_retail"]
     for pack_id in list_pack_ids():
         pack = load_pack(pack_id)
         assert pack.id == pack_id and pack.benchmarks_synthetic is True

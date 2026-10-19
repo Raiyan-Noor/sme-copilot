@@ -19,6 +19,7 @@ import type { DoneItem, InboxItem, MorningBrief, NeedsYouItem } from "@/lib/type
 import { useApi } from "@/lib/use-api";
 import { cn } from "@/lib/utils";
 
+import { BriefInsights, CouldAlsoCheck } from "./brief-insights";
 import { useFastForward } from "./fast-forward";
 import { StageLine } from "./stage-line";
 import { useAdvisor, type Resolution } from "./state";
@@ -89,8 +90,18 @@ export function BriefMessage() {
       </ChatBubble>
     );
   }
-  const held = inbox.data?.items.filter((i) => i.record.sentinel.hold) ?? [];
+  const held = inbox.data?.items.filter((i) => i.record.sentinel.hold && !ownUploadOnlyNew(i)) ?? [];
   return <Brief brief={brief.data} held={held} />;
+}
+
+/** Flags any brand-new business gets on its own uploaded invoices (nobody has been paid yet). */
+const NEW_PAYEE_FLAGS = new Set(["first_time_payee", "amount_anomaly"]);
+
+/** A document the owner uploaded at setup whose only flags are "new payee": it stays held in the inbox (and any
+ * payment still needs a signature), but it is not raised as possible fraud in the brief. */
+function ownUploadOnlyNew(item: InboxItem): boolean {
+  const flags = item.record.sentinel.flags ?? [];
+  return item.record.source === "upload" && flags.every((f) => NEW_PAYEE_FLAGS.has(f.code));
 }
 
 function Brief({ brief, held }: { brief: MorningBrief; held: InboxItem[] }) {
@@ -124,7 +135,9 @@ function Brief({ brief, held }: { brief: MorningBrief; held: InboxItem[] }) {
             <NeedsYou key={n.approval_id} item={n} brief={brief} />
           ))}
           {brief.improve ? <Improve brief={brief} /> : null}
+          <BriefInsights brief={brief} />
           <Overnight done={brief.done_overnight} notDone={brief.not_done} facts={brief.facts} />
+          <CouldAlsoCheck hints={brief.could_also_check} />
         </div>
       }
     >

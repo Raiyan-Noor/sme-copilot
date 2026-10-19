@@ -99,6 +99,12 @@ class Gateway:
         self.loan_drafts = self.executors.loan_drafts
         assert set(self.policy.t2) | set(self.policy.t3) == set(ACTION_ARGS), "policy.yaml and dispatch disagree"
 
+    def close(self) -> None:
+        """Release the business's state files (onboarding deletes a business)."""
+        self.store.close()
+        self.executors.bank.close()
+        self.executors.mailbox.close()
+
     @classmethod
     def for_tenant(cls, tenant_dir: Path, audit: AuditLog, clock: Clock, policy: Policy | None = None) -> "Gateway":
         return cls(GatewayStore(tenant_dir / "gateway.sqlite"), audit, clock, policy, tenant_dir)

@@ -15,7 +15,7 @@ The original build plan (prompts 0–17) is fully built, including Prompt 16 (sc
 | F1 | Document upload | Merged into F4 |
 | F2 | Sending approved emails | Prompt ready (P4) |
 | F3 | Live demo console | Prompt ready (P2) |
-| F4 | Onboarding from zero | Prompt ready (P1) |
+| F4 | Onboarding from zero | Done (P1) |
 | F5 | Payments tab | Prompt ready (P3) |
 | F6 | Product and ad knowledge in Skill Packs | Merged into P1 |
 | F7 | Transactions tab | Prompt ready (P5) |

@@ -95,10 +95,11 @@ class Profile:
 
 
 def load_profile(computed: Computed, seed_dir: Path) -> Profile:
-    """Names the planner may use. Comes from the business's own seed records, never from untrusted content."""
+    """Names the planner may use. Comes from the business's own records (seed folder, or the contacts the owner
+    confirmed at onboarding), never from untrusted content."""
     info = computed.inputs.info
     owner, names = "the owner", {}
-    folder = seed_dir / info.seed_source if info.seed_source else None
+    folder = computed.inputs.records or (seed_dir / info.seed_source if info.seed_source else None)
     if folder and (folder / "counterparties.json").is_file():
         doc = json.loads((folder / "counterparties.json").read_text(encoding="utf-8"))
         owner = safe_label((doc.get("owner") or {}).get("name")) or owner

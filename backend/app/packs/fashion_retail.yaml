@@ -169,6 +169,12 @@ leak_detectors:
   - detector: slow_moving_stock
     label: Stock that is not selling
     params: {min_days_held: 90, max_sell_through: 0.4, carrying_cost_rate: 0.25}
+  - detector: losing_ad_campaigns
+    label: Ad campaign costing more than it earns
+    params: {lookback_days: 90, min_roas: 1.0}
+  - detector: product_returns
+    label: Product coming back too often
+    params: {lookback_days: 90, max_return_rate: 0.15, min_units_sold: 20}
 
 # Ranking input for the financing matcher; eligibility stays with each product's own rules.
 financing_fit:
@@ -191,3 +197,82 @@ readiness:
     - {id: ready, label: Ready, min_score: 0.70}
     - {id: building, label: Building, min_score: 0.45}
     - {id: early, label: Early, min_score: 0.0}
+
+# Onboarding: words in the owner's own description that pick this pack.
+business_types: [clothing, clothes, fashion, boutique, apparel, garment, dress, shoe, footwear, accessories, tailor, saree, textile]
+
+# What onboarding asks for, one at a time. The owner can upload, or skip; a skipped item shows in the brief as
+# "I could also check <unlocks> if you add <label>".
+data_needs:
+  - id: bank_statement
+    kind: bank
+    required: true
+    ask: "Upload a bank or mobile-wallet statement (CSV), the last three months if you can."
+    why: "It is how I see your cash, every sale, bill and fee, and how many days your cash would last."
+    label: a bank or wallet statement
+    unlocks: "your cash buffer and the leaks hiding in your bills"
+  - id: products
+    kind: products
+    required: true
+    ask: "Upload your product list with cost price, sale price and stock (CSV from your shop system or a spreadsheet)."
+    why: "In fashion the margin is made or lost per piece: markdowns, returns and slow sizes all hide in the total."
+    label: your product list
+    unlocks: "margins per product and stock that is about to run out"
+  - id: product_sales
+    kind: sales
+    required: false
+    ask: "Upload your sales per product (date, product, quantity, amount). Three months is plenty."
+    why: "Sales per product show what actually sells, what comes back as returns, and what sits on the rail."
+    label: your sales per product
+    unlocks: "your best and worst sellers and which products come back as returns"
+  - id: ad_spend
+    kind: ad_spend
+    required: true
+    ask: "Do you run Facebook, Instagram or Google ads? If so, upload your ad spend export so I can check they are paying off."
+    why: "Ads that do not pay for themselves are one of the most common hidden costs for a shop that sells online."
+    label: your ad spend export
+    unlocks: "whether each ad campaign is paying for itself"
+
+# What an experienced fashion advisor asks, which owners often do not think of. Each answer becomes an owner-stated
+# fact or a detector setting for this business (packs/answers.py). Option labels are UI text for the owner.
+advisor_questions:
+  - id: return_rate
+    ask: "Do you take returns? Roughly what share of what you sell comes back?"
+    why: "Returns quietly eat fashion margins. I will flag any product that comes back more often than you expect."
+    options:
+      - {label: Exchanges only, value: 0.05}
+      - {label: Under 10%, value: 0.10}
+      - {label: 10 to 20%, value: 0.20}
+      - {label: More than 20%, value: 0.30}
+      - {label: Not sure}
+    effect: {detector: product_returns, param: max_return_rate}
+  - id: festival_stock
+    ask: "Do you buy extra stock ahead of big festivals and season changes (Eid, Christmas, Diwali, year-end sales)?"
+    why: "Festival stock sits for weeks before it sells, so I will not call it slow-moving too early."
+    options:
+      - {label: "Yes, well ahead", value: 150}
+      - {label: A little, value: 120}
+      - {label: "No", value: 90}
+      - {label: Not sure}
+    effect: {detector: slow_moving_stock, param: min_days_held}
+  - id: marketplace_fees
+    ask: "Do you sell through online marketplaces? What commission do they take?"
+    why: "Marketplace commissions come out before the money reaches you, so they hide inside your sales figure."
+    options:
+      - {label: I do not use marketplaces, value: 0}
+      - {label: About 10%, value: 0.10}
+      - {label: About 15%, value: 0.15}
+      - {label: About 20% or more, value: 0.20}
+      - {label: Not sure}
+    effect: {fact: marketplace_commission, unit: ratio}
+  - id: supplier_terms
+    ask: "How many days do your suppliers give you to pay?"
+    why: "Credit terms decide how long your cash can work for you before a bill is due."
+    options:
+      - {label: I pay upfront, value: 0}
+      - {label: About a week, value: 7}
+      - {label: About two weeks, value: 15}
+      - {label: About a month, value: 30}
+      - {label: Two months, value: 60}
+      - {label: Not sure}
+    effect: {fact: supplier_terms_days, unit: days}

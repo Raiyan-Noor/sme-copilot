@@ -18,6 +18,7 @@ from datetime import date, timedelta
 import pandas as pd
 from pydantic import Field
 
+from app.engine.ads import campaigns, roas_fact
 from app.engine.common import a_date, count, days, money, ratio, slug
 from app.firewall.fact import Fact
 from app.ledger.money import format_minor
@@ -393,5 +394,80 @@ def slow_moving_stock(df: pd.DataFrame, p: SlowMovingStockParams, ctx: DetectorC
             count(f"{pre}.units_bought", units_in, by, [ln.id for ln in lines]),
             ratio(f"{pre}.sell_through", units_out / units_in, by, ids),
             days(f"{pre}.days_held", (ctx.today - first).days, by, [lines[0].id, "clock:today"]),
+        ]))
+    return found
+
+
+# --- losing_ad_campaigns ----------------------------------------------------------------------------------------
+
+
+class LosingAdCampaignsParams(DetectorParams):
+    lookback_days: int = Field(default=90, ge=28, le=365)
+    min_roas: float = Field(default=1.0, gt=0, le=10)  # below this the campaign costs more than it brings in
+
+
+@detector("losing_ad_campaigns", LosingAdCampaignsParams)
+def losing_ad_campaigns(df: pd.DataFrame, p: LosingAdCampaignsParams, ctx: DetectorContext) -> list[Finding]:
+    """Ad campaigns whose attributed sales are below their spend (return on ad spend under `min_roas`).
+
+    Yearly impact = (spend - attributed sales) over the window, annualized. A campaign without attributed sales is
+    not judged: its return is unknown, not zero. Reads the business's own ad spend export (ledger/records.py).
+    """
+    name, by = "losing_ad_campaigns", "packs.detectors.losing_ad_campaigns"
+    found = []
+    for c in campaigns(ctx.ad_spend, ctx.today, p.lookback_days):
+        if c.roas is None or c.roas >= p.min_roas:
+            continue
+        ids = list(c.row_ids)
+        first = min(a.date for a in ctx.ad_spend if a.id in set(ids))
+        key = slug(c.id)
+        pre = _prefix(name, key)
+        found.append(_finding(name, key, ctx, _annualize(c.spend_minor - (c.sales_minor or 0), _span(ctx, first)),
+                              ids, {"campaign": c.name, "channel": c.channel}, [
+            money(f"{pre}.spend", c.spend_minor, ctx.currency, by, ids),
+            money(f"{pre}.attributed_sales", c.sales_minor or 0, ctx.currency, by, ids),
+            roas_fact(f"{pre}.roas", c.roas, ids).model_copy(update={"computed_by": by}),
+        ]))
+    return found
+
+
+# --- product_returns --------------------------------------------------------------------------------------------
+
+
+class ProductReturnsParams(DetectorParams):
+    lookback_days: int = Field(default=90, ge=28, le=365)
+    max_return_rate: Ratio = 0.15  # returned units / sold units above this counts as a leak
+    min_units_sold: int = Field(default=20, ge=1)
+
+
+@detector("product_returns", ProductReturnsParams)
+def product_returns(df: pd.DataFrame, p: ProductReturnsParams, ctx: DetectorContext) -> list[Finding]:
+    """Products that come back too often: returned units (negative qty sale lines) / units sold above
+    `max_return_rate`. Impact = yearly revenue refunded on that product (from the return lines themselves)."""
+    name, by = "product_returns", "packs.detectors.product_returns"
+    since = _since(ctx, p.lookback_days)
+    lines: dict[str, list[SaleLine]] = defaultdict(list)
+    for s in ctx.sale_lines:
+        if since < s.date <= ctx.today:
+            lines[s.product_id].append(s)
+    found = []
+    for product, ss in sorted(lines.items()):
+        sold = sum(s.qty for s in ss if s.qty > 0)
+        returns = [s for s in ss if s.qty < 0]
+        returned = -sum(s.qty for s in returns)
+        if sold < p.min_units_sold or not returns or returned / sold <= p.max_return_rate:
+            continue
+        refunded = -sum(s.revenue_minor for s in returns)
+        ids = [s.id for s in ss]
+        first = min(s.date for s in ss)
+        key = slug(product)
+        pre = _prefix(name, key)
+        found.append(_finding(name, key, ctx, _annualize(refunded, _span(ctx, first)), [s.id for s in returns],
+                              {"product_id": product}, [
+            ratio(f"{pre}.return_rate", returned / sold, by, ids),
+            count(f"{pre}.returned", returned, by, [s.id for s in returns]),
+            count(f"{pre}.sold", sold, by, [s.id for s in ss if s.qty > 0]),
+            money(f"{pre}.refunded", refunded, ctx.currency, by, [s.id for s in returns]),
+            ratio(f"{pre}.healthy_rate", p.max_return_rate, by, [f"{ctx.pack.ref}#leak_detectors.{name}"]),
         ]))
     return found

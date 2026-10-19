@@ -29,6 +29,10 @@ class SandboxMailbox:
         self._lock = threading.Lock()
         self._conn.executescript(SCHEMA)
 
+    def close(self) -> None:
+        with self._lock:
+            self._conn.close()
+
     def send(self, kind: str, recipient_id: str, details: dict, today: date) -> dict:
         with self._lock:
             cur = self._conn.execute(

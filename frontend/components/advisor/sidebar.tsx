@@ -3,6 +3,7 @@
 import {
   Check,
   ChevronsUpDown,
+  CirclePlus,
   Inbox,
   Landmark,
   PanelLeftClose,
@@ -11,6 +12,7 @@ import {
   ShieldCheck,
   X,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { Logo } from "@/components/brand/Logo";
@@ -52,6 +54,7 @@ export function Sidebar({
   const inbox = useApi(key, () => api.inbox(id));
   const packs = useApi(`packs:${session}`, api.packs);
   const [menu, setMenu] = useState(false);
+  const router = useRouter();
   const flagged = inbox.data?.held ?? 0;
   const packName = (pid: string) => packs.data?.find((p) => p.id === pid)?.display_name ?? pid;
 
@@ -186,6 +189,18 @@ export function Sidebar({
                 <span className="t">{b.name}</span>
               </button>
             ))}
+            <button
+              type="button"
+              className="ka-nav"
+              role="menuitem"
+              onClick={() => {
+                setMenu(false);
+                router.push("/start");
+              }}
+            >
+              <CirclePlus size={16} strokeWidth={1.5} style={{ color: "var(--brand-primary)" }} aria-hidden />
+              <span className="t">Start fresh: a new business</span>
+            </button>
             <div className="ka-sb__label" style={{ padding: "10px 12px 2px" }}>
               Skill Pack
             </div>

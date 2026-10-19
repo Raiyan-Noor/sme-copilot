@@ -1,0 +1,332 @@
+date,description,counterparty,amount,balance,reference
+2026-07-20,Card settlement,Acquirer card sales,113.30,6613.30,RT-00001
+2026-07-20,Merchant fee card sales,Acquirer card sales,-2.72,6610.58,RT-00002
+2026-07-20,QR payment received,Wallet customer,92.70,6703.28,RT-00003
+2026-07-20,Meta ads boost,Meta Platforms,-137.68,6565.60,RT-00004
+2026-07-20,Google ads,Google Ads,-34.62,6530.98,RT-00005
+2026-07-21,Card settlement,Acquirer card sales,130.35,6661.33,RT-00006
+2026-07-21,Merchant fee card sales,Acquirer card sales,-3.13,6658.20,RT-00007
+2026-07-21,QR payment received,Wallet customer,106.65,6764.85,RT-00008
+2026-07-22,Card settlement,Acquirer card sales,70.95,6835.80,RT-00009
+2026-07-22,Merchant fee card sales,Acquirer card sales,-1.70,6834.10,RT-00010
+2026-07-22,QR payment received,Wallet customer,58.05,6892.15,RT-00011
+2026-07-22,Garments collection order,Indigo Loom Textiles,-1654.40,5237.75,RT-00012
+2026-07-23,Card settlement,Acquirer card sales,92.95,5330.70,RT-00013
+2026-07-23,Merchant fee card sales,Acquirer card sales,-2.23,5328.47,RT-00014
+2026-07-23,QR payment received,Wallet customer,76.05,5404.52,RT-00015
+2026-07-24,Card settlement,Acquirer card sales,137.50,5542.02,RT-00016
+2026-07-24,Merchant fee card sales,Acquirer card sales,-3.30,5538.72,RT-00017
+2026-07-24,QR payment received,Wallet customer,112.50,5651.22,RT-00018
+2026-07-25,Card settlement,Acquirer card sales,201.85,5853.07,RT-00019
+2026-07-25,Merchant fee card sales,Acquirer card sales,-4.84,5848.23,RT-00020
+2026-07-25,QR payment received,Wallet customer,165.15,6013.38,RT-00021
+2026-07-26,Card settlement,Acquirer card sales,149.05,6162.43,RT-00022
+2026-07-26,Merchant fee card sales,Acquirer card sales,-3.58,6158.85,RT-00023
+2026-07-26,QR payment received,Wallet customer,121.95,6280.80,RT-00024
+2026-07-27,Card settlement,Acquirer card sales,121.00,6401.80,RT-00025
+2026-07-27,Merchant fee card sales,Acquirer card sales,-2.90,6398.90,RT-00026
+2026-07-27,QR payment received,Wallet customer,99.00,6497.90,RT-00027
+2026-07-27,Meta ads boost,Meta Platforms,-127.39,6370.51,RT-00028
+2026-07-27,Google ads,Google Ads,-32.56,6337.95,RT-00029
+2026-07-28,Card settlement,Acquirer card sales,122.10,6460.05,RT-00030
+2026-07-28,Merchant fee card sales,Acquirer card sales,-2.93,6457.12,RT-00031
+2026-07-28,QR payment received,Wallet customer,99.90,6557.02,RT-00032
+2026-07-29,Card settlement,Acquirer card sales,66.00,6623.02,RT-00033
+2026-07-29,Merchant fee card sales,Acquirer card sales,-1.58,6621.44,RT-00034
+2026-07-29,QR payment received,Wallet customer,54.00,6675.44,RT-00035
+2026-07-30,Card settlement,Acquirer card sales,102.85,6778.29,RT-00036
+2026-07-30,Merchant fee card sales,Acquirer card sales,-2.47,6775.82,RT-00037
+2026-07-30,QR payment received,Wallet customer,84.15,6859.97,RT-00038
+2026-07-31,Card settlement,Acquirer card sales,194.70,7054.67,RT-00039
+2026-07-31,Merchant fee card sales,Acquirer card sales,-4.67,7050.00,RT-00040
+2026-07-31,QR payment received,Wallet customer,159.30,7209.30,RT-00041
+2026-08-01,Card settlement,Acquirer card sales,137.50,7346.80,RT-00042
+2026-08-01,Merchant fee card sales,Acquirer card sales,-3.30,7343.50,RT-00043
+2026-08-01,QR payment received,Wallet customer,112.50,7456.00,RT-00044
+2026-08-01,Shop rent,Banyan Properties,-1200.00,6256.00,RT-00045
+2026-08-01,Payroll staff wages,Payroll,-1800.00,4456.00,RT-00046
+2026-08-01,Refund to customer,Customer refund,-41.82,4414.18,RT-00047
+2026-08-02,Card settlement,Acquirer card sales,194.70,4608.88,RT-00048
+2026-08-02,Merchant fee card sales,Acquirer card sales,-4.67,4604.21,RT-00049
+2026-08-02,QR payment received,Wallet customer,159.30,4763.51,RT-00050
+2026-08-03,Card settlement,Acquirer card sales,79.20,4842.71,RT-00051
+2026-08-03,Merchant fee card sales,Acquirer card sales,-1.90,4840.81,RT-00052
+2026-08-03,QR payment received,Wallet customer,64.80,4905.61,RT-00053
+2026-08-03,Meta ads boost,Meta Platforms,-132.28,4773.33,RT-00054
+2026-08-03,Google ads,Google Ads,-31.66,4741.67,RT-00055
+2026-08-04,Card settlement,Acquirer card sales,165.55,4907.22,RT-00056
+2026-08-04,Merchant fee card sales,Acquirer card sales,-3.97,4903.25,RT-00057
+2026-08-04,QR payment received,Wallet customer,135.45,5038.70,RT-00058
+2026-08-05,Card settlement,Acquirer card sales,125.95,5164.65,RT-00059
+2026-08-05,Merchant fee card sales,Acquirer card sales,-3.02,5161.63,RT-00060
+2026-08-05,QR payment received,Wallet customer,103.05,5264.68,RT-00061
+2026-08-05,Electricity bill,City Power Co,-84.19,5180.49,RT-00062
+2026-08-05,Broadband internet,FiberNet Broadband,-45.00,5135.49,RT-00063
+2026-08-06,Card settlement,Acquirer card sales,126.50,5261.99,RT-00064
+2026-08-06,Merchant fee card sales,Acquirer card sales,-3.04,5258.95,RT-00065
+2026-08-06,QR payment received,Wallet customer,103.50,5362.45,RT-00066
+2026-08-07,Card settlement,Acquirer card sales,159.50,5521.95,RT-00067
+2026-08-07,Merchant fee card sales,Acquirer card sales,-3.83,5518.12,RT-00068
+2026-08-07,QR payment received,Wallet customer,130.50,5648.62,RT-00069
+2026-08-08,Card settlement,Acquirer card sales,154.55,5803.17,RT-00070
+2026-08-08,Merchant fee card sales,Acquirer card sales,-3.71,5799.46,RT-00071
+2026-08-08,QR payment received,Wallet customer,126.45,5925.91,RT-00072
+2026-08-08,Garments collection order,Indigo Loom Textiles,-1334.73,4591.18,RT-00073
+2026-08-08,Refund to customer,Customer refund,-32.17,4559.01,RT-00074
+2026-08-09,Card settlement,Acquirer card sales,134.20,4693.21,RT-00075
+2026-08-09,Merchant fee card sales,Acquirer card sales,-3.22,4689.99,RT-00076
+2026-08-09,QR payment received,Wallet customer,109.80,4799.79,RT-00077
+2026-08-10,Card settlement,Acquirer card sales,79.20,4878.99,RT-00078
+2026-08-10,Merchant fee card sales,Acquirer card sales,-1.90,4877.09,RT-00079
+2026-08-10,QR payment received,Wallet customer,64.80,4941.89,RT-00080
+2026-08-10,Meta ads boost,Meta Platforms,-141.09,4800.80,RT-00081
+2026-08-10,Google ads,Google Ads,-34.81,4765.99,RT-00082
+2026-08-11,Card settlement,Acquirer card sales,90.20,4856.19,RT-00083
+2026-08-11,Merchant fee card sales,Acquirer card sales,-2.16,4854.03,RT-00084
+2026-08-11,QR payment received,Wallet customer,73.80,4927.83,RT-00085
+2026-08-12,Card settlement,Acquirer card sales,116.60,5044.43,RT-00086
+2026-08-12,Merchant fee card sales,Acquirer card sales,-2.80,5041.63,RT-00087
+2026-08-12,QR payment received,Wallet customer,95.40,5137.03,RT-00088
+2026-08-13,Card settlement,Acquirer card sales,89.65,5226.68,RT-00089
+2026-08-13,Merchant fee card sales,Acquirer card sales,-2.15,5224.53,RT-00090
+2026-08-13,QR payment received,Wallet customer,73.35,5297.88,RT-00091
+2026-08-14,Card settlement,Acquirer card sales,172.15,5470.03,RT-00092
+2026-08-14,Merchant fee card sales,Acquirer card sales,-4.13,5465.90,RT-00093
+2026-08-14,QR payment received,Wallet customer,140.85,5606.75,RT-00094
+2026-08-15,Card settlement,Acquirer card sales,187.00,5793.75,RT-00095
+2026-08-15,Merchant fee card sales,Acquirer card sales,-4.49,5789.26,RT-00096
+2026-08-15,QR payment received,Wallet customer,153.00,5942.26,RT-00097
+2026-08-15,Accessories order,Kora Accessories,-392.70,5549.56,RT-00098
+2026-08-15,Paper bags and packaging,Wrap & Co Packaging,-65.00,5484.56,RT-00099
+2026-08-16,Card settlement,Acquirer card sales,182.60,5667.16,RT-00100
+2026-08-16,Merchant fee card sales,Acquirer card sales,-4.38,5662.78,RT-00101
+2026-08-16,QR payment received,Wallet customer,149.40,5812.18,RT-00102
+2026-08-17,Card settlement,Acquirer card sales,72.60,5884.78,RT-00103
+2026-08-17,Merchant fee card sales,Acquirer card sales,-1.74,5883.04,RT-00104
+2026-08-17,QR payment received,Wallet customer,59.40,5942.44,RT-00105
+2026-08-17,Meta ads boost,Meta Platforms,-134.91,5807.53,RT-00106
+2026-08-17,Google ads,Google Ads,-32.51,5775.02,RT-00107
+2026-08-18,Card settlement,Acquirer card sales,118.25,5893.27,RT-00108
+2026-08-18,Merchant fee card sales,Acquirer card sales,-2.84,5890.43,RT-00109
+2026-08-18,QR payment received,Wallet customer,96.75,5987.18,RT-00110
+2026-08-19,Card settlement,Acquirer card sales,135.85,6123.03,RT-00111
+2026-08-19,Merchant fee card sales,Acquirer card sales,-3.26,6119.77,RT-00112
+2026-08-19,QR payment received,Wallet customer,111.15,6230.92,RT-00113
+2026-08-20,Card settlement,Acquirer card sales,78.10,6309.02,RT-00114
+2026-08-20,Merchant fee card sales,Acquirer card sales,-1.87,6307.15,RT-00115
+2026-08-20,QR payment received,Wallet customer,63.90,6371.05,RT-00116
+2026-08-21,Card settlement,Acquirer card sales,147.95,6519.00,RT-00117
+2026-08-21,Merchant fee card sales,Acquirer card sales,-3.55,6515.45,RT-00118
+2026-08-21,QR payment received,Wallet customer,121.05,6636.50,RT-00119
+2026-08-22,Card settlement,Acquirer card sales,122.10,6758.60,RT-00120
+2026-08-22,Merchant fee card sales,Acquirer card sales,-2.93,6755.67,RT-00121
+2026-08-22,QR payment received,Wallet customer,99.90,6855.57,RT-00122
+2026-08-22,Garments collection order,Indigo Loom Textiles,-1616.80,5238.77,RT-00123
+2026-08-22,Refund to customer,Customer refund,-46.04,5192.73,RT-00124
+2026-08-23,Card settlement,Acquirer card sales,195.25,5387.98,RT-00125
+2026-08-23,Merchant fee card sales,Acquirer card sales,-4.69,5383.29,RT-00126
+2026-08-23,QR payment received,Wallet customer,159.75,5543.04,RT-00127
+2026-08-24,Card settlement,Acquirer card sales,147.95,5690.99,RT-00128
+2026-08-24,Merchant fee card sales,Acquirer card sales,-3.55,5687.44,RT-00129
+2026-08-24,QR payment received,Wallet customer,121.05,5808.49,RT-00130
+2026-08-24,Meta ads boost,Meta Platforms,-150.53,5657.96,RT-00131
+2026-08-24,Google ads,Google Ads,-31.59,5626.37,RT-00132
+2026-08-25,Card settlement,Acquirer card sales,127.05,5753.42,RT-00133
+2026-08-25,Merchant fee card sales,Acquirer card sales,-3.05,5750.37,RT-00134
+2026-08-25,QR payment received,Wallet customer,103.95,5854.32,RT-00135
+2026-08-26,Card settlement,Acquirer card sales,143.55,5997.87,RT-00136
+2026-08-26,Merchant fee card sales,Acquirer card sales,-3.45,5994.42,RT-00137
+2026-08-26,QR payment received,Wallet customer,117.45,6111.87,RT-00138
+2026-08-27,Card settlement,Acquirer card sales,231.55,6343.42,RT-00139
+2026-08-27,Merchant fee card sales,Acquirer card sales,-5.56,6337.86,RT-00140
+2026-08-27,QR payment received,Wallet customer,189.45,6527.31,RT-00141
+2026-08-28,Card settlement,Acquirer card sales,209.55,6736.86,RT-00142
+2026-08-28,Merchant fee card sales,Acquirer card sales,-5.03,6731.83,RT-00143
+2026-08-28,QR payment received,Wallet customer,171.45,6903.28,RT-00144
+2026-08-29,Card settlement,Acquirer card sales,151.80,7055.08,RT-00145
+2026-08-29,Merchant fee card sales,Acquirer card sales,-3.64,7051.44,RT-00146
+2026-08-29,QR payment received,Wallet customer,124.20,7175.64,RT-00147
+2026-08-30,Card settlement,Acquirer card sales,186.45,7362.09,RT-00148
+2026-08-30,Merchant fee card sales,Acquirer card sales,-4.47,7357.62,RT-00149
+2026-08-30,QR payment received,Wallet customer,152.55,7510.17,RT-00150
+2026-08-31,Card settlement,Acquirer card sales,55.00,7565.17,RT-00151
+2026-08-31,Merchant fee card sales,Acquirer card sales,-1.32,7563.85,RT-00152
+2026-08-31,QR payment received,Wallet customer,45.00,7608.85,RT-00153
+2026-08-31,Meta ads boost,Meta Platforms,-145.78,7463.07,RT-00154
+2026-08-31,Google ads,Google Ads,-35.81,7427.26,RT-00155
+2026-09-01,Card settlement,Acquirer card sales,111.10,7538.36,RT-00156
+2026-09-01,Merchant fee card sales,Acquirer card sales,-2.67,7535.69,RT-00157
+2026-09-01,QR payment received,Wallet customer,90.90,7626.59,RT-00158
+2026-09-01,Shop rent,Banyan Properties,-1200.00,6426.59,RT-00159
+2026-09-01,Payroll staff wages,Payroll,-1800.00,4626.59,RT-00160
+2026-09-02,Card settlement,Acquirer card sales,114.40,4740.99,RT-00161
+2026-09-02,Merchant fee card sales,Acquirer card sales,-2.75,4738.24,RT-00162
+2026-09-02,QR payment received,Wallet customer,93.60,4831.84,RT-00163
+2026-09-03,Card settlement,Acquirer card sales,65.45,4897.29,RT-00164
+2026-09-03,Merchant fee card sales,Acquirer card sales,-1.57,4895.72,RT-00165
+2026-09-03,QR payment received,Wallet customer,53.55,4949.27,RT-00166
+2026-09-04,Card settlement,Acquirer card sales,184.25,5133.52,RT-00167
+2026-09-04,Merchant fee card sales,Acquirer card sales,-4.42,5129.10,RT-00168
+2026-09-04,QR payment received,Wallet customer,150.75,5279.85,RT-00169
+2026-09-05,Card settlement,Acquirer card sales,184.25,5464.10,RT-00170
+2026-09-05,Merchant fee card sales,Acquirer card sales,-4.42,5459.68,RT-00171
+2026-09-05,QR payment received,Wallet customer,150.75,5610.43,RT-00172
+2026-09-05,Electricity bill,City Power Co,-96.69,5513.74,RT-00173
+2026-09-05,Broadband internet,FiberNet Broadband,-45.00,5468.74,RT-00174
+2026-09-05,Refund to customer,Customer refund,-36.48,5432.26,RT-00175
+2026-09-06,Card settlement,Acquirer card sales,100.65,5532.91,RT-00176
+2026-09-06,Merchant fee card sales,Acquirer card sales,-2.42,5530.49,RT-00177
+2026-09-06,QR payment received,Wallet customer,82.35,5612.84,RT-00178
+2026-09-07,Card settlement,Acquirer card sales,85.80,5698.64,RT-00179
+2026-09-07,Merchant fee card sales,Acquirer card sales,-2.06,5696.58,RT-00180
+2026-09-07,QR payment received,Wallet customer,70.20,5766.78,RT-00181
+2026-09-07,Meta ads boost,Meta Platforms,-139.44,5627.34,RT-00182
+2026-09-07,Google ads,Google Ads,-36.16,5591.18,RT-00183
+2026-09-08,Card settlement,Acquirer card sales,136.95,5728.13,RT-00184
+2026-09-08,Merchant fee card sales,Acquirer card sales,-3.29,5724.84,RT-00185
+2026-09-08,QR payment received,Wallet customer,112.05,5836.89,RT-00186
+2026-09-08,Garments collection order,Indigo Loom Textiles,-1641.09,4195.80,RT-00187
+2026-09-09,Card settlement,Acquirer card sales,152.35,4348.15,RT-00188
+2026-09-09,Merchant fee card sales,Acquirer card sales,-3.66,4344.49,RT-00189
+2026-09-09,QR payment received,Wallet customer,124.65,4469.14,RT-00190
+2026-09-10,Card settlement,Acquirer card sales,66.00,4535.14,RT-00191
+2026-09-10,Merchant fee card sales,Acquirer card sales,-1.58,4533.56,RT-00192
+2026-09-10,QR payment received,Wallet customer,54.00,4587.56,RT-00193
+2026-09-11,Card settlement,Acquirer card sales,183.15,4770.71,RT-00194
+2026-09-11,Merchant fee card sales,Acquirer card sales,-4.40,4766.31,RT-00195
+2026-09-11,QR payment received,Wallet customer,149.85,4916.16,RT-00196
+2026-09-12,Card settlement,Acquirer card sales,172.15,5088.31,RT-00197
+2026-09-12,Merchant fee card sales,Acquirer card sales,-4.13,5084.18,RT-00198
+2026-09-12,QR payment received,Wallet customer,140.85,5225.03,RT-00199
+2026-09-12,Refund to customer,Customer refund,-38.04,5186.99,RT-00200
+2026-09-13,Card settlement,Acquirer card sales,147.95,5334.94,RT-00201
+2026-09-13,Merchant fee card sales,Acquirer card sales,-3.55,5331.39,RT-00202
+2026-09-13,QR payment received,Wallet customer,121.05,5452.44,RT-00203
+2026-09-14,Card settlement,Acquirer card sales,162.80,5615.24,RT-00204
+2026-09-14,Merchant fee card sales,Acquirer card sales,-3.91,5611.33,RT-00205
+2026-09-14,QR payment received,Wallet customer,133.20,5744.53,RT-00206
+2026-09-14,Meta ads boost,Meta Platforms,-137.86,5606.67,RT-00207
+2026-09-14,Google ads,Google Ads,-35.71,5570.96,RT-00208
+2026-09-15,Card settlement,Acquirer card sales,160.05,5731.01,RT-00209
+2026-09-15,Merchant fee card sales,Acquirer card sales,-3.84,5727.17,RT-00210
+2026-09-15,QR payment received,Wallet customer,130.95,5858.12,RT-00211
+2026-09-15,Accessories order,Kora Accessories,-378.08,5480.04,RT-00212
+2026-09-15,Paper bags and packaging,Wrap & Co Packaging,-65.00,5415.04,RT-00213
+2026-09-16,Card settlement,Acquirer card sales,103.40,5518.44,RT-00214
+2026-09-16,Merchant fee card sales,Acquirer card sales,-2.48,5515.96,RT-00215
+2026-09-16,QR payment received,Wallet customer,84.60,5600.56,RT-00216
+2026-09-17,Card settlement,Acquirer card sales,156.20,5756.76,RT-00217
+2026-09-17,Merchant fee card sales,Acquirer card sales,-3.75,5753.01,RT-00218
+2026-09-17,QR payment received,Wallet customer,127.80,5880.81,RT-00219
+2026-09-18,Card settlement,Acquirer card sales,115.50,5996.31,RT-00220
+2026-09-18,Merchant fee card sales,Acquirer card sales,-2.77,5993.54,RT-00221
+2026-09-18,QR payment received,Wallet customer,94.50,6088.04,RT-00222
+2026-09-19,Card settlement,Acquirer card sales,181.50,6269.54,RT-00223
+2026-09-19,Merchant fee card sales,Acquirer card sales,-4.36,6265.18,RT-00224
+2026-09-19,QR payment received,Wallet customer,148.50,6413.68,RT-00225
+2026-09-20,Card settlement,Acquirer card sales,166.65,6580.33,RT-00226
+2026-09-20,Merchant fee card sales,Acquirer card sales,-4.00,6576.33,RT-00227
+2026-09-20,QR payment received,Wallet customer,136.35,6712.68,RT-00228
+2026-09-21,Card settlement,Acquirer card sales,17.60,6730.28,RT-00229
+2026-09-21,Merchant fee card sales,Acquirer card sales,-0.42,6729.86,RT-00230
+2026-09-21,QR payment received,Wallet customer,14.40,6744.26,RT-00231
+2026-09-21,Meta ads boost,Meta Platforms,-135.08,6609.18,RT-00232
+2026-09-21,Google ads,Google Ads,-35.22,6573.96,RT-00233
+2026-09-22,Card settlement,Acquirer card sales,95.15,6669.11,RT-00234
+2026-09-22,Merchant fee card sales,Acquirer card sales,-2.28,6666.83,RT-00235
+2026-09-22,QR payment received,Wallet customer,77.85,6744.68,RT-00236
+2026-09-22,Garments collection order,Indigo Loom Textiles,-1395.08,5349.60,RT-00237
+2026-09-23,Card settlement,Acquirer card sales,90.20,5439.80,RT-00238
+2026-09-23,Merchant fee card sales,Acquirer card sales,-2.16,5437.64,RT-00239
+2026-09-23,QR payment received,Wallet customer,73.80,5511.44,RT-00240
+2026-09-24,Card settlement,Acquirer card sales,161.70,5673.14,RT-00241
+2026-09-24,Merchant fee card sales,Acquirer card sales,-3.88,5669.26,RT-00242
+2026-09-24,QR payment received,Wallet customer,132.30,5801.56,RT-00243
+2026-09-25,Card settlement,Acquirer card sales,138.05,5939.61,RT-00244
+2026-09-25,Merchant fee card sales,Acquirer card sales,-3.31,5936.30,RT-00245
+2026-09-25,QR payment received,Wallet customer,112.95,6049.25,RT-00246
+2026-09-26,Card settlement,Acquirer card sales,154.55,6203.80,RT-00247
+2026-09-26,Merchant fee card sales,Acquirer card sales,-3.71,6200.09,RT-00248
+2026-09-26,QR payment received,Wallet customer,126.45,6326.54,RT-00249
+2026-09-26,Refund to customer,Customer refund,-32.17,6294.37,RT-00250
+2026-09-27,Card settlement,Acquirer card sales,145.20,6439.57,RT-00251
+2026-09-27,Merchant fee card sales,Acquirer card sales,-3.48,6436.09,RT-00252
+2026-09-27,QR payment received,Wallet customer,118.80,6554.89,RT-00253
+2026-09-28,Card settlement,Acquirer card sales,150.15,6705.04,RT-00254
+2026-09-28,Merchant fee card sales,Acquirer card sales,-3.60,6701.44,RT-00255
+2026-09-28,QR payment received,Wallet customer,122.85,6824.29,RT-00256
+2026-09-28,Meta ads boost,Meta Platforms,-150.58,6673.71,RT-00257
+2026-09-28,Google ads,Google Ads,-32.01,6641.70,RT-00258
+2026-09-29,Card settlement,Acquirer card sales,63.25,6704.95,RT-00259
+2026-09-29,Merchant fee card sales,Acquirer card sales,-1.52,6703.43,RT-00260
+2026-09-29,QR payment received,Wallet customer,51.75,6755.18,RT-00261
+2026-09-30,Card settlement,Acquirer card sales,117.15,6872.33,RT-00262
+2026-09-30,Merchant fee card sales,Acquirer card sales,-2.81,6869.52,RT-00263
+2026-09-30,QR payment received,Wallet customer,95.85,6965.37,RT-00264
+2026-10-01,Card settlement,Acquirer card sales,127.60,7092.97,RT-00265
+2026-10-01,Merchant fee card sales,Acquirer card sales,-3.06,7089.91,RT-00266
+2026-10-01,QR payment received,Wallet customer,104.40,7194.31,RT-00267
+2026-10-01,Shop rent,Banyan Properties,-1200.00,5994.31,RT-00268
+2026-10-01,Payroll staff wages,Payroll,-1800.00,4194.31,RT-00269
+2026-10-02,Card settlement,Acquirer card sales,139.70,4334.01,RT-00270
+2026-10-02,Merchant fee card sales,Acquirer card sales,-3.35,4330.66,RT-00271
+2026-10-02,QR payment received,Wallet customer,114.30,4444.96,RT-00272
+2026-10-03,Card settlement,Acquirer card sales,112.75,4557.71,RT-00273
+2026-10-03,Merchant fee card sales,Acquirer card sales,-2.71,4555.00,RT-00274
+2026-10-03,QR payment received,Wallet customer,92.25,4647.25,RT-00275
+2026-10-03,Refund to customer,Customer refund,-42.55,4604.70,RT-00276
+2026-10-04,Card settlement,Acquirer card sales,177.65,4782.35,RT-00277
+2026-10-04,Merchant fee card sales,Acquirer card sales,-4.26,4778.09,RT-00278
+2026-10-04,QR payment received,Wallet customer,145.35,4923.44,RT-00279
+2026-10-05,Card settlement,Acquirer card sales,85.80,5009.24,RT-00280
+2026-10-05,Merchant fee card sales,Acquirer card sales,-2.06,5007.18,RT-00281
+2026-10-05,QR payment received,Wallet customer,70.20,5077.38,RT-00282
+2026-10-05,Meta ads boost,Meta Platforms,-147.00,4930.38,RT-00283
+2026-10-05,Google ads,Google Ads,-37.63,4892.75,RT-00284
+2026-10-05,Electricity bill,City Power Co,-87.62,4805.13,RT-00285
+2026-10-05,Broadband internet,FiberNet Broadband,-45.00,4760.13,RT-00286
+2026-10-06,Card settlement,Acquirer card sales,127.60,4887.73,RT-00287
+2026-10-06,Merchant fee card sales,Acquirer card sales,-3.06,4884.67,RT-00288
+2026-10-06,QR payment received,Wallet customer,104.40,4989.07,RT-00289
+2026-10-07,Card settlement,Acquirer card sales,171.05,5160.12,RT-00290
+2026-10-07,Merchant fee card sales,Acquirer card sales,-4.11,5156.01,RT-00291
+2026-10-07,QR payment received,Wallet customer,139.95,5295.96,RT-00292
+2026-10-08,Card settlement,Acquirer card sales,133.10,5429.06,RT-00293
+2026-10-08,Merchant fee card sales,Acquirer card sales,-3.19,5425.87,RT-00294
+2026-10-08,QR payment received,Wallet customer,108.90,5534.77,RT-00295
+2026-10-08,Garments collection order,Indigo Loom Textiles,-1395.64,4139.13,RT-00296
+2026-10-09,Card settlement,Acquirer card sales,150.70,4289.83,RT-00297
+2026-10-09,Merchant fee card sales,Acquirer card sales,-3.62,4286.21,RT-00298
+2026-10-09,QR payment received,Wallet customer,123.30,4409.51,RT-00299
+2026-10-10,Card settlement,Acquirer card sales,168.30,4577.81,RT-00300
+2026-10-10,Merchant fee card sales,Acquirer card sales,-4.04,4573.77,RT-00301
+2026-10-10,QR payment received,Wallet customer,137.70,4711.47,RT-00302
+2026-10-11,Card settlement,Acquirer card sales,183.15,4894.62,RT-00303
+2026-10-11,Merchant fee card sales,Acquirer card sales,-4.40,4890.22,RT-00304
+2026-10-11,QR payment received,Wallet customer,149.85,5040.07,RT-00305
+2026-10-12,Card settlement,Acquirer card sales,114.40,5154.47,RT-00306
+2026-10-12,Merchant fee card sales,Acquirer card sales,-2.75,5151.72,RT-00307
+2026-10-12,QR payment received,Wallet customer,93.60,5245.32,RT-00308
+2026-10-12,Meta ads boost,Meta Platforms,-148.07,5097.25,RT-00309
+2026-10-12,Google ads,Google Ads,-32.62,5064.63,RT-00310
+2026-10-13,Card settlement,Acquirer card sales,157.30,5221.93,RT-00311
+2026-10-13,Merchant fee card sales,Acquirer card sales,-3.78,5218.15,RT-00312
+2026-10-13,QR payment received,Wallet customer,128.70,5346.85,RT-00313
+2026-10-14,Card settlement,Acquirer card sales,84.15,5431.00,RT-00314
+2026-10-14,Merchant fee card sales,Acquirer card sales,-2.02,5428.98,RT-00315
+2026-10-14,QR payment received,Wallet customer,68.85,5497.83,RT-00316
+2026-10-15,Card settlement,Acquirer card sales,50.60,5548.43,RT-00317
+2026-10-15,Merchant fee card sales,Acquirer card sales,-1.21,5547.22,RT-00318
+2026-10-15,QR payment received,Wallet customer,41.40,5588.62,RT-00319
+2026-10-15,Accessories order,Kora Accessories,-356.03,5232.59,RT-00320
+2026-10-15,Paper bags and packaging,Wrap & Co Packaging,-65.00,5167.59,RT-00321
+2026-10-16,Card settlement,Acquirer card sales,182.60,5350.19,RT-00322
+2026-10-16,Merchant fee card sales,Acquirer card sales,-4.38,5345.81,RT-00323
+2026-10-16,QR payment received,Wallet customer,149.40,5495.21,RT-00324
+2026-10-17,Card settlement,Acquirer card sales,129.25,5624.46,RT-00325
+2026-10-17,Merchant fee card sales,Acquirer card sales,-3.10,5621.36,RT-00326
+2026-10-17,QR payment received,Wallet customer,105.75,5727.11,RT-00327
+2026-10-17,Refund to customer,Customer refund,-53.32,5673.79,RT-00328
+2026-10-18,Card settlement,Acquirer card sales,244.75,5918.54,RT-00329
+2026-10-18,Merchant fee card sales,Acquirer card sales,-5.87,5912.67,RT-00330
+2026-10-18,QR payment received,Wallet customer,200.25,6112.92,RT-00331

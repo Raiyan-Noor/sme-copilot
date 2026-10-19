@@ -157,6 +157,9 @@ leak_detectors:
   - detector: slow_moving_stock
     label: Stock that is not selling
     params: {min_days_held: 30, max_sell_through: 0.5, carrying_cost_rate: 0.30}
+  - detector: losing_ad_campaigns
+    label: Ad campaign costing more than it earns
+    params: {lookback_days: 90, min_roas: 1.0}
 
 # Ranking input for the financing matcher; eligibility stays with each product's own rules.
 financing_fit:
@@ -179,3 +182,69 @@ readiness:
     - {id: ready, label: Ready, min_score: 0.75}
     - {id: building, label: Building, min_score: 0.50}
     - {id: early, label: Early, min_score: 0.0}
+
+# Onboarding: words in the owner's own description that pick this pack.
+business_types: [grocery, grocer, corner store, mini mart, minimart, supermarket, convenience, kirana, general store, food shop, bakery, dairy]
+
+# What onboarding asks for, one at a time. Ads are optional for a grocery, so they are not asked for by default.
+data_needs:
+  - id: bank_statement
+    kind: bank
+    required: true
+    ask: "Upload a bank or mobile-wallet statement (CSV), the last three months if you can."
+    why: "It is how I see your cash, every sale, bill and fee, and how many days your cash would last."
+    label: a bank or wallet statement
+    unlocks: "your cash buffer and the leaks hiding in your bills"
+  - id: products
+    kind: products
+    required: true
+    ask: "Upload your product list with cost price, sale price and stock (CSV from your shop system or a spreadsheet)."
+    why: "Grocery margins are thin and differ a lot between staples and fresh goods, so the total hides the products that lose money."
+    label: your product list
+    unlocks: "margins per product and stock that is about to run out"
+  - id: product_sales
+    kind: sales
+    required: false
+    ask: "Upload your sales per product (date, product, quantity, amount). Three months is plenty."
+    why: "Sales per product show what sells fast, what sits on the shelf, and what is about to run out."
+    label: your sales per product
+    unlocks: "your best and worst sellers"
+
+# What an experienced grocery advisor asks, which owners often do not think of. Option labels are UI text.
+advisor_questions:
+  - id: credit_sales
+    ask: "Do regular customers buy on credit (baki) and pay later? Roughly what share of your sales?"
+    why: "Credit sales are money you have earned but do not have yet. I will keep them in your cash plan."
+    options:
+      - {label: No credit, value: 0}
+      - {label: Under 10%, value: 0.05}
+      - {label: 10 to 25%, value: 0.15}
+      - {label: More than 25%, value: 0.30}
+      - {label: Not sure}
+    effect: {fact: credit_sales_share, unit: ratio}
+  - id: spoilage
+    ask: "How much fresh stock (milk, bread, vegetables) do you throw away because it expired?"
+    why: "Spoilage is a silent cost in grocery. The more you throw away, the sooner I flag stock that is not selling."
+    options:
+      - {label: Very little, value: 45}
+      - {label: Some every week, value: 30}
+      - {label: A lot, value: 14}
+      - {label: Not sure}
+    effect: {detector: slow_moving_stock, param: min_days_held}
+  - id: early_pay_discounts
+    ask: "Do any suppliers give a discount if you pay early?"
+    why: "A small early-payment discount is worth more than most savings accounts. I will watch the deadlines for you."
+    options:
+      - {label: "Yes", value: 1}
+      - {label: "No", value: 2}
+      - {label: Not sure}
+    effect: {detector: missed_early_pay_discounts, param: min_invoices}
+  - id: wallet_fees
+    ask: "What fee does your mobile wallet or card provider charge per sale?"
+    why: "Payment fees creep up quietly. I will flag it if you pay more than the rate you agreed."
+    options:
+      - {label: About 1%, value: 0.01}
+      - {label: About 1.5%, value: 0.015}
+      - {label: About 2%, value: 0.02}
+      - {label: Not sure}
+    effect: {detector: payment_fees, param: max_share_of_digital}

@@ -4,6 +4,11 @@ A business is one tenant SQLite file under data_dir. Its profile (display name, 
 synthetic, which seed folder it came from) is kept in the tenant's own `meta` table, so there is one source of
 truth per business. Business IDs are the tenant slugs (`maya-corner-store`); seed folders use underscores.
 
+A business created by onboarding (services/onboarding.py) has no seed folder. Its own records (products, sale lines,
+ad spend, known contacts) live in a records folder next to its gateway state, data_dir/<business_id>/records/, in
+the same file formats as a seed folder; `records_folder` returns whichever applies, so the engine, the profile and
+the sentinel read both kinds of business the same way.
+
 Bootstrap loads each business in the seed output (`make seed`) through the real ingestion path: statements via
 ledger.ingest (PII tokenized there), scheduled items into the tenant DB. It builds into a temporary file and
 renames it into place, so a failed bootstrap never leaves a half-loaded tenant.
@@ -25,6 +30,9 @@ META_NAME = "business_name"
 META_PACK = "pack_id"
 META_SYNTHETIC = "synthetic"
 META_SEED = "seed_source"
+META_ONBOARDED = "onboarded"
+META_ANSWERS = "advisor_answers"  # JSON {question id: value or null}, from onboarding
+META_INBOX = "inbox_connection"  # sandbox | gmail
 
 
 class BusinessInfo(BaseModel):
@@ -34,6 +42,7 @@ class BusinessInfo(BaseModel):
     currency: str
     synthetic: bool
     seed_source: str | None = None
+    onboarded: bool = False
 
 
 def tenant_id_for(seed_id: str) -> str:
@@ -54,7 +63,29 @@ def business_info(conn: sqlite3.Connection) -> BusinessInfo:
         currency=get_meta(conn, "currency") or "",
         synthetic=get_meta(conn, META_SYNTHETIC) == "true",
         seed_source=get_meta(conn, META_SEED),
+        onboarded=get_meta(conn, META_ONBOARDED) == "true",
     )
+
+
+def tenant_dir(conn: sqlite3.Connection) -> Path:
+    """data_dir/<business_id>/: the business's gateway state, briefs, inbox and (if onboarded) records."""
+    db_file = conn.execute("PRAGMA database_list").fetchone()["file"]
+    return Path(db_file).parent / (get_meta(conn, "business_id") or "")
+
+
+def records_folder(conn: sqlite3.Connection, seed_dir: Path) -> Path | None:
+    """Where the business's own records are: its seed folder, or its onboarding records folder."""
+    info = business_info(conn)
+    if info.seed_source:
+        return seed_dir / info.seed_source
+    if info.onboarded:
+        return tenant_dir(conn) / "records"
+    return None
+
+
+def advisor_answers(conn: sqlite3.Connection) -> dict[str, float | None]:
+    raw = get_meta(conn, META_ANSWERS)
+    return json.loads(raw) if raw else {}
 
 
 def list_businesses(data_dir: Path) -> list[BusinessInfo]:

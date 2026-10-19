@@ -9,13 +9,19 @@ else
   VENV_PY := $(CURDIR)/backend/.venv/bin/python
 endif
 
-.PHONY: setup seed dev test openapi redteam evidence anchor
+.PHONY: setup seed dev test openapi redteam evidence anchor reset-demo samples
 
 setup:  ## venv + pip install, npm install
 	$(BOOT_PY) scripts/setup.py
 
 seed:  ## regenerate both businesses and the mailbox (deterministic) -> backend/data/generated/
 	"$(VENV_PY)" backend/data/seed/generate.py
+
+samples:  ## regenerate the onboarding demo upload folder (deterministic) -> backend/data/samples/fashion_shop/
+	"$(VENV_PY)" backend/data/seed/sample_upload.py
+
+reset-demo:  ## delete every business created by onboarding (rehearsals); seeded businesses stay
+	"$(VENV_PY)" scripts/reset_demo.py
 
 dev:  ## FastAPI :8000 + Next :3000
 	"$(VENV_PY)" scripts/dev.py

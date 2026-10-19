@@ -10,6 +10,10 @@ A pack is trusted, versioned config for one kind of business. On the same ledger
 - `leak_detectors`: which registered detector functions run, by name, with params validated per detector.
 - `financing_fit`: how well each financing product type suits this kind of business.
 - `readiness`: weights, raw-value ranges and bands for the Readiness Passport.
+- `data_needs`: what onboarding asks the owner to upload (products, sales, ad spend ...), why, and the CSV columns.
+- `advisor_questions`: what an experienced advisor for this kind of business would ask, with a one-line "why I'm
+  asking"; each answer becomes an owner-stated Fact or a detector setting the engine uses.
+- `business_types`: words in an owner's own description of the business that pick this pack at onboarding.
 
 A pack holds no money amounts: thresholds are ratios, counts and day windows, so it is currency- and
 region-neutral. Holiday IDs are generic types (e.g. `major_festival`); the business's calendar maps them to dates.
@@ -202,6 +206,54 @@ class Readiness(_Strict):
         return self
 
 
+DataKind = Literal["bank", "sales", "products", "ad_spend"]
+
+
+class DataNeed(_Strict):
+    """One thing onboarding asks for. `kind` names the CSV the upload must match (ledger/records.py)."""
+
+    id: Slug
+    kind: DataKind
+    ask: Annotated[str, StringConstraints(min_length=1, max_length=200)]
+    why: Annotated[str, StringConstraints(min_length=1, max_length=200)]
+    required: bool = False
+    # What the brief says when the owner skipped it: "KaChing could also check <unlocks> if you add <label>."
+    label: Label
+    unlocks: Label
+
+
+class AnswerOption(_Strict):
+    label: Label  # UI text we wrote (may hold digits: it is shown to the owner, never to the planner)
+    value: float | None = None  # None: "not sure", which leaves the pack default in place
+
+
+class AnswerEffect(_Strict):
+    """What an answer changes. Exactly one of: an owner-stated Fact (`fact`), or a detector param (`detector`)."""
+
+    fact: Slug | None = None
+    unit: Literal["ratio", "days", "count"] | None = None
+    detector: Slug | None = None
+    param: Slug | None = None
+
+    @model_validator(mode="after")
+    def _one(self) -> "AnswerEffect":
+        if (self.fact is None) == (self.detector is None):
+            raise ValueError("an answer effect sets either a fact or a detector param")
+        if self.fact is not None and self.unit is None:
+            raise ValueError("a fact effect needs a unit")
+        if self.detector is not None and self.param is None:
+            raise ValueError("a detector effect needs a param")
+        return self
+
+
+class AdvisorQuestion(_Strict):
+    id: Slug
+    ask: Annotated[str, StringConstraints(min_length=1, max_length=200)]
+    why: Annotated[str, StringConstraints(min_length=1, max_length=200)]
+    options: tuple[AnswerOption, ...] = Field(min_length=2, max_length=6)
+    effect: AnswerEffect
+
+
 class Pack(_Strict):
     id: Slug
     version: int = Field(ge=1)
@@ -214,6 +266,9 @@ class Pack(_Strict):
     leak_detectors: tuple[DetectorConfig, ...]
     financing_fit: dict[FinancingProductType, FinancingFit]
     readiness: Readiness
+    business_types: tuple[Keyword, ...] = ()
+    data_needs: tuple[DataNeed, ...] = ()
+    advisor_questions: tuple[AdvisorQuestion, ...] = ()
 
     @property
     def ref(self) -> str:
@@ -243,4 +298,11 @@ class Pack(_Strict):
         names = [d.detector for d in self.leak_detectors]
         if len(names) != len(set(names)):
             raise ValueError("each leak detector may appear once per pack")
+        for q in self.advisor_questions:
+            if q.effect.detector is not None and q.effect.detector not in names:
+                raise ValueError(f"question {q.id} sets a param of {q.effect.detector}, which this pack does not run")
+        for group in (self.data_needs, self.advisor_questions):
+            ids = [g.id for g in group]
+            if len(ids) != len(set(ids)):
+                raise ValueError("data need and question ids must be unique")
         return self

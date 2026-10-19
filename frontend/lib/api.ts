@@ -8,7 +8,18 @@ import type {
   AdvanceRequest,
   AnchorRequestResult,
   AnchorStatus,
+  Answer,
   AuditVerifyResult,
+  Contacts,
+  FinishResult,
+  InboxChoice,
+  InboxRecord,
+  NewBusiness,
+  OnboardingView,
+  ResetResult,
+  Skip,
+  StartingPoint,
+  UploadResult,
   LeafCheck,
   PassportExportSummary,
   AdvanceResult,
@@ -123,6 +134,29 @@ export const api = {
   business: (id: string) => request<BusinessDetail>("GET", biz(id)),
   packs: () => request<PackSummary[]>("GET", "/packs"),
   switchPack: (id: string, body: PackSwitch) => request<BusinessInfo>("PUT", `${biz(id)}/pack`, { body }),
+
+  // Onboarding from zero
+  startOnboarding: (body: NewBusiness) => request<BusinessInfo>("POST", "/onboarding", { body }),
+  resetOnboarding: () => request<ResetResult>("POST", "/onboarding/reset"),
+  onboarding: (id: string) => request<OnboardingView>("GET", `${biz(id)}/onboarding`),
+  setStartingPoint: (id: string, body: StartingPoint) =>
+    request<OnboardingView>("PUT", `${biz(id)}/onboarding/starting-point`, { body }),
+  answer: (id: string, body: Answer) => request<OnboardingView>("POST", `${biz(id)}/onboarding/answers`, { body }),
+  skipNeed: (id: string, body: Skip) => request<OnboardingView>("POST", `${biz(id)}/onboarding/skip`, { body }),
+  uploadOnboardingFile: (id: string, file: File) => {
+    const form = new FormData();
+    form.append("file", file, file.name);
+    return request<UploadResult>("POST", `${biz(id)}/onboarding/uploads`, { body: form });
+  },
+  onboardingDocument: (id: string, emailId: string) =>
+    request<InboxRecord>("GET", `${biz(id)}/onboarding/documents/${enc(emailId)}`),
+  approveDocument: (id: string, emailId: string) =>
+    request<Record<string, string>>("POST", `${biz(id)}/onboarding/documents/${enc(emailId)}/approve`),
+  confirmContacts: (id: string, body: Contacts) =>
+    request<OnboardingView>("POST", `${biz(id)}/onboarding/contacts`, { body }),
+  setInbox: (id: string, body: InboxChoice) => request<OnboardingView>("PUT", `${biz(id)}/onboarding/inbox`, { body }),
+  finishOnboarding: (id: string) => request<FinishResult>("POST", `${biz(id)}/onboarding/finish`),
+  deleteBusiness: (id: string) => request<ResetResult>("DELETE", biz(id)),
 
   // Ledger
   transactions: (

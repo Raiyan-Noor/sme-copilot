@@ -60,6 +60,10 @@ class GatewayStore:
         self._lock = threading.Lock()
         self._conn.executescript(SCHEMA)
 
+    def close(self) -> None:
+        with self._lock:
+            self._conn.close()
+
     # Owner keys
     def enroll_key(self, public_key_hex: str, today: date) -> None:
         bytes.fromhex(public_key_hex)

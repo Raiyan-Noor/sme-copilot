@@ -25,7 +25,7 @@ from app.quarantine.store import AttachmentInfo, InboxRecord, InboxStore
 from app.quarantine.typed import build_fields
 from app.sentinel.checks import Headers, LedgerInvoice, TextEvidence, assess
 from app.sentinel.directory import Directory, load_directory
-from app.services.businesses import business_info
+from app.services.businesses import business_info, records_folder
 from app.services.runtime import Runtime
 
 EMAIL_ID = re.compile(r"^(em|up)-[a-z0-9]{3,16}$")
@@ -89,8 +89,7 @@ class InboxProcessor:
 
     def _directory(self, conn: sqlite3.Connection) -> tuple[Directory, str]:
         info = business_info(conn)
-        folder = self.rt.settings.seed_dir / info.seed_source if info.seed_source else None
-        return load_directory(conn, folder, info.name), info.currency
+        return load_directory(conn, records_folder(conn, self.rt.settings.seed_dir), info.name), info.currency
 
     def sync(self) -> SyncReport:
         with self.rt.business(self.business_id) as conn:

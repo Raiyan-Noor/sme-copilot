@@ -1,0 +1,9 @@
+sku,name,category,cost_price,sale_price,stock
+KURTA-COT,Cotton kurta,tops,11.00,29.00,34
+LINEN-SHIRT,Linen shirt,tops,14.00,34.00,4
+DENIM-JKT,Denim jacket,outerwear,26.00,59.00,22
+MAXI-DRESS,Floral maxi dress,dresses,19.00,49.00,18
+SLIM-CHINO,Slim chinos,bottoms,13.00,32.00,26
+SILK-SCARF,Silk scarf,accessories,9.00,24.00,60
+TOTE-BAG,Canvas tote bag,accessories,5.00,15.00,40
+LEATHER-BELT,Leather belt,accessories,8.00,22.00,30

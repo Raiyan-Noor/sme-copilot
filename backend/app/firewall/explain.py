@@ -1,9 +1,10 @@
 """explain_fact: walk a Fact back to the Facts it was computed from and the rows it cites (invariant 4).
 
 Pure: the caller passes the request's FactStore and a resolver that looks up a source ID (ledger transaction,
-scheduled item, sale line) in the business's data. Three kinds of reference are not rows and are never looked up:
+scheduled item, sale line) in the business's data. Four kinds of reference are not rows and are never looked up:
 `clock:<...>` (the simulated clock), `pack:<id>@<version>#<path>` (Skill Pack config, shown as "from the Skill
-Pack"), and `catalog:v<version>#<path>` (the synthetic financing catalog).
+Pack"), `catalog:v<version>#<path>` (the synthetic financing catalog) and `owner:<what>` (an answer the owner gave at
+onboarding).
 
 Invariant 2: a row's `text` is untrusted statement content. It is filled only when `include_text=True`, which the
 owner-facing API uses. The planner's explain_fact tool must call with `include_text=False`, so it receives IDs,
@@ -21,7 +22,7 @@ from app.firewall.fact import Fact
 from app.firewall.store import FactStore
 
 SourceKind = Literal["transaction", "scheduled_item", "sale_line", "purchase_line", "receivable", "supplier_invoice",
-                     "clock", "pack", "catalog", "unknown"]
+                     "product", "ad_spend", "owner_answer", "clock", "pack", "catalog", "unknown"]
 
 
 class SourceRow(BaseModel):
@@ -63,6 +64,8 @@ def _source(ref: str, resolve: Resolver, include_text: bool) -> SourceRow:
         return SourceRow(id=ref, kind="pack", text="from the Skill Pack" if include_text else None)
     if ref.startswith("catalog:"):
         return SourceRow(id=ref, kind="catalog", text="from the financing catalog" if include_text else None)
+    if ref.startswith("owner:"):
+        return SourceRow(id=ref, kind="owner_answer", text="what you told me at setup" if include_text else None)
     row = resolve(ref)
     if row is None:
         return SourceRow(id=ref, kind="unknown")

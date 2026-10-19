@@ -1,7 +1,7 @@
 """Run the active pack's leak detectors: (ledger snapshot, pack, clock) -> findings / Facts.
 
 Each Finding's impact Fact is the yearly impact in minor units with evidence in source_row_ids (invariant 4).
-Detectors also read the business's own POS and purchasing records (products, sale lines, purchase lines) when the
+Detectors also read the business's own POS, purchasing and ad records (products, sale lines, purchase lines, ad spend) when the
 pack enables a detector that needs them; without them those detectors find nothing.
 """
 
@@ -9,6 +9,7 @@ from app.clock import Clock
 from app.firewall.fact import Fact
 from app.ledger.pos import Product, SaleLine
 from app.ledger.purchases import PurchaseLine
+from app.ledger.records import AdSpendLine
 from app.ledger.snapshot import LedgerSnapshot
 from app.packs.ledger_view import frame
 from app.packs.registry import DetectorContext, Finding, get_detector
@@ -21,11 +22,12 @@ def detector_labels(pack: Pack) -> dict[str, str]:
 
 
 def find_leaks(snapshot: LedgerSnapshot, pack: Pack, clock: Clock, *, products: tuple[Product, ...] = (),
-               sale_lines: tuple[SaleLine, ...] = (), purchases: tuple[PurchaseLine, ...] = ()) -> list[Finding]:
+               sale_lines: tuple[SaleLine, ...] = (), purchases: tuple[PurchaseLine, ...] = (),
+               ad_spend: tuple[AdSpendLine, ...] = ()) -> list[Finding]:
     """All findings from the pack's detectors, in pack order, then by finding ID."""
     df = frame(snapshot, pack)
     ctx = DetectorContext(pack=pack, today=clock.today(), currency=snapshot.currency, products=products,
-                          sale_lines=sale_lines, purchases=purchases)
+                          sale_lines=sale_lines, purchases=purchases, ad_spend=ad_spend)
     found: list[Finding] = []
     for cfg in pack.leak_detectors:
         spec = get_detector(cfg.detector)

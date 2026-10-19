@@ -42,7 +42,7 @@ def test_unknown_and_malformed_business_ids_are_404(read_api):
 
 def test_packs_are_listed_with_synthetic_benchmarks(read_api):
     packs = {p["id"]: p for p in read_api.get("/packs").json()}
-    assert set(packs) == {"grocery_retail", "fashion_retail"}
+    assert set(packs) == {"grocery_retail", "fashion_retail", "general_retail"}
     assert all(p["benchmarks_synthetic"] for p in packs.values())
 
 

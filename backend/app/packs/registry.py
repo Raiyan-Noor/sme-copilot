@@ -14,6 +14,7 @@ from pydantic import BaseModel, ConfigDict
 from app.firewall.fact import Fact
 from app.ledger.pos import Product, SaleLine
 from app.ledger.purchases import PurchaseLine
+from app.ledger.records import AdSpendLine
 from app.packs.schema import Pack
 
 
@@ -25,7 +26,7 @@ class DetectorParams(BaseModel):
 
 @dataclass(frozen=True)
 class DetectorContext:
-    """What a detector may read besides the categorized ledger: the business's own POS and purchasing records."""
+    """What a detector may read besides the categorized ledger: the business's own POS, purchasing and ad records."""
 
     pack: Pack
     today: date
@@ -33,6 +34,7 @@ class DetectorContext:
     products: tuple[Product, ...] = ()
     sale_lines: tuple[SaleLine, ...] = ()
     purchases: tuple[PurchaseLine, ...] = ()
+    ad_spend: tuple[AdSpendLine, ...] = ()
 
 
 @dataclass(frozen=True)

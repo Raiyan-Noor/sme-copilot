@@ -1,7 +1,8 @@
 """Point-of-sale data for product margins: the product list and daily per-product sale lines.
 
 `cost_minor` is the product's supplier unit cost on that day times qty, so margins move when a supplier's prices
-creep. Refunds are negative qty. Money is integer minor units.
+creep. Refunds are negative qty. Money is integer minor units. A product's own `cost_minor` (unit cost) and `stock`
+(units on hand) come from an uploaded products file (ledger/records.py); a seeded business leaves them empty.
 """
 
 import csv
@@ -19,6 +20,8 @@ class Product(BaseModel):
     category: str | None = None
     supplier_id: str | None = None
     price_minor: int
+    cost_minor: int | None = None
+    stock: int | None = None
 
 
 class SaleLine(BaseModel):

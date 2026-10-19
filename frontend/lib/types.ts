@@ -21,6 +21,13 @@ export interface ActionEvent {
   reason_segments?: ReplySegment[];
 }
 
+export interface AdBrief {
+  total_spend: Fact;
+  losing?: CampaignLine[];
+  best_channel?: string | null;
+  best_channel_roas?: Fact | null;
+}
+
 export interface AdvanceRequest {
   days: number;
   /** Run reminders and the Morning Brief after moving */
@@ -32,6 +39,14 @@ export interface AdvanceResult {
   start: string;
   offset_days: number;
   overnight?: OvernightReport[];
+}
+
+export interface AdvisorQuestion {
+  id: string;
+  ask: string;
+  why: string;
+  options: AnswerOption[];
+  effect: AnswerEffect;
 }
 
 export interface AgentTurn {
@@ -77,6 +92,24 @@ export interface AnchorStatus {
   entries_since_last_batch: number;
   queued: number;
   batches: AnchorBatchView[];
+}
+
+export interface Answer {
+  question_id: string;
+  option: number;
+}
+
+/** What an answer changes. Exactly one of: an owner-stated Fact (`fact`), or a detector param (`detector`). */
+export interface AnswerEffect {
+  fact?: string | null;
+  unit?: "ratio" | "days" | "count" | null;
+  detector?: string | null;
+  param?: string | null;
+}
+
+export interface AnswerOption {
+  label: string;
+  value?: number | null;
 }
 
 /** What the owner is asked to sign. `payload` is signed as canonical JSON; `args` are shown to the owner. */
@@ -153,6 +186,18 @@ export interface AuditVerifyResult {
   onchain: LogAnchorCheck;
 }
 
+export interface Bill {
+  name: string;
+  kind?: "bill" | "loan";
+  amount_minor: number;
+  day_of_month: number;
+}
+
+export interface Body_post_upload {
+  /** CSV, PDF invoice or receipt image */
+  file: Blob;
+}
+
 export interface Body_upload_email {
   file: Blob;
 }
@@ -180,6 +225,7 @@ export interface BusinessDetail {
   currency: string;
   synthetic: boolean;
   seed_source?: string | null;
+  onboarded?: boolean;
   accounts: Account[];
   transactions: number;
   scheduled_items: number;
@@ -192,6 +238,7 @@ export interface BusinessInfo {
   currency: string;
   synthetic: boolean;
   seed_source?: string | null;
+  onboarded?: boolean;
 }
 
 /** A verification call the owner makes on a number from their own records. Generated in code, not by an LLM. */
@@ -199,6 +246,15 @@ export interface CallScript {
   call: string;
   number_source: string;
   lines: string[];
+}
+
+export interface CampaignLine {
+  campaign_id: string;
+  campaign: string;
+  channel: string;
+  spend: Fact;
+  attributed_sales?: Fact | null;
+  roas?: Fact | null;
 }
 
 export interface CashPosition {
@@ -228,6 +284,26 @@ export interface ComingUpItem {
   due: Fact;
 }
 
+export interface ContactIn {
+  name: string;
+  kind: "supplier" | "customer" | "payee";
+  domain?: string | null;
+}
+
+export interface ContactProposal {
+  id: string;
+  name: string;
+  kind: "supplier" | "customer" | "payee";
+  source: "statement" | "document" | "bill";
+  seen: number;
+  domain?: string | null;
+  confirmed?: boolean;
+}
+
+export interface Contacts {
+  contacts: ContactIn[];
+}
+
 export interface ConversationEvent {
   type?: "conversation";
   conversation_id: string;
@@ -237,6 +313,17 @@ export interface ConversationEvent {
 export interface Counterparty {
   id: string;
   name: string | null;
+}
+
+/** One thing onboarding asks for. `kind` names the CSV the upload must match (ledger/records.py). */
+export interface DataNeed {
+  id: string;
+  kind: "bank" | "sales" | "products" | "ad_spend";
+  ask: string;
+  why: string;
+  required?: boolean;
+  label: string;
+  unlocks: string;
 }
 
 export interface Decision {
@@ -354,6 +441,12 @@ export interface FinancingResponse {
   facts: Record<string, Fact>;
 }
 
+export interface FinishResult {
+  business: BusinessInfo;
+  todo: string[];
+  could_also_check: string[];
+}
+
 export interface FirewallReport {
   attempts: number;
   rejected?: string[][];
@@ -428,6 +521,10 @@ export interface ImproveItem {
   text: string;
   yearly_saving: Fact;
   facts: Record<string, Fact>;
+}
+
+export interface InboxChoice {
+  connection: "sandbox" | "gmail";
 }
 
 export interface InboxDetail {
@@ -611,6 +708,9 @@ export interface MorningBrief {
   coming_up: ComingUpItem[];
   improve: ImproveItem | null;
   firewall: BriefFirewall;
+  products?: ProductBrief | null;
+  ads?: AdBrief | null;
+  could_also_check?: string[];
 }
 
 export interface NeedsYouItem {
@@ -618,6 +718,34 @@ export interface NeedsYouItem {
   tool: string;
   summary: string;
   reasons: string[];
+}
+
+export interface NewBusiness {
+  name: string;
+  /** The owner's own words; picks the Skill Pack */
+  business_type: string;
+  currency?: string;
+}
+
+export interface OnboardingState {
+  skipped?: string[];
+  uploads?: UploadResult[];
+  approved_documents?: string[];
+  contacts_confirmed?: boolean;
+  finished?: boolean;
+}
+
+export interface OnboardingView {
+  business: BusinessInfo;
+  plan: Plan;
+  answers: Record<string, number | null>;
+  state: OnboardingState;
+  inbox: string | null;
+  contacts: ContactProposal[];
+  summary: SummaryLine[];
+  could_also_check: string[];
+  mandates: SuggestedMandate[];
+  facts: Record<string, Fact>;
 }
 
 /**
@@ -737,6 +865,14 @@ export interface PathStep {
   text: string;
 }
 
+/** What onboarding asks for this business, from its pack. */
+export interface Plan {
+  pack_id: string;
+  pack_name: string;
+  data_needs: DataNeed[];
+  questions: AdvisorQuestion[];
+}
+
 /**
  * One period. `lines` is keyed by line ID: revenue, cogs, gross_profit, gross_margin, operating_expenses,
  * operating_profit, revenue.<category>, expense.<category>, owner_drawings, uncategorized.count ...
@@ -754,6 +890,20 @@ export interface PnlResponse {
   pack_ref: string;
   period: "month" | "week";
   periods: PnlPeriod[];
+}
+
+export interface ProductBrief {
+  best_margin?: ProductLine | null;
+  worst_margin?: ProductLine | null;
+  slow_movers?: ProductLine[];
+  stockout_risk?: ProductLine[];
+}
+
+export interface ProductLine {
+  product_id: string;
+  name: string;
+  margin?: Fact | null;
+  days_of_cover?: Fact | null;
 }
 
 export interface ProductMatch {
@@ -868,6 +1018,10 @@ export interface ReplySegment {
   fact_id?: string | null;
 }
 
+export interface ResetResult {
+  deleted: string[];
+}
+
 export interface RowError {
   line: number;
   message: string;
@@ -906,10 +1060,14 @@ export interface SignedPayload {
   expiry: string;
 }
 
+export interface Skip {
+  need_id: string;
+}
+
 /** One cited source. Money is integer minor units; `text` is untrusted and owner-UI only. */
 export interface SourceRow {
   id: string;
-  kind: "transaction" | "scheduled_item" | "sale_line" | "purchase_line" | "receivable" | "supplier_invoice" | "clock" | "pack" | "catalog" | "unknown";
+  kind: "transaction" | "scheduled_item" | "sale_line" | "purchase_line" | "receivable" | "supplier_invoice" | "product" | "ad_spend" | "owner_answer" | "clock" | "pack" | "catalog" | "unknown";
   date?: string | null;
   amount_minor?: number | null;
   currency?: string | null;
@@ -962,6 +1120,11 @@ export interface StandingTerms {
   allowlist: string[];
 }
 
+export interface StartingPoint {
+  cash_on_hand_minor?: number | null;
+  bills?: Bill[];
+}
+
 export interface StatementRejected {
   message: string;
   errors: RowError[];
@@ -969,6 +1132,20 @@ export interface StatementRejected {
 
 export interface StatementRejectedResponse {
   detail: StatementRejected;
+}
+
+export interface SuggestedMandate {
+  tool: string;
+  title: string;
+  text: string;
+  max_amount_minor: number;
+  allowlist: string[];
+  names: string[];
+}
+
+export interface SummaryLine {
+  label: string;
+  text: string;
 }
 
 /** A T2 tool: its policy.yaml ceiling, the owner's active standing mandate (if any) and who it could cover. */
@@ -1040,6 +1217,22 @@ export interface Untrusted_str_ {
   source: string;
   confidence: number;
   needs_review: boolean;
+}
+
+/** One file the owner dropped in. Counts are what the parser saw; `errors` explain a rejected file per line. */
+export interface UploadResult {
+  filename: string;
+  kind: "bank" | "sales" | "products" | "ad_spend" | "invoice" | "receipt" | "unknown";
+  status: "imported" | "rejected" | "pending_review" | "flagged";
+  message: string;
+  rows?: number;
+  added?: number;
+  duplicates?: number;
+  date_from?: string | null;
+  date_to?: string | null;
+  ignored_columns?: string[];
+  errors?: RowError[];
+  document_id?: string | null;
 }
 
 export interface ValidationError {

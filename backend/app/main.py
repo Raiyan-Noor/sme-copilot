@@ -14,12 +14,14 @@ from fastapi.responses import JSONResponse
 from app.agent.context import ConversationStore
 from app.anchoring import Chain
 from app.api import (
-    agent, anchors, audit, brief, businesses, clock, finance, financing, gateway, health, inbox, ledger, trust,
+    agent, anchors, audit, brief, businesses, clock, finance, financing, gateway, health, inbox, ledger, onboarding,
+    trust,
 )
 from app.config import Settings, get_settings
 from app.firewall.store import UnknownFactError
 from app.ledger.schema import TenantError
 from app.packs.loader import PackError
+from app.services.onboarding import OnboardingError
 from app.services.runtime import ClockNotConfigured, Runtime
 
 PASSCODE_HEADER = "X-Passcode"
@@ -56,7 +58,8 @@ def create_app(settings: Settings | None = None, anchor_chain: Chain | None = No
     app.state.runtime = Runtime(settings, anchor_chain)
     app.state.conversations = ConversationStore()
     for router in (health.router, businesses.router, ledger.router, finance.router, gateway.router, audit.router,
-                   clock.router, agent.router, brief.router, inbox.router, financing.router, trust.router, anchors.router):
+                   clock.router, agent.router, brief.router, inbox.router, financing.router, trust.router, anchors.router,
+                   onboarding.router):
         app.include_router(router)
     if settings.expose_test_routes:
         app.include_router(gateway.test_router)
@@ -71,6 +74,7 @@ def create_app(settings: Settings | None = None, anchor_chain: Chain | None = No
     app.add_exception_handler(UnknownFactError, error(404, "unknown fact: "))
     app.add_exception_handler(PackError, error(422))
     app.add_exception_handler(ClockNotConfigured, error(503))
+    app.add_exception_handler(OnboardingError, error(422))
 
     def openapi() -> dict:
         """Declare the passcode header so /docs shows an Authorize button."""
