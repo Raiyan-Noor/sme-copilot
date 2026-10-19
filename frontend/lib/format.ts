@@ -12,6 +12,7 @@ const TOOL_TITLES: Record<string, string> = {
   delay_supplier_payment: "Delay a supplier payment",
   send_supplier_message: "Message a supplier",
   cancel_subscription: "Cancel a subscription",
+  pay_invoice: "Pay an invoice",
 };
 
 const TOOL_SHORT: Record<string, string> = {
@@ -22,6 +23,7 @@ const TOOL_SHORT: Record<string, string> = {
   delay_supplier_payment: "Delay a supplier payment",
   send_supplier_message: "Supplier messages",
   cancel_subscription: "Cancel subscriptions",
+  pay_invoice: "One-off payments",
 };
 
 const T1_SHORT: Record<string, string> = {
@@ -73,6 +75,18 @@ const RULE_LABELS: Record<string, string> = {
   raises_policy_cap: "A limit may lower the hard cap, never raise it",
   mandate_too_long: "A standing limit cannot last that long",
   untrusted_source: "The due date came from an email, so it was not sent automatically",
+  payee_account_changed: "The payee's bank account changed since you were asked, so it was not paid",
+  call_script_verification_required: "Call the payee on a number you already had before paying this",
+  payment_request_mismatch: "The payment details changed after they were prepared",
+  payment_request_cancelled: "This payment was cancelled",
+  unknown_payment_request: "No such payment request",
+  not_connected: "No payment service is connected",
+  no_account_on_file: "No bank account on file for this payee",
+  unreachable: "The payment service could not be reached",
+  over_per_payment_cap: "Above the per-payment limit you approved at the payment service",
+  over_daily_cap: "Above the daily limit you approved at the payment service",
+  token_revoked: "The payment service connection was revoked",
+  account_closed: "The payee's bank refused it (account closed)",
 };
 
 export const sentence = (code: string) => {

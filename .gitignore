@@ -27,3 +27,6 @@ out/
 .DS_Store
 Thumbs.db
 .idea/
+
+# SandboxPay (simulated payment provider) data
+backend/data/sandboxpay/

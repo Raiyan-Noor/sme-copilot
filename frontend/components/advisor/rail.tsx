@@ -47,11 +47,11 @@ function Sparkline({ forecast, w = 252, h = 64 }: { forecast: ForecastResponse; 
 }
 
 export function RailBody() {
-  const { openPanel, waiting, goToWaiting } = useAdvisor();
+  const { openPanel, waiting, goToWaiting, ledgerVersion } = useAdvisor();
   const { session } = useBusiness();
   const { id, key } = useBusinessKey("rail");
-  const cash = useApi(key && `${key}:cash`, () => api.cash(id));
-  const forecast = useApi(key && `${key}:forecast`, () => api.forecast(id));
+  const cash = useApi(key && `${key}:cash:${ledgerVersion}`, () => api.cash(id));
+  const forecast = useApi(key && `${key}:forecast:${ledgerVersion}`, () => api.forecast(id));
   const verify = useApi(`verify:${session}`, api.auditVerify);
   const ff = useFastForward();
   const h30 = forecast.data?.horizons.find((h) => h.days === 30);

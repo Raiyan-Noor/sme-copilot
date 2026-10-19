@@ -71,6 +71,16 @@ import type {
   StandingMandateRequest,
   TransactionPage,
   TransactionRow,
+  CallVerification,
+  Payee,
+  PayeeCreate,
+  PaymentConnectionStatus,
+  PaymentConnectRequest,
+  PaymentConnectStart,
+  PaymentCreate,
+  PaymentView,
+  PaymentsOverview,
+  Receipt,
 } from "@/lib/types";
 
 export const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000").replace(/\/+$/, "");
@@ -237,6 +247,29 @@ export const api = {
   gmailPoll: (id: string) => request<GmailPollResult>("POST", `${biz(id)}/connections/gmail/poll`),
   gmailImportRecent: (id: string) => request<GmailImportStarted>("POST", `${biz(id)}/connections/gmail/import`),
 
+  // Payments (SandboxPay, the simulated provider). Approving uses the gateway's approve route, signed here.
+  payments: (id: string, q: { status?: PaymentView["status"]; payee_id?: string } = {}) =>
+    request<PaymentsOverview>("GET", `${biz(id)}/payments`, { query: q }),
+  createPayment: (id: string, body: PaymentCreate) =>
+    request<PaymentView>("POST", `${biz(id)}/payments/requests`, { body }),
+  payment: (id: string, rid: string) => request<PaymentView>("GET", `${biz(id)}/payments/requests/${enc(rid)}`),
+  cancelPayment: (id: string, rid: string) =>
+    request<PaymentView>("POST", `${biz(id)}/payments/requests/${enc(rid)}/cancel`),
+  refreshPayment: (id: string, rid: string) =>
+    request<PaymentView>("POST", `${biz(id)}/payments/requests/${enc(rid)}/refresh`),
+  paymentReceipt: (id: string, rid: string) =>
+    request<Receipt>("GET", `${biz(id)}/payments/requests/${enc(rid)}/receipt`),
+  paymentOnchain: (id: string, rid: string) =>
+    request<LeafCheck>("GET", `${biz(id)}/payments/requests/${enc(rid)}/onchain`),
+  addPayee: (id: string, body: PayeeCreate) => request<Payee>("POST", `${biz(id)}/payments/payees`, { body }),
+  verifyCall: (id: string, body: CallVerification) =>
+    request<void>("POST", `${biz(id)}/payments/verifications`, { body }),
+  paymentConnection: (id: string) => request<PaymentConnectionStatus>("GET", `${biz(id)}/connections/payments`),
+  paymentConnect: (id: string, body: PaymentConnectRequest) =>
+    request<PaymentConnectStart>("POST", `${biz(id)}/connections/payments/connect`, { body }),
+  paymentDisconnect: (id: string) =>
+    request<PaymentConnectionStatus>("POST", `${biz(id)}/connections/payments/disconnect`),
+
   // Financing and the Readiness Passport
   financing: (id: string) => request<FinancingResponse>("GET", `${biz(id)}/financing`),
   passport: (id: string) => request<PassportResponse>("GET", `${biz(id)}/passport`),
@@ -353,9 +386,18 @@ export async function* transactionStream(
 }
 
 /** One live inbox event (GET /inbox/stream). Mirrors app/services/inbox_events.py `InboxEvent`. */
+export interface PaymentStreamEvent {
+  request_id: string;
+  status: PaymentView["status"];
+  payee_name: string;
+  amount_minor: number;
+  currency: string;
+  rule: string | null;
+}
+
 export interface InboxStreamEvent {
   seq: number;
-  kind: "message" | "connection";
+  kind: "message" | "connection" | "payment" | "payment_connection";
   email_id: string | null;
   source: string | null;
   stage: "received" | "extracting" | "checking" | "accepted" | "flagged" | "held" | "failed" | null;
@@ -363,11 +405,13 @@ export interface InboxStreamEvent {
   subject: string | null;
   flags: string[];
   connection: GmailStatus | null;
+  payment: PaymentStreamEvent | null;
 }
 
 /**
- * Each email's progress through quarantine and the sentinel (from Gmail, the sandbox mailbox or an upload), and
- * changes to the Gmail connection, as they happen. Yields `message` and `connection` events.
+ * Each email's progress through quarantine and the sentinel (from Gmail, the sandbox mailbox or an upload), changes
+ * to the Gmail connection, and each payment's status, as they happen. Yields `message`, `connection`, `payment` and
+ * `payment_connection` events.
  */
 export async function* inboxStream(
   businessId: string,

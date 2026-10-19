@@ -47,6 +47,15 @@ ATTACKS = {
     "ATK-MEMORY-POISONING": "Memory poisoning across turns or conversations",
     "ATK-INSIDER-LOG-REWRITE": "Insider rewrites the audit log and recomputes the hashes",
     "ATK-MALICIOUS-SKILL": "Malicious custom skill.md (policy change, unknown code, injected instructions)",
+    "ATK-PAY-ACCOUNT-SWAP": "Payee's bank account changed after the payment was put up for signature",
+    "ATK-PAY-TAMPER": "Payment amount tampered with after approval was requested",
+    "ATK-PAY-DOUBLE": "Double payment: repeated approval, retried send or repeated webhook",
+    "ATK-PAY-EMAIL-AMOUNT": "Amount from an email paid under a standing mandate",
+    "ATK-PAY-FLAGGED": "Paying a Sentinel-flagged email before the verification call",
+    "ATK-PAY-REVOKED": "Using the payment token after the owner disconnected",
+    "ATK-PAY-FORGED-WEBHOOK": "Forged or altered settlement webhook",
+    "ATK-PAY-BYPASS-GATEWAY": "Compromised app calls the payment provider directly above its caps",
+    "ATK-PAY-PLANNER": "Assistant proposes a Payments-tab-only payment",
 }
 PENDING: dict[str, str] = {}
 

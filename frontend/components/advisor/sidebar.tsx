@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Banknote,
   Check,
   ChevronsUpDown,
   CirclePlus,
@@ -79,6 +80,7 @@ export function Sidebar({
   const links = [
     { id: "inbox" as const, label: "Inbox", icon: Inbox, count: flagged },
     { id: "transactions" as const, label: "Transactions", icon: List, count: 0 },
+    { id: "payments" as const, label: "Payments", icon: Banknote, count: 0 },
     { id: "financing" as const, label: "Financing", icon: Landmark, count: 0 },
     { id: "trust" as const, label: "Limits and trust", icon: ShieldCheck, count: 0 },
   ];

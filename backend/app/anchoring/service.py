@@ -49,6 +49,7 @@ _LEAF_SOURCES: dict[str, tuple[LeafKind, str]] = {
     "gateway.mandate_stored": ("mandate", "record_hash"),
     "passport.exported": ("passport", "sha256"),
     "skill.uploaded": ("skill", "sha256"),
+    "payments.settled": ("payment", "receipt_sha256"),
 }
 
 
@@ -256,7 +257,7 @@ class AnchorService:
         self.audit.append("anchor.batch_created", {
             "tool": "anchor", "tier": "T1", "caller": "system", "trigger": trigger, "batch_id": batch.batch_id,
             "merkle_root": root, "head_seq": head.seq, "head_hash": head.hash, "chain_id": self.chain_id,
-            "leaves": {k: sum(x[0] == k for x in raw) for k in ("audit_head", "mandate", "passport", "skill")},
+            "leaves": {k: sum(x[0] == k for x in raw) for k in ("audit_head", "mandate", "passport", "skill", "payment")},
         })
         return batch
 

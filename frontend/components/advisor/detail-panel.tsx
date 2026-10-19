@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { CashPanel } from "./panel-cash";
 import { FinancingPanel } from "./panel-financing";
 import { EmailPanel, InboxPanel } from "./panel-inbox";
+import { PaymentsPanel } from "./panel-payments";
 import { TransactionsPanel } from "./panel-transactions";
 import { TrustPanel } from "./panel-trust";
 import { useAdvisor, type PanelEntry } from "./state";
@@ -98,11 +99,13 @@ function View({ entry }: { entry: PanelEntry }) {
       return <TracePanel entry={entry} />;
     case "transactions":
       return <TransactionsPanel openId={entry.txId} />;
+    case "payments":
+      return <PaymentsPanel openId={entry.paymentId} />;
   }
 }
 
 const entryKey = (e: PanelEntry) =>
-  `${e.view}:${e.tab ?? ""}:${e.emailId ?? ""}:${e.fact?.id ?? ""}:${e.txId ?? ""}`;
+  `${e.view}:${e.tab ?? ""}:${e.emailId ?? ""}:${e.fact?.id ?? ""}:${e.txId ?? ""}:${e.paymentId ?? ""}`;
 
 /** The detail panel: one view at a time, sliding in over the rail; drill-downs stack with a back button. */
 export function DetailPanel({ wide }: { wide: boolean }) {

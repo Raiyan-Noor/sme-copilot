@@ -1,8 +1,9 @@
 """FastAPI app: CORS from ALLOWED_ORIGINS and passcode auth from DEMO_PASSCODE.
 
 Auth fails closed: if DEMO_PASSCODE is unset, every protected route returns 503 instead of being open.
-The passcode is compared in constant time. Only the health check, the API docs, CORS preflights and the Gmail
-OAuth callback (state-checked) are public. The lifespan starts the Gmail poller (GMAIL_POLL).
+The passcode is compared in constant time. Only the health check, the API docs, CORS preflights, the Gmail
+OAuth callback (state-checked), and the payment provider's consent callback (state-checked) and settlement webhook
+(HMAC-checked) are public. The lifespan starts the Gmail poller (GMAIL_POLL).
 """
 
 import hmac
@@ -17,7 +18,7 @@ from app.agent.context import ConversationStore
 from app.anchoring import Chain
 from app.api import (
     agent, anchors, audit, brief, businesses, clock, connections, demo_console, finance, financing, gateway, health, inbox, ledger,
-    onboarding, skills, trust,
+    onboarding, payments, skills, trust,
 )
 from app.config import Settings, get_settings
 from app.firewall.store import UnknownFactError
@@ -25,13 +26,17 @@ from app.ledger.schema import TenantError
 from app.packs.loader import PackError
 from app.services.gmail import ConnectError, GmailPoller
 from app.services.onboarding import OnboardingError
+from app.services.payments import PaymentsError
 from app.services.runtime import ClockNotConfigured, Runtime
 
 PASSCODE_HEADER = "X-Passcode"
 # The Gmail OAuth callback is public: Google redirects the browser there without our header. It acts only on a
 # one-time state this server issued (services/gmail.py).
+# The payment provider calls the consent callback (state-checked) and the settlement webhook (HMAC-checked) the same
+# way.
 PUBLIC_PATHS = frozenset({"/health", "/docs", "/docs/oauth2-redirect", "/redoc", "/openapi.json",
-                          connections.CALLBACK_PATH})
+                          connections.CALLBACK_PATH, payments.CALLBACK_PATH})
+PUBLIC_PREFIXES = (payments.WEBHOOK_PREFIX,)
 
 
 def create_app(settings: Settings | None = None, anchor_chain: Chain | None = None) -> FastAPI:
@@ -53,7 +58,9 @@ def create_app(settings: Settings | None = None, anchor_chain: Chain | None = No
 
     @app.middleware("http")
     async def require_passcode(request: Request, call_next):
-        if request.method == "OPTIONS" or request.url.path in PUBLIC_PATHS:
+        path = request.url.path
+        if request.method == "OPTIONS" or path in PUBLIC_PATHS or (
+                request.method == "POST" and path.startswith(PUBLIC_PREFIXES)):
             return await call_next(request)
         if not passcode:
             return JSONResponse({"detail": "Passcode not configured on server"}, status_code=503)
@@ -75,7 +82,7 @@ def create_app(settings: Settings | None = None, anchor_chain: Chain | None = No
     app.state.conversations = ConversationStore()
     for router in (health.router, businesses.router, ledger.router, finance.router, gateway.router, audit.router,
                    clock.router, agent.router, brief.router, inbox.router, financing.router, trust.router, anchors.router,
-                   onboarding.router, skills.router, connections.router):
+                   onboarding.router, skills.router, connections.router, payments.router):
         app.include_router(router)
     if settings.expose_test_routes:
         app.include_router(gateway.test_router)
@@ -94,6 +101,7 @@ def create_app(settings: Settings | None = None, anchor_chain: Chain | None = No
     app.add_exception_handler(ClockNotConfigured, error(503))
     app.add_exception_handler(OnboardingError, error(422))
     app.add_exception_handler(ConnectError, error(422))
+    app.add_exception_handler(PaymentsError, error(422))
 
     def openapi() -> dict:
         """Declare the passcode header so /docs shows an Authorize button."""

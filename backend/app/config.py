@@ -81,6 +81,20 @@ class Settings(BaseSettings):
     # Where the OAuth popup's "connected" message is posted; defaults to the first ALLOWED_ORIGINS entry.
     frontend_url: str = ""
 
+    # SandboxPay: the simulated payment provider, a separate local service (backend/sandboxpay, port 8100).
+    sandboxpay_url: str = "http://127.0.0.1:8100"  # the API this server calls
+    sandboxpay_public_url: str = ""  # the consent screen the owner's browser opens; defaults to sandboxpay_url
+    sandboxpay_client_id: str = "sme-copilot"
+    sandboxpay_client_secret: SecretStr = SecretStr("")  # shared with the provider (same .env)
+    sandboxpay_redirect_uri: str = "http://localhost:8000/payments/sandboxpay/callback"
+    # Where the provider posts settlement webhooks; the business ID is appended.
+    sandboxpay_webhook_base: str = "http://127.0.0.1:8000/payments/sandboxpay/webhook"
+    # Encrypts the provider token at rest (64 hex chars); falls back to GMAIL_TOKEN_KEY.
+    sandboxpay_token_key: SecretStr = SecretStr("")
+    # Limits asked for on the provider's consent screen; the owner can lower them there.
+    sandboxpay_per_payment_cap_minor: int = Field(default=1_000_000, gt=0)
+    sandboxpay_daily_cap_minor: int = Field(default=2_000_000, gt=0)
+
     @field_validator("anchor_chain_id")
     @classmethod
     def _testnet_only(cls, v: int) -> int:

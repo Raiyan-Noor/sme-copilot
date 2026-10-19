@@ -15,6 +15,7 @@ stored mandate and execution is appended to the audit log (invariant 7).
 """
 
 import secrets
+from collections.abc import Callable
 from datetime import timedelta
 from pathlib import Path
 from typing import Any, Literal
@@ -24,6 +25,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from app.audit import AuditLog
 from app.clock import Clock
 from app.connections.gmail import MailRoute
+from app.connections.sandboxpay import PaymentRoute
 from app.gateway.dispatch import ACTION_ARGS, Executors, check_args
 from app.gateway.mandate import MandateRecord, SignedPayload, StandingTerms, args_hash, verify_signature
 from app.gateway.policy import Policy, Tier, load_policy
@@ -91,14 +93,18 @@ class Gateway:
         policy: Policy | None = None,
         data_dir: Path | None = None,
         mail: MailRoute | None = None,
+        payments: PaymentRoute | None = None,
     ):
         self.store = store
         self.audit = audit
         self.clock = clock
         self.policy = policy or load_policy()
         self.data_dir = data_dir  # the tenant directory, or None for an in-memory gateway
-        self.executors = Executors(data_dir, mail=mail)
+        self.executors = Executors(data_dir, mail=mail, payments=payments)
         self.loan_drafts = self.executors.loan_drafts
+        # Told about every execution after it is logged: (tool, args, result, mandate_id). The Payments service
+        # tracks settlement from here. A listener cannot change the decision; it runs after the action.
+        self.listeners: list[Callable[[str, dict, dict, int], None]] = []
         assert set(self.policy.t2) | set(self.policy.t3) == set(ACTION_ARGS), "policy.yaml and dispatch disagree"
 
     def close(self) -> None:
@@ -109,9 +115,10 @@ class Gateway:
 
     @classmethod
     def for_tenant(cls, tenant_dir: Path, audit: AuditLog, clock: Clock, policy: Policy | None = None,
-                   mail: MailRoute | None = None) -> "Gateway":
-        """`mail`: how approved emails reach contacts (Gmail when connected, else the sandbox outbox)."""
-        return cls(GatewayStore(tenant_dir / "gateway.sqlite"), audit, clock, policy, tenant_dir, mail)
+                   mail: MailRoute | None = None, payments: PaymentRoute | None = None) -> "Gateway":
+        """`mail`: how approved emails reach contacts (Gmail when connected, else the sandbox outbox).
+        `payments`: how approved payments reach the payment provider (SandboxPay), and the payees' accounts on file."""
+        return cls(GatewayStore(tenant_dir / "gateway.sqlite"), audit, clock, policy, tenant_dir, mail, payments)
 
     # Owner keys
     def enroll_owner_key(self, public_key_hex: str) -> None:
@@ -168,6 +175,22 @@ class Gateway:
             if self.store.executions_since(tool, key, since) >= rule.frequency.max:
                 return "frequency_cap", None
         return None, mandate
+
+    def payee_account(self, payee_id: str) -> str | None:
+        """Read-only: the account a payment to this payee would go to now (a signed payee change, else the contact
+        book's). The Payments service puts it in the args the owner signs, so a later change is caught."""
+        return self.executors.bank.account_for(payee_id)
+
+    def mandate_covers(self, action: ProposedAction) -> bool:
+        """Read-only: would this exact T2 action run under the active standing mandate right now? Nothing is logged
+        or executed; `propose()` still decides. Untrusted arguments are never covered (invariant 3)."""
+        if self.policy.tier_of(action.tool) != "T2" or action.untrusted():
+            return False
+        values = action.values()
+        if check_args(action.tool, values) or self.executors.precheck(action.tool, values):
+            return False
+        rule, _ = self._check_t2(action.tool, values)
+        return rule is None
 
     def _request_approval(self, action: ProposedAction, tier: Tier, reasons: list[str]) -> Decision:
         today = self.clock.today()
@@ -292,6 +315,11 @@ class Gateway:
         key = str(args[rule.frequency.per]) if rule and rule.frequency else None
         self.store.record_execution(tool, key, today, mandate_id)
         self.audit.append("executor.executed", {"tool": tool, "mandate_id": mandate_id, "result": result})
+        for listener in self.listeners:
+            try:
+                listener(tool, args, result, mandate_id)
+            except Exception as exc:  # noqa: BLE001 - the action already ran; record the bookkeeping failure
+                self.audit.append("gateway.listener_failed", {"tool": tool, "error": type(exc).__name__})
         return result
 
     def _log(self, action: ProposedAction, decision: Decision) -> Decision:

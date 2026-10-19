@@ -29,6 +29,11 @@ from app.gateway import ArgValue, Decision, ProposedAction, load_policy
 from app.gateway.dispatch import ACTION_ARGS
 
 
+# Actions the owner starts from a screen, not the assistant: the Payments tab proposes `pay_invoice` in code, with
+# the payee's account on file and the amount from the business's own records. The planner neither sees nor proposes it.
+NOT_FOR_PLANNER = frozenset({"pay_invoice"})
+
+
 def _is_fact_arg(name: str, typ: type) -> bool:
     return typ is int or name.endswith("date")
 
@@ -40,6 +45,8 @@ def action_catalog() -> str:
     policy = load_policy()
     parts = []
     for tool, spec in ACTION_ARGS.items():
+        if tool in NOT_FOR_PLANNER:
+            continue
         args = ", ".join(n + ("=fact" if _is_fact_arg(n, t) else "") for n, t in spec.items())
         how = "runs within the owner's standing limit" if tool in policy.t2 else "waits for the owner's signature"
         parts.append(f"{tool}({args}): {how}")
@@ -115,6 +122,9 @@ def propose_action(ctx: TurnContext, raw_arguments: str) -> tuple[dict[str, Any]
     try:
         parsed = json.loads(raw_arguments or "{}")
         call = ProposeArgs.model_validate(parsed if isinstance(parsed, dict) else {})
+        if call.tool in NOT_FOR_PLANNER:
+            return {"error": f"{call.tool} is not available to the assistant; the owner starts it from the Payments "
+                             "screen"}, None
         args = {name: _resolve(ctx, name, raw) for name, raw in call.args.items()}
         action = ProposedAction(tool=call.tool, args=args)
     except json.JSONDecodeError:

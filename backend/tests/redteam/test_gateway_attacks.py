@@ -7,6 +7,8 @@ to the gateway API directly. Each test records the rule that stopped it; `make r
 
 import pytest
 
+from app.gateway import load_policy
+
 from tests.agent_env import MAYA, FakeLLM, agent_client, build_template, calls, copy_data_dir, text
 from tests.owner_api import (
     approve, bank_ops, draft_mandate, enroll, grant, outbox, propose, register, sign_approval,
@@ -178,7 +180,8 @@ def test_mandate_that_raises_the_policy_cap_is_rejected(make, attack):
     attack("ATK-OVER-CAP-T2", "owner-signed mandate claiming a cap above policy.yaml", "scripted")
     client, _ = make()
     owner = enroll(client, MAYA)
-    draft = draft_mandate(client, MAYA, "pay_recurring_bill", 500_000, ["sup_ggw"])
+    above = load_policy().t2["pay_recurring_bill"].max_amount_minor + 1
+    draft = draft_mandate(client, MAYA, "pay_recurring_bill", above, ["sup_ggw"])
     result = register(client, MAYA, owner, draft["payload"], draft["terms"], draft["message"])
     assert not result["accepted"] and result["rule"] == "raises_policy_cap"
     attack.caught("gateway", result["rule"])

@@ -4,6 +4,7 @@ FROM python:3.12-slim
 WORKDIR /app
 COPY backend/pyproject.toml ./
 COPY backend/app ./app
+COPY backend/sandboxpay ./sandboxpay
 # app/config.py resolves the repo root two levels above app/, which is / here, so the built-in skills go to /skills.
 COPY skills /skills
 RUN pip install --no-cache-dir .

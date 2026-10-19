@@ -12,3 +12,15 @@ services:
         required: false
     volumes:
       - ./backend/data:/app/data
+  sandboxpay:  # the simulated payment provider, its own service (set SANDBOXPAY_URL=http://sandboxpay:8100 for backend)
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    command: ["uvicorn", "--factory", "sandboxpay.main:create_app", "--host", "0.0.0.0", "--port", "8100"]
+    ports:
+      - "8100:8100"
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      - ./backend/data:/app/data

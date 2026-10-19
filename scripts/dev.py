@@ -1,4 +1,5 @@
-"""`make dev`: FastAPI on :8000 with reload, plus Next.js on :3000 once frontend/package.json exists.
+"""`make dev`: FastAPI on :8000 with reload, SandboxPay (the simulated payment provider, its own service) on :8100,
+plus Next.js on :3000 once frontend/package.json exists.
 
 Run with the backend venv's Python. Ctrl+C stops both. Next.js only reads .env files in frontend/, so the
 NEXT_PUBLIC_* values from the root .env are passed to it here; no other .env value (no secret) is.
@@ -30,6 +31,10 @@ def main() -> int:
     procs = [subprocess.Popen(
         [sys.executable, "-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", "8000",
          "--reload", "--reload-dir", "app"],
+        cwd=ROOT / "backend",
+    ), subprocess.Popen(
+        [sys.executable, "-m", "uvicorn", "--factory", "sandboxpay.main:create_app", "--host", "127.0.0.1",
+         "--port", "8100"],
         cwd=ROOT / "backend",
     )]
     if (FRONTEND / "package.json").exists():

@@ -30,7 +30,7 @@ dev = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["app"]
+packages = ["app", "sandboxpay"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

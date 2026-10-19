@@ -21,6 +21,7 @@ const PAGE = 50;
 
 const SOURCE_LABEL: Record<TransactionRow["source"] & string, string> = {
   import: "CSV import",
+  payment: "Payment (SandboxPay)",
 };
 
 function MoneyCell({ row }: { row: TransactionRow }) {
@@ -89,9 +90,19 @@ function TransactionDetail({ id, onBack }: { id: string; onBack: () => void }) {
             <dd style={{ fontFamily: "var(--font-code)" }}>{row.data.import_id}</dd>
           </dl>
           <div className="kc-caption">
-            This row came in through a CSV statement import, logged to the audit chain at the time of import. A
-            dedicated on-chain verify link for individual rows isn&apos;t built yet; the audit log&apos;s head (which
-            covers every row) is anchored and verifiable from the Trust tab.
+            {row.data.source === "payment" ? (
+              <>
+                This row was posted when the payment provider&apos;s signed webhook said the payment settled. Its
+                receipt fingerprint goes into the next anchoring batch; verify it on-chain from the payment in the
+                Payments tab.
+              </>
+            ) : (
+              <>
+                This row came in through a CSV statement import, logged to the audit chain at the time of import. A
+                dedicated on-chain verify link for individual rows isn&apos;t built yet; the audit log&apos;s head
+                (which covers every row) is anchored and verifiable from the Trust tab.
+              </>
+            )}
           </div>
         </div>
       )}
@@ -100,7 +111,7 @@ function TransactionDetail({ id, onBack }: { id: string; onBack: () => void }) {
 }
 
 export function TransactionsPanel({ openId }: { openId?: string }) {
-  const { pushPanel, popPanel, toast } = useAdvisor();
+  const { pushPanel, popPanel, toast, ledgerVersion } = useAdvisor();
   const { id: businessId, key } = useBusinessKey("transactions");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -122,8 +133,10 @@ export function TransactionsPanel({ openId }: { openId?: string }) {
     }),
     [dateFrom, dateTo, search, direction, count],
   );
-  const page = useApi(key && `${key}:tx:${JSON.stringify(query)}`, () => api.transactions(businessId, query));
-  const latest = useApi(key && `${key}:tx-latest`, () => api.transactions(businessId, { limit: 1 }));
+  const page = useApi(key && `${key}:tx:${ledgerVersion}:${JSON.stringify(query)}`, () =>
+    api.transactions(businessId, query),
+  );
+  const latest = useApi(key && `${key}:tx-latest:${ledgerVersion}`, () => api.transactions(businessId, { limit: 1 }));
   const rows = page.data?.items ?? [];
 
   useEffect(() => {

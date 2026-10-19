@@ -13,6 +13,7 @@ use it creates data_dir, restores the simulated clock, opens the audit log (conf
   append so it can cut a batch every ANCHOR_BATCH_SIZE entries. Sends run in the background.
 - Inbox events: an in-memory feed of each message's progress through the pipeline, streamed to the Inbox screen.
 - Gmail (services/gmail.py): OAuth connections, the background poller and the mail route the gateway sends with.
+- Payments (services/payments.py): the SandboxPay connection and the payment route the gateway pays through.
 - Fact cache: keyed by business, active pack, simulated date and ledger version, so a page refresh does not
   recompute (or re-log) the same facts. Each fresh computation is logged with a hash of every fact it produced.
 """
@@ -57,6 +58,7 @@ class Runtime:
         self._demo_llm: LLMAdapter | None = None
         self.inbox_events = InboxEvents()
         self._gmail = None
+        self._payments = None
 
     # Setup
     @property
@@ -119,6 +121,16 @@ class Runtime:
                 self._gmail = GmailService(self)
             return self._gmail
 
+    @property
+    def payments(self):
+        """The Payments service (services/payments.py): SandboxPay connection, pay requests, settlement."""
+        from app.services.payments import PaymentsService  # it imports services.inbox, which imports this module
+
+        with self._lock:
+            if self._payments is None:
+                self._payments = PaymentsService(self)
+            return self._payments
+
     # Clock
     def _clock_file(self) -> Path:
         return self.data_dir / "clock.json"
@@ -174,7 +186,9 @@ class Runtime:
             gw = self._gateways.get(business_id)
             if gw is None:
                 gw = Gateway.for_tenant(self.data_dir / business_id, self.audit, self.clock,
-                                        mail=self.gmail.mail_route(business_id))
+                                        mail=self.gmail.mail_route(business_id),
+                                        payments=self.payments.route(business_id))
+                self.payments.attach(business_id, gw)
                 self._gateways[business_id] = gw
             return gw
 

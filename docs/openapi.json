@@ -3657,6 +3657,679 @@
         }
       }
     },
+    "/businesses/{business_id}/payments": {
+      "get": {
+        "tags": [
+          "payments"
+        ],
+        "summary": "Payments Overview",
+        "description": "Connection, payees, suggested payments from the business's records, and every request (newest first),\noptionally filtered by status or payee.",
+        "operationId": "payments_overview",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "proposed",
+                    "awaiting_approval",
+                    "approved",
+                    "sent",
+                    "settled",
+                    "failed",
+                    "denied",
+                    "cancelled"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "payee_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Payee Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentsOverview"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/payments/requests": {
+      "post": {
+        "tags": [
+          "payments"
+        ],
+        "summary": "Create Payment",
+        "description": "Create a pay request and put it to the gateway: it runs if a signed limit covers it, otherwise it returns\n`awaiting_approval` with the approval ID to sign.",
+        "operationId": "create_payment",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaymentCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/payments/requests/{request_id}": {
+      "get": {
+        "tags": [
+          "payments"
+        ],
+        "summary": "Get Payment",
+        "operationId": "get_payment",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          },
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^pr_[0-9a-f]{16}$",
+              "title": "Request Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/payments/requests/{request_id}/cancel": {
+      "post": {
+        "tags": [
+          "payments"
+        ],
+        "summary": "Cancel Payment",
+        "operationId": "cancel_payment",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          },
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^pr_[0-9a-f]{16}$",
+              "title": "Request Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/payments/requests/{request_id}/refresh": {
+      "post": {
+        "tags": [
+          "payments"
+        ],
+        "summary": "Refresh Payment",
+        "description": "Ask the provider for the status of a sent payment, in case its webhook did not arrive.",
+        "operationId": "refresh_payment",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          },
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^pr_[0-9a-f]{16}$",
+              "title": "Request Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/payments/requests/{request_id}/receipt": {
+      "get": {
+        "tags": [
+          "payments"
+        ],
+        "summary": "Payment Receipt",
+        "operationId": "payment_receipt",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          },
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^pr_[0-9a-f]{16}$",
+              "title": "Request Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Receipt"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/payments/requests/{request_id}/onchain": {
+      "get": {
+        "tags": [
+          "payments"
+        ],
+        "summary": "Verify Payment Onchain",
+        "description": "Recompute the receipt's hash from the stored receipt, find it in an anchored batch and check the root on\nchain (invariant 9: only the hash is published).",
+        "operationId": "verify_payment_onchain",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          },
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^pr_[0-9a-f]{16}$",
+              "title": "Request Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeafCheck"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/payments/payees": {
+      "post": {
+        "tags": [
+          "payments"
+        ],
+        "summary": "Add Payee",
+        "description": "Add a payee. Needs the account number typed twice and an explicit confirmation.",
+        "operationId": "add_payee",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PayeeCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Payee"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/payments/verifications": {
+      "post": {
+        "tags": [
+          "payments"
+        ],
+        "summary": "Verify Call",
+        "description": "Mark the call-script check done for a flagged email. Only then can it be paid (and still only with a\nsignature).",
+        "operationId": "verify_call",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CallVerification"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/connections/payments": {
+      "get": {
+        "tags": [
+          "payments"
+        ],
+        "summary": "Payment Connection",
+        "operationId": "payment_connection",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentConnectionStatus"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/connections/payments/connect": {
+      "post": {
+        "tags": [
+          "payments"
+        ],
+        "summary": "Connect Payments",
+        "description": "Start the consent flow: the provider's consent URL (state + PKCE) to open in a popup.",
+        "operationId": "connect_payments",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaymentConnectRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentConnectStart"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/connections/payments/disconnect": {
+      "post": {
+        "tags": [
+          "payments"
+        ],
+        "summary": "Disconnect Payments",
+        "description": "Revoke the token at the provider (immediately) and delete it here.",
+        "operationId": "disconnect_payments",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentConnectionStatus"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/businesses/{business_id}/gateway/propose": {
       "post": {
         "tags": [
@@ -5223,6 +5896,20 @@
         ],
         "title": "CallScript",
         "description": "A verification call the owner makes on a number from their own records. Generated in code, not by an LLM."
+      },
+      "CallVerification": {
+        "properties": {
+          "email_id": {
+            "type": "string",
+            "pattern": "^(em|up|gm|dc)-[a-z0-9]{3,16}$",
+            "title": "Email Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email_id"
+        ],
+        "title": "CallVerification"
       },
       "CampaignLine": {
         "properties": {
@@ -7338,7 +8025,8 @@
               "audit_head",
               "mandate",
               "passport",
-              "skill"
+              "skill",
+              "payment"
             ],
             "title": "Kind"
           },
@@ -7403,7 +8091,8 @@
               "audit_head",
               "mandate",
               "passport",
-              "skill"
+              "skill",
+              "payment"
             ],
             "title": "Kind"
           },
@@ -8761,6 +9450,656 @@
         ],
         "title": "PathStep"
       },
+      "Payee": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "supplier",
+              "payee",
+              "added"
+            ],
+            "title": "Kind"
+          },
+          "account_last4": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account Last4"
+          },
+          "verified": {
+            "type": "boolean",
+            "title": "Verified"
+          },
+          "account_changed": {
+            "type": "boolean",
+            "title": "Account Changed",
+            "default": false
+          },
+          "has_account": {
+            "type": "boolean",
+            "title": "Has Account"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "verified",
+          "has_account"
+        ],
+        "title": "Payee"
+      },
+      "PayeeCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 60,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "account_number": {
+            "type": "string",
+            "maxLength": 40,
+            "minLength": 6,
+            "title": "Account Number"
+          },
+          "confirm_account_number": {
+            "type": "string",
+            "maxLength": 40,
+            "minLength": 6,
+            "title": "Confirm Account Number"
+          },
+          "confirmed": {
+            "type": "boolean",
+            "title": "Confirmed",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "account_number",
+          "confirm_account_number"
+        ],
+        "title": "PayeeCreate"
+      },
+      "PaymentConnectRequest": {
+        "properties": {
+          "client_name": {
+            "type": "string",
+            "maxLength": 60,
+            "title": "Client Name",
+            "description": "The app's display name for the consent screen",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "title": "PaymentConnectRequest"
+      },
+      "PaymentConnectStart": {
+        "properties": {
+          "authorize_url": {
+            "type": "string",
+            "title": "Authorize Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "authorize_url"
+        ],
+        "title": "PaymentConnectStart"
+      },
+      "PaymentConnectionStatus": {
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "connected",
+              "not_connected",
+              "not_configured"
+            ],
+            "title": "State"
+          },
+          "provider": {
+            "type": "string",
+            "title": "Provider",
+            "default": "SandboxPay"
+          },
+          "simulated": {
+            "type": "boolean",
+            "title": "Simulated",
+            "default": true
+          },
+          "scopes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Scopes",
+            "default": []
+          },
+          "can_do": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Can Do"
+          },
+          "cannot_do": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Cannot Do"
+          },
+          "per_payment_cap_minor": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Per Payment Cap Minor"
+          },
+          "daily_cap_minor": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Daily Cap Minor"
+          },
+          "spent_today_minor": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spent Today Minor"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          },
+          "account_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account Name"
+          },
+          "connected_on": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Connected On"
+          },
+          "provider_reachable": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Reachable"
+          },
+          "missing_settings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Missing Settings",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "state",
+          "can_do",
+          "cannot_do",
+          "currency"
+        ],
+        "title": "PaymentConnectionStatus"
+      },
+      "PaymentCreate": {
+        "properties": {
+          "source": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80,
+                "pattern": "^(item|email):[A-Za-z0-9_\\-]{1,64}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "payee_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payee Id"
+          },
+          "amount_minor": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 1000000000000.0,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount Minor"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 200,
+            "title": "Reason",
+            "default": ""
+          },
+          "reference": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference"
+          }
+        },
+        "type": "object",
+        "title": "PaymentCreate",
+        "description": "Either `source` (a suggestion's key: payee and amount come from the business's records) or a manual request\n(`payee_id` + `amount_minor`)."
+      },
+      "PaymentEvent": {
+        "properties": {
+          "seq": {
+            "type": "integer",
+            "title": "Seq"
+          },
+          "on_date": {
+            "type": "string",
+            "format": "date",
+            "title": "On Date"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "proposed",
+              "awaiting_approval",
+              "approved",
+              "sent",
+              "settled",
+              "failed",
+              "denied",
+              "cancelled"
+            ],
+            "title": "Status"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "seq",
+          "on_date",
+          "status"
+        ],
+        "title": "PaymentEvent"
+      },
+      "PaymentView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "created_on": {
+            "type": "string",
+            "format": "date",
+            "title": "Created On"
+          },
+          "payee_id": {
+            "type": "string",
+            "title": "Payee Id"
+          },
+          "payee_name": {
+            "type": "string",
+            "title": "Payee Name"
+          },
+          "account_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account Token"
+          },
+          "account_last4": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account Last4"
+          },
+          "amount_minor": {
+            "type": "integer",
+            "title": "Amount Minor"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          },
+          "reference": {
+            "type": "string",
+            "title": "Reference"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "source_kind": {
+            "type": "string",
+            "enum": [
+              "manual",
+              "bill",
+              "invoice",
+              "email",
+              "assistant"
+            ],
+            "title": "Source Kind"
+          },
+          "source_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Ref"
+          },
+          "source_label": {
+            "type": "string",
+            "title": "Source Label"
+          },
+          "amount_untrusted": {
+            "type": "boolean",
+            "title": "Amount Untrusted"
+          },
+          "scheduled_item_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scheduled Item Id"
+          },
+          "email_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email Id"
+          },
+          "tool": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool"
+          },
+          "bill_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bill Id"
+          },
+          "approval_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approval Id"
+          },
+          "mandate_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mandate Id"
+          },
+          "idempotency_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Idempotency Key"
+          },
+          "provider_payment_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Payment Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "proposed",
+              "awaiting_approval",
+              "approved",
+              "sent",
+              "settled",
+              "failed",
+              "denied",
+              "cancelled"
+            ],
+            "title": "Status"
+          },
+          "rule": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rule"
+          },
+          "ledger_tx_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ledger Tx Id"
+          },
+          "receipt_sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Receipt Sha256"
+          },
+          "settled_on": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Settled On"
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/PaymentEvent"
+            },
+            "type": "array",
+            "title": "Events",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "created_on",
+          "payee_id",
+          "payee_name",
+          "amount_minor",
+          "currency",
+          "reference",
+          "reason",
+          "source_kind",
+          "source_label",
+          "amount_untrusted",
+          "status"
+        ],
+        "title": "PaymentView"
+      },
+      "PaymentsOverview": {
+        "properties": {
+          "connection": {
+            "$ref": "#/components/schemas/PaymentConnectionStatus"
+          },
+          "payees": {
+            "items": {
+              "$ref": "#/components/schemas/Payee"
+            },
+            "type": "array",
+            "title": "Payees"
+          },
+          "suggestions": {
+            "items": {
+              "$ref": "#/components/schemas/SuggestedPayment"
+            },
+            "type": "array",
+            "title": "Suggestions"
+          },
+          "requests": {
+            "items": {
+              "$ref": "#/components/schemas/PaymentView"
+            },
+            "type": "array",
+            "title": "Requests"
+          }
+        },
+        "type": "object",
+        "required": [
+          "connection",
+          "payees",
+          "suggestions",
+          "requests"
+        ],
+        "title": "PaymentsOverview"
+      },
       "Plan": {
         "properties": {
           "pack_id": {
@@ -9204,6 +10543,30 @@
           "tool"
         ],
         "title": "ProposedAction"
+      },
+      "Receipt": {
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "title": "Request Id"
+          },
+          "receipt_sha256": {
+            "type": "string",
+            "title": "Receipt Sha256"
+          },
+          "document": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Document"
+          }
+        },
+        "type": "object",
+        "required": [
+          "request_id",
+          "receipt_sha256",
+          "document"
+        ],
+        "title": "Receipt"
       },
       "RedteamAttack": {
         "properties": {
@@ -10530,6 +11893,107 @@
         ],
         "title": "SuggestedMandate"
       },
+      "SuggestedPayment": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "payee_id": {
+            "type": "string",
+            "title": "Payee Id"
+          },
+          "payee_name": {
+            "type": "string",
+            "title": "Payee Name"
+          },
+          "amount_minor": {
+            "type": "integer",
+            "title": "Amount Minor"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          },
+          "due_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due Date"
+          },
+          "reference": {
+            "type": "string",
+            "title": "Reference"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "source_kind": {
+            "type": "string",
+            "enum": [
+              "bill",
+              "invoice",
+              "email"
+            ],
+            "title": "Source Kind"
+          },
+          "amount_untrusted": {
+            "type": "boolean",
+            "title": "Amount Untrusted"
+          },
+          "covered_by_mandate": {
+            "type": "boolean",
+            "title": "Covered By Mandate"
+          },
+          "needs_verification": {
+            "type": "boolean",
+            "title": "Needs Verification",
+            "default": false
+          },
+          "verified": {
+            "type": "boolean",
+            "title": "Verified",
+            "default": false
+          },
+          "flags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Flags",
+            "default": []
+          },
+          "call_script": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Call Script",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "payee_id",
+          "payee_name",
+          "amount_minor",
+          "currency",
+          "reference",
+          "label",
+          "source_kind",
+          "amount_untrusted",
+          "covered_by_mandate"
+        ],
+        "title": "SuggestedPayment"
+      },
       "SummaryLine": {
         "properties": {
           "label": {
@@ -10795,7 +12259,10 @@
           },
           "source": {
             "type": "string",
-            "const": "import",
+            "enum": [
+              "import",
+              "payment"
+            ],
             "title": "Source",
             "default": "import"
           },

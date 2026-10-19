@@ -262,6 +262,10 @@ export interface CallScript {
   lines: string[];
 }
 
+export interface CallVerification {
+  email_id: string;
+}
+
 export interface CampaignLine {
   campaign_id: string;
   campaign: string;
@@ -653,7 +657,7 @@ export interface KpiRow {
 
 /** One anchored hash. `ref` says where it came from (audit seq, mandate ID, Passport export), never its content. */
 export interface Leaf {
-  kind: "audit_head" | "mandate" | "passport" | "skill";
+  kind: "audit_head" | "mandate" | "passport" | "skill" | "payment";
   hash: string;
   ref: string;
   leaf_hash: string;
@@ -663,7 +667,7 @@ export interface Leaf {
 export interface LeafCheck {
   status: "match" | "mismatch" | "not_anchored" | "queued" | "unavailable";
   reason: string | null;
-  kind: "audit_head" | "mandate" | "passport" | "skill";
+  kind: "audit_head" | "mandate" | "passport" | "skill" | "payment";
   hash: string;
   recorded_hash: string | null;
   batch_id?: string | null;
@@ -920,6 +924,106 @@ export interface PathStep {
   text: string;
 }
 
+export interface Payee {
+  id: string;
+  name: string;
+  kind: "supplier" | "payee" | "added";
+  account_last4?: string | null;
+  verified: boolean;
+  account_changed?: boolean;
+  has_account: boolean;
+}
+
+export interface PayeeCreate {
+  name: string;
+  account_number: string;
+  confirm_account_number: string;
+  confirmed?: boolean;
+}
+
+export interface PaymentConnectRequest {
+  /** The app's display name for the consent screen */
+  client_name?: string;
+}
+
+export interface PaymentConnectStart {
+  authorize_url: string;
+}
+
+export interface PaymentConnectionStatus {
+  state: "connected" | "not_connected" | "not_configured";
+  provider?: string;
+  simulated?: boolean;
+  scopes?: string[];
+  can_do: string[];
+  cannot_do: string[];
+  per_payment_cap_minor?: number | null;
+  daily_cap_minor?: number | null;
+  spent_today_minor?: number | null;
+  currency: string;
+  account_name?: string | null;
+  connected_on?: string | null;
+  provider_reachable?: boolean | null;
+  missing_settings?: string[];
+}
+
+/**
+ * Either `source` (a suggestion's key: payee and amount come from the business's records) or a manual request
+ * (`payee_id` + `amount_minor`).
+ */
+export interface PaymentCreate {
+  source?: string | null;
+  payee_id?: string | null;
+  amount_minor?: number | null;
+  reason?: string;
+  reference?: string | null;
+}
+
+export interface PaymentEvent {
+  seq: number;
+  on_date: string;
+  status: "proposed" | "awaiting_approval" | "approved" | "sent" | "settled" | "failed" | "denied" | "cancelled";
+  note?: string | null;
+}
+
+export interface PaymentView {
+  id: string;
+  created_on: string;
+  payee_id: string;
+  payee_name: string;
+  account_token?: string | null;
+  account_last4?: string | null;
+  amount_minor: number;
+  currency: string;
+  reference: string;
+  reason: string;
+  source_kind: "manual" | "bill" | "invoice" | "email" | "assistant";
+  source_ref?: string | null;
+  source_label: string;
+  amount_untrusted: boolean;
+  scheduled_item_id?: string | null;
+  email_id?: string | null;
+  tool?: string | null;
+  bill_id?: string | null;
+  approval_id?: string | null;
+  mandate_id?: number | null;
+  idempotency_key?: string | null;
+  provider_payment_id?: string | null;
+  status: "proposed" | "awaiting_approval" | "approved" | "sent" | "settled" | "failed" | "denied" | "cancelled";
+  rule?: string | null;
+  ledger_tx_id?: string | null;
+  receipt_sha256?: string | null;
+  settled_on?: string | null;
+  events?: PaymentEvent[];
+}
+
+export interface PaymentsOverview {
+  connection: PaymentConnectionStatus;
+  payees: Payee[];
+  suggestions: SuggestedPayment[];
+  requests: PaymentView[];
+}
+
 /** What onboarding asks for this business, from its pack. */
 export interface Plan {
   pack_id: string;
@@ -1009,6 +1113,12 @@ export interface ProofStep {
 export interface ProposedAction {
   tool: string;
   args?: Record<string, ArgValue>;
+}
+
+export interface Receipt {
+  request_id: string;
+  receipt_sha256: string;
+  document: Record<string, unknown>;
 }
 
 export interface RedteamAttack {
@@ -1254,6 +1364,24 @@ export interface SuggestedMandate {
   names: string[];
 }
 
+export interface SuggestedPayment {
+  key: string;
+  payee_id: string;
+  payee_name: string;
+  amount_minor: number;
+  currency: string;
+  due_date?: string | null;
+  reference: string;
+  label: string;
+  source_kind: "bill" | "invoice" | "email";
+  amount_untrusted: boolean;
+  covered_by_mandate: boolean;
+  needs_verification?: boolean;
+  verified?: boolean;
+  flags?: string[];
+  call_script?: string[];
+}
+
 export interface SummaryLine {
   label: string;
   text: string;
@@ -1306,7 +1434,7 @@ export interface TransactionRow {
   running_balance_minor: number;
   import_id: string;
   source_line: number;
-  source?: "import";
+  source?: "import" | "payment";
   status?: "settled";
 }
 

@@ -2,7 +2,7 @@
 
 Deadline: Tue Oct 20, 23:59 Beijing = **21:59 Dhaka**
 Feature freeze: **Tue 13:00 Dhaka**
-Last updated: Mon Oct 19, night Dhaka (P2)
+Last updated: Tue Oct 20, early Dhaka (P3)
 
 This file is now the single source of truth for remaining work (`docs/build-prompts.md` is superseded — see the
 note at its top). See "Maintaining this file" at the end before editing it.
@@ -20,7 +20,7 @@ Verified against `git log`, the code on disk and a full `pytest` run (831 passed
 | F2 | Sending approved emails | Not started (P4) |
 | F3 | Live demo console | Done (P2) — verified live against OpenAI for all 7 presets on both seeded businesses; needs `DEMO_MODE=true` (server) and `NEXT_PUBLIC_DEMO_MODE=true` (frontend) to appear |
 | F4 | Onboarding from zero | Done (P1, P1 follow-up fix) |
-| F5 | Payments tab | Not started (P3) |
+| F5 | Payments tab | Done (P3) — SandboxPay provider service, Payments tab, `pay_invoice` (T3); verified live in the browser on an isolated copy of the data; optional stablecoin rail not built |
 | F6 | Product and ad knowledge in Skill Packs | Merged into P1 |
 | F7 | Transactions tab | Done (P5, commit `c606eab`) |
 | F8 | Real Gmail inbox via OAuth (read + send approved emails) | Done (P6) — built and tested against a mocked Google; not yet connected to the live demo account (needs GMAIL_CLIENT_ID/SECRET in `.env`) |
@@ -50,7 +50,7 @@ P7 uses the product and ad data onboarding imports. P5 comes early because uploa
 their results in the Transactions tab. P6 comes before P2 and P4 so the console and email sending can use the real
 inbox.
 
-**Remaining order from here:** P3 → P4 → Prompt 19.
+**Remaining order from here:** P4 → Prompt 19.
 
 **Demo email plan:** the console injects sandbox attacks that real email can't fake (lookalike domains, spoofed senders); real emails are sent live from your phone to the demo Gmail inbox.
 
@@ -66,21 +66,18 @@ Tiers in `policy.yaml` (canonical; matches the Tiers table in CLAUDE.md):
   12 runs/hour, never moves value, not in the planner's registry).
 - **T2** (signed standing mandate, max 90 days; breaking a cap/allow-list/frequency rule is denied, not escalated):
   - `send_invoice_reminder`: ≤ 50000 minor units, allow-listed customers, 1 per customer per 3 days.
-  - `pay_recurring_bill`: ≤ 50000 minor units, allow-listed payees.
+  - `pay_recurring_bill`: ≤ 500000 minor units (raised for P3), allow-listed payees.
 - **T3** (owner signs the exact payload, approval expires after 2 days): `submit_loan_application`,
   `change_payee_details` (needs an out-of-band call script), `delay_supplier_payment`, `send_supplier_message`,
-  `cancel_subscription`.
+  `cancel_subscription`, `pay_invoice` (P3; Payments tab only — hidden from the planner's action catalogue by
+  `agent/actions.NOT_FOR_PLANNER`, so no planner recording went stale).
 - **T4** (no tools, by design; analysis only, logged as a violation): `large_debt`, `hiring_or_firing`,
   `pricing_change`, `deal_commitment`.
 
-**Open decision — T2 cap:** both T2 tools currently cap at 50000 minor units (৳500). Raiyan said he'd confirm
-keep-vs-raise before P3 starts; don't change it without that confirmation.
+**T2 cap (decided Oct 19, before P3):** Raiyan chose to raise `pay_recurring_bill` to 500000 minor units (৳5,000);
+`send_invoice_reminder` stays at 50000. Applied in `policy.yaml`; `tests/policy/test_gateway_payments.py` pins both.
 
-Executed actions and visibility, verified by reading the code directly (not yet built — these gaps are what P3 and
-P4 exist to close):
-- `pay_recurring_bill` executes through `executor/sandbox_bank.py`, which writes only to its own standalone
-  `operations` SQLite table and the audit log. **It never touches the ledger** — no balance change, no effect on
-  forecast/buffer days. P3's "balance drops and buffer days update visibly" is new work, not already there.
+Executed actions and visibility, verified by reading the code directly (the gap P4 exists to close):
 - `send_invoice_reminder` executes through `executor/reminder_sender.py` → `executor/sandbox_mailbox.py`, which
   does write a row to a real `outbox` table (`SandboxMailbox.outbox()`). But **nothing reads it**: no API route and
   no frontend component references `outbox`. The data exists but isn't surfaced. P4's "store sent emails, show
@@ -108,19 +105,18 @@ planner request including every tool schema, so P7 adding three new T1 tools (`r
 came from (commit `4df2220`, 74 replay files touched). Full details and the re-record procedure:
 [[benign-replay-rerecord]] in memory.
 
-**`docs/results/redteam.json` is stale relative to current HEAD.** Its `commit` field reads
-`8e7ccecf0fe6aad78a5001102aafb4d205b125e1+dirty` — the "onboarding fixed" commit, which is *before* P8
-(`d48d6c4`) and P7 (`4df2220`). It shows 16/16 attacks blocked, 67/67 variants blocked, 24/24 tasks succeeded, but
-that run never exercised the P7 ad-advisor tools or the P8 custom skill-upload path. Re-run `make redteam` after
-P7/P8 (and again after each remaining prompt) before trusting those numbers in the deck or README — per invariant 8,
-never carry this stale number forward as if it covers the current attack surface.
+**`docs/results/redteam.json`** was regenerated during P3 (replay, `commit` = P2's hash `+dirty`, i.e. the P3 working
+tree): 25/25 attacks, 76/76 variants, 24/24 tasks. Re-run `make redteam` after P4 and before quoting numbers in the
+deck or README (invariant 8).
 
 Already answered by the original plan: products are tracked individually (product margins and an
 unprofitable-products leak detector exist); reminders are a T2 action (`send_invoice_reminder`) under a standing
 signed mandate; untrusted-provenance arguments force T3; loan applications are T3; a statement-upload endpoint
 exists in the backend.
 
-`make test` passes clean as of the P2 update: 885 pytest cases (was 854 after P6), plus the branding and frontend-types checks.
+`make test` passes clean as of the P3 update: 924 pytest cases (was 885 after P2), plus the branding and frontend-types
+checks. `make redteam` (replay) re-run for P3 on the uncommitted P3 tree: 25/25 attacks blocked (76/76 variants),
+24/24 benign tasks — the 9 new `ATK-PAY-*` attacks included.
 
 **P6 (Gmail) as built, Mon Oct 19 evening:** full `pytest` run 854 passed (replay mode), branding and frontend-types
 checks pass. No planner prompt, tool schema, policy.yaml or extractor input changed, so no replay recordings went
@@ -163,6 +159,36 @@ stale and `make redteam` was not re-run for P6. What later prompts can reuse:
   right for side-by-side recording. Gated by `NEXT_PUBLIC_DEMO_MODE`. A held/flagged email now toasts on every
   screen (moved from the Inbox panel into `AdvisorProvider`).
 - Not done: the Morning Brief does not change when mail is flagged (toast only); no `make` target to start in demo mode.
+
+**P3 (payments) as built, Tue Oct 20 early:**
+- **Provider:** `backend/sandboxpay/` is its own FastAPI service (`uvicorn --factory sandboxpay.main:create_app`,
+  port 8100; `make dev` starts it; docker-compose has a `sandboxpay` service). It imports nothing from `app`. Own
+  SQLite, consent screen at `/authorize` (owner can lower the per-payment/daily caps, never raise), code + PKCE +
+  client secret → scoped bearer token + per-connection webhook secret, `/oauth/revoke`, `/v1/payments` with a required
+  `Idempotency-Key`, its own per-payment and daily caps, settlement after `SANDBOXPAY_SETTLE_SECONDS` (default 4) with
+  an HMAC-SHA256-signed webhook (retried with backoff). `SANDBOXPAY_CLIENT_SECRET` was generated into `.env`; the token
+  is encrypted with `SANDBOXPAY_TOKEN_KEY`, falling back to `GMAIL_TOKEN_KEY`.
+- **App side:** `executor/sandbox_bank.py` is now the provider client (no parallel executor). `pay_invoice` (T3) args
+  are payee + account token + amount + reference + request ID, so the signature binds payee, amount and account; the
+  gateway precheck (`dispatch.Executors.precheck`) refuses if the account on file changed or a flagged-email request
+  has no call verification. `pay_recurring_bill` (T2) pays the account on file with key = hash(payee, bill, amount).
+  `Gateway.mandate_covers()` (read-only) decides which tool the Payments service proposes; `Gateway.listeners` lets
+  `services/payments.py` follow executions. Settlement only on a verified webhook (or a provider status check):
+  one ledger row (`import_id` `pay_<request>`, Transactions shows source "payment"), the bill's scheduled item set to
+  `paid`, a canonical receipt whose hash is logged as `payments.settled` and anchored as leaf kind `payment`.
+- **Live status:** payment events ride the existing inbox SSE stream (`kind` `payment` / `payment_connection`); the
+  owner app toasts settled/failed payments and reloads cash, runway and Transactions on settlement.
+- **Frontend:** `/payments` panel (`components/advisor/panel-payments.tsx`), sidebar link after Transactions:
+  provider card (connect/disconnect, scopes, caps, spent today), due-soon suggestions from bills/invoices (one tap →
+  approval sheet), "Held by the inbox check" for flagged emails (call script + "mark the call done"), manual request,
+  history with status/payee filters and live step dots, payees with Verified / Added-by-you badges and an add-payee
+  form (account typed twice + confirmation), payment detail with timeline, receipt, ledger link and Verify on-chain.
+- **Verified live** (browser, isolated copy of the data on :8001/:8101/:3001, anchoring off): connect → pay FreshLine
+  FL-26-0049 → sign → settled by webhook → cash on hand 15,837.53 → 14,550.35. The running dev server on :8000 was
+  not touched and was still serving pre-P3 code at the time; restart it (see the stale-worker memory) to get P3.
+- **Not done:** optional testnet stablecoin rail (needs Raiyan's go-ahead first, per the prompt). A payment made
+  without a connected provider is recorded as failed `not_connected` (the gateway still reports `executed` for the
+  executor run, as before).
 
 ---
 
@@ -429,6 +455,9 @@ Commit and push.
 ---
 
 ## P3 — Payments tab with a connected payment provider
+
+Note (after P3): done; see "P3 (payments) as built" under Known facts. The T2 cap decision was taken (৳5,000 for
+bills). `pay_invoice` is Payments-tab only, by Raiyan's choice, so planner recordings did not go stale.
 
 Note: confirmed by reading `executor/sandbox_bank.py` that `pay_recurring_bill` currently writes only to its own
 operations table, never the ledger — this prompt's "balance drops and buffer days update visibly" step is real,

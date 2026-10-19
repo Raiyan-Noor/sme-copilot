@@ -8,19 +8,27 @@ import type { FactRef } from "@/components/kc/fact";
 import type { ToastData } from "@/components/kc/misc";
 import { chatStream, inboxStream } from "@/lib/api";
 import { errorMessage } from "@/lib/errors";
-import { flagLabel, nowTime } from "@/lib/format";
+import { flagLabel, money, nowTime, ruleLabel } from "@/lib/format";
 import type { ActionEvent, Decision, Flag, ReplyEvent, StageEvent } from "@/lib/types";
 
 import type { Stage } from "./stage-line";
 
-export type PanelView = "cash" | "financing" | "inbox" | "trust" | "email" | "trace" | "transactions";
+export type PanelView = "cash" | "financing" | "inbox" | "trust" | "email" | "trace" | "transactions" | "payments";
 export type TrustTab = "limits" | "audit" | "anchors" | "redteam";
-export type PanelEntry = { view: PanelView; tab?: TrustTab; emailId?: string; fact?: FactRef; txId?: string };
+export type PanelEntry = {
+  view: PanelView;
+  tab?: TrustTab;
+  emailId?: string;
+  fact?: FactRef;
+  txId?: string;
+  paymentId?: string;
+};
 
 /** The routes from the skeleton, each opening the matching view of the one conversation-first screen. */
 const ROUTE_PANEL: Record<string, PanelView> = {
   "/cash-flow": "cash",
   "/transactions": "transactions",
+  "/payments": "payments",
   "/financing": "financing",
   "/inbox": "inbox",
   "/trust": "trust",
@@ -28,6 +36,7 @@ const ROUTE_PANEL: Record<string, PanelView> = {
 const PANEL_ROUTE: Partial<Record<PanelView, string>> = {
   cash: "/cash-flow",
   transactions: "/transactions",
+  payments: "/payments",
   financing: "/financing",
   inbox: "/inbox",
   trust: "/trust",
@@ -80,6 +89,10 @@ type AdvisorValue = {
   /** Scroll target on the brief: "waiting" scrolls to the first thing that needs the owner. */
   scrollRequest: number;
   goToWaiting: () => void;
+  /** Bumped on every live payment event (status or provider connection): the Payments panel reloads on it. */
+  paymentVersion: number;
+  /** Bumped when a payment settles into the ledger: cash, runway and transactions reload on it. */
+  ledgerVersion: number;
 };
 
 const AdvisorContext = createContext<AdvisorValue | null>(null);
@@ -151,6 +164,10 @@ export function AdvisorProvider({ children }: { children: React.ReactNode }) {
     [dismissToast],
   );
 
+  // ---- Payment events (live status from SandboxPay's webhooks) share the inbox stream.
+  const [paymentVersion, setPaymentVersion] = useState(0);
+  const [ledgerVersion, setLedgerVersion] = useState(0);
+
   // ---- Mail alerts: a held or flagged email toasts wherever the owner is, whether it came from Gmail, the sandbox
   // inbox or the demo console. The Inbox panel shows the same stream as live rows.
   useEffect(() => {
@@ -159,6 +176,25 @@ export function AdvisorProvider({ children }: { children: React.ReactNode }) {
     (async () => {
       try {
         for await (const { data: e } of inboxStream(businessId, ctl.signal)) {
+          if (e.kind === "payment" || e.kind === "payment_connection") {
+            setPaymentVersion((n) => n + 1);
+            const p = e.payment;
+            if (p?.status === "settled") {
+              setLedgerVersion((n) => n + 1);
+              toast({
+                variant: "success",
+                title: `Paid: ${p.payee_name}`,
+                description: `${money(p.amount_minor, p.currency)} settled. Your balance is updated.`,
+              });
+            } else if (p?.status === "failed") {
+              toast({
+                variant: "danger",
+                title: `Payment failed: ${p.payee_name}`,
+                description: p.rule ? ruleLabel(p.rule) : undefined,
+              });
+            }
+            continue;
+          }
           if (e.kind !== "message" || (e.stage !== "held" && e.stage !== "flagged")) continue;
           toast({
             variant: e.stage === "held" ? "danger" : "default",
@@ -325,6 +361,8 @@ export function AdvisorProvider({ children }: { children: React.ReactNode }) {
     send,
     scrollRequest,
     goToWaiting,
+    paymentVersion,
+    ledgerVersion,
   };
   return <AdvisorContext.Provider value={value}>{children}</AdvisorContext.Provider>;
 }

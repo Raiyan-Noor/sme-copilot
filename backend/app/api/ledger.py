@@ -24,10 +24,10 @@ router = APIRouter(tags=["ledger"])
 
 MAX_STATEMENT_BYTES = 5 * 1024 * 1024
 
-# Every row today comes from a bank/wallet statement import and is immediately settled: the Payments tab (P3) will
-# add "payment" rows and the quarantined extractor's approval flow will add "pending" ones. Both fields are kept on
-# the wire now so the frontend doesn't need a breaking change when those land.
-TransactionSource = Literal["import"]
+# Rows come from a bank/wallet statement import, or from a payment that settled through the Payments tab (its import
+# ID is `pay_<request>`; services/payments.py posts it only on the provider's signed "settled" webhook). Both are
+# settled; the quarantined extractor's approval flow may later add "pending" ones.
+TransactionSource = Literal["import", "payment"]
 TransactionStatus = Literal["settled"]
 
 
@@ -70,6 +70,11 @@ class StatementRejectedResponse(BaseModel):
     detail: StatementRejected
 
 
+def _row(t, running: dict[str, int]) -> "TransactionRow":
+    return TransactionRow(**t.model_dump(), running_balance_minor=running[t.id],
+                          source="payment" if t.import_id.startswith("pay_") else "import")
+
+
 def _running_balances(snapshot: LedgerSnapshot) -> dict[str, int]:
     """Cumulative amount_minor across every account, in the snapshot's chronological order."""
     running = 0
@@ -108,7 +113,7 @@ def _rows(
             continue
         if needle and needle not in t.description.lower() and needle not in (t.counterparty or "").lower():
             continue
-        out.append(TransactionRow(**t.model_dump(), running_balance_minor=running[t.id]))
+        out.append(_row(t, running))
     return out
 
 
@@ -195,7 +200,7 @@ async def _transaction_events(rt: RuntimeDep, business_id: str, request: Request
             seen_ids |= new_ids
             for t in snapshot.transactions:
                 if t.id in new_ids:
-                    row = TransactionRow(**t.model_dump(), running_balance_minor=running[t.id])
+                    row = _row(t, running)
                     yield f"event: transaction\ndata: {row.model_dump_json()}\n\n"
             yield f"event: balance\ndata: {running[snapshot.transactions[-1].id]}\n\n"
         await asyncio.sleep(poll_seconds)

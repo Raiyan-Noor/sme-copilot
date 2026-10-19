@@ -19,7 +19,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-LeafKind = Literal["audit_head", "mandate", "passport", "skill"]
+LeafKind = Literal["audit_head", "mandate", "passport", "skill", "payment"]
 HEX64 = r"^[0-9a-f]{64}$"
 
 LEAF_PREFIX = b"\x00"
