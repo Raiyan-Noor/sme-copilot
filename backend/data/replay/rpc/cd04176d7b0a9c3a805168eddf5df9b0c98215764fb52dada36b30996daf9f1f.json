@@ -1,0 +1,16 @@
+{
+ "key": "cd04176d7b0a9c3a805168eddf5df9b0c98215764fb52dada36b30996daf9f1f",
+ "namespace": "rpc",
+ "request": {
+  "chain_id": 11155111,
+  "op": "send_anchor",
+  "root": "319f0919ba679f6b13b1c7dee6c556409b3cf7be9a2575409337604d8ac2d36d"
+ },
+ "response": {
+  "block_number": 11944631,
+  "block_timestamp": 1792369764,
+  "chain_id": 11155111,
+  "from_address": "0x945Bba9062788823114726C5c2DaA74ED339017c",
+  "tx_hash": "0x3495fda47d58966557ddd61fc97a2094a12853e730b51178597c730298d54378"
+ }
+}
