@@ -2,31 +2,55 @@
 
 Deadline: Tue Oct 20, 23:59 Beijing = **21:59 Dhaka**
 Feature freeze: **Tue 13:00 Dhaka**
-Last updated: Mon Oct 19, 04:35 Dhaka
+Last updated: Mon Oct 19, 07:30 Dhaka
+
+This file is now the single source of truth for remaining work (`docs/build-prompts.md` is superseded — see the
+note at its top). See "Maintaining this file" at the end before editing it.
 
 ## Status
 
-The original build plan (prompts 0–17) is fully built, including Prompt 16 (screens, SSE chat, tweetnacl signing, trace drawer, pack switcher, fast-forward, Trust tab) and Prompt 17 (on-chain anchoring with Merkle root, testnet transaction and verify). The features below are new work on top of it.
+Verified against `git log`, the code on disk and a full `pytest` run (831 passed) on Mon Oct 19, ~07:20 Dhaka.
 
 | # | Item | Status |
 |---|------|--------|
 | Prompts 0–17 | Original build plan | Done |
-| Evidence | `make evidence`, demo-profile and Gemini recordings | Unconfirmed — ask Claude Code |
+| Prompt 18 | Stretch 2: Monte Carlo what-if, marketing ROI, expansion planner | Dropped (P7 covers marketing ROI) |
+| Prompt 19 | Evidence and docs: `make evidence`, Sol demo-profile recordings, Gemini recordings | Not started — `make evidence` is still a stub (`exit 1`); no Sol or Gemini recordings exist yet |
 | F1 | Document upload | Merged into F4 |
-| F2 | Sending approved emails | Prompt ready (P4) |
-| F3 | Live demo console | Prompt ready (P2) |
-| F4 | Onboarding from zero | Done (P1) |
-| F5 | Payments tab | Prompt ready (P3) |
+| F2 | Sending approved emails | Not started (P4) |
+| F3 | Live demo console | Not started (P2) |
+| F4 | Onboarding from zero | Done (P1, P1 follow-up fix) |
+| F5 | Payments tab | Not started (P3) |
 | F6 | Product and ad knowledge in Skill Packs | Merged into P1 |
-| F7 | Transactions tab | Prompt ready (P5) |
-| F8 | Real Gmail inbox via OAuth (read + send approved emails) | Prompt ready (P6) |
-| F9 | Ad advisor: discuss which product to advertise more | Prompt ready (P7) |
+| F7 | Transactions tab | Partial (P5) — uncommitted work in progress in the shared tree |
+| F8 | Real Gmail inbox via OAuth (read + send approved emails) | Not started (P6) |
+| F9 | Ad advisor: discuss which product to advertise more | Done (P7) |
 | F10 | Proactive "what you didn't think of" questions from the Skill Pack | Merged into P1 |
 | F11 | Upload a custom skill.md on the opening page; open skills library | Done (P8) |
-| F12 | Chat loading messages that show what KaChing is doing | Prompt ready (P0) |
+| F12 | Chat loading messages that show what KaChing is doing | Done (P0) |
 | — | Correcting ledger entries | Dropped |
 
-**Build order:** P0 → P1 → P8 → P7 → P5 → P6 → P2 → P3 → P4. P0 is a quick fix, do it first. All build on Prompt 16's signing, SSE chat and real-data screens, which already exist. P8 follows P1 because it reuses the pack-driven onboarding. P7 uses the product and ad data onboarding imports. P5 comes early because uploads, payments and emails all show their results in the Transactions tab. P6 comes before P2 and P4 so the console and email sending can use the real inbox.
+Verification notes: P0 confirmed by `frontend/components/advisor/stage-line.tsx` and commit `23d2f8e`. P1 confirmed
+by the onboarding flow in `frontend/app/start/`, the upload path and commits `f57180c` + `8e7ccec`. P7 confirmed by
+`backend/app/engine/ad_advisor.py`, `backend/app/agent/ads_tools.py` and the new T1 tools in `policy.yaml`
+(`rank_products_for_ads`, `product_performance`, `ad_budget_what_if`) and commit `4df2220`. P8 confirmed by
+`backend/app/packs/skill.py` and commit `d48d6c4`. P2/P6/P4 confirmed **not started**: no matching files
+(`*console*`, `*gmail*`) exist anywhere in `backend/app` or `frontend/app`. P3 (payments) also not started: no
+`*payment*`/`*sandboxpay*` files exist. **P5 (Transactions) is partially in progress but uncommitted** as of this
+update: `git status` shows a modified `backend/app/api/ledger.py` (+165/-10), a new untracked
+`frontend/app/transactions/page.tsx`, and edits across several `frontend/components/advisor/*` files and
+`frontend/lib/api.ts`/`types.ts` — this looks like another session actively building it in this shared working
+tree (see [[parallel-sessions-shared-tree]] in memory). Those files were left untouched by this update; whoever is
+mid-P5 should commit when ready and flip this row to Done.
+
+**Build order:** P0 → P1 → P8 → P7 → P5 → P6 → P2 → P3 → P4 → Prompt 19 (evidence). P0 is a quick fix, do it first.
+Prompt 19 must run before the freeze: the submission requires execution evidence. All build on Prompt 16's signing,
+SSE chat and real-data screens, which already exist. P8 follows P1 because it reuses the pack-driven onboarding.
+P7 uses the product and ad data onboarding imports. P5 comes early because uploads, payments and emails all show
+their results in the Transactions tab. P6 comes before P2 and P4 so the console and email sending can use the real
+inbox.
+
+**Remaining order from here:** P5 → P6 → P2 → P3 → P4 → Prompt 19.
 
 **Demo email plan:** the console injects sandbox attacks that real email can't fake (lookalike domains, spoofed senders); real emails are sent live from your phone to the demo Gmail inbox.
 
@@ -34,19 +58,69 @@ The original build plan (prompts 0–17) is fully built, including Prompt 16 (sc
 
 **Demo story:** a new business sets up KaChing in under 2 minutes → uploads files → connects its inbox → gets its first brief → attacks arrive live from the console and get flagged → an invoice is paid with one tap → a reminder email is approved and sent.
 
-## Questions to send Claude Code (one message)
+## Known facts
 
-```
-Quick questions, answer briefly before continuing:
-1. List every tool in policy.yaml by tier (T1–T4), with its caps. What exactly is in T4?
-2. When an approved action executes through executor/sandbox_bank.py, does the ledger balance visibly change, or does it only write to the audit log?
-3. Does send_invoice_reminder produce a visible sent message anywhere, or only an audit entry?
-4. What is "stretch 2", and what's left on it?
-5. Is `make evidence` built, and are there demo-profile and Gemini recordings yet?
-6. Does docs/results/anchors.json hold at least one real testnet transaction hash that verifies?
-```
+Tiers in `policy.yaml` (canonical; matches the Tiers table in CLAUDE.md):
+- **T1** (autonomous, read/compute only): `get_*`, `list_*`, `explain_fact`, `match_financing`, `get_passport`,
+  `rank_products_for_ads`, `product_performance`, `ad_budget_what_if`; system-only `anchor` (testnet only, caps at
+  12 runs/hour, never moves value, not in the planner's registry).
+- **T2** (signed standing mandate, max 90 days; breaking a cap/allow-list/frequency rule is denied, not escalated):
+  - `send_invoice_reminder`: ≤ 50000 minor units, allow-listed customers, 1 per customer per 3 days.
+  - `pay_recurring_bill`: ≤ 50000 minor units, allow-listed payees.
+- **T3** (owner signs the exact payload, approval expires after 2 days): `submit_loan_application`,
+  `change_payee_details` (needs an out-of-band call script), `delay_supplier_payment`, `send_supplier_message`,
+  `cancel_subscription`.
+- **T4** (no tools, by design; analysis only, logged as a violation): `large_debt`, `hiring_or_firing`,
+  `pricing_change`, `deal_commitment`.
 
-Already answered by the original plan: products are tracked individually (product margins and an unprofitable-products leak detector exist); reminders are a T2 action (`send_invoice_reminder`) under a standing signed mandate; untrusted-provenance arguments force T3; loan applications are T3; a statement-upload endpoint exists in the backend.
+**Open decision — T2 cap:** both T2 tools currently cap at 50000 minor units (৳500). Raiyan said he'd confirm
+keep-vs-raise before P3 starts; don't change it without that confirmation.
+
+Executed actions and visibility, verified by reading the code directly (not yet built — these gaps are what P3 and
+P4 exist to close):
+- `pay_recurring_bill` executes through `executor/sandbox_bank.py`, which writes only to its own standalone
+  `operations` SQLite table and the audit log. **It never touches the ledger** — no balance change, no effect on
+  forecast/buffer days. P3's "balance drops and buffer days update visibly" is new work, not already there.
+- `send_invoice_reminder` executes through `executor/reminder_sender.py` → `executor/sandbox_mailbox.py`, which
+  does write a row to a real `outbox` table (`SandboxMailbox.outbox()`). But **nothing reads it**: no API route and
+  no frontend component references `outbox`. The data exists but isn't surfaced. P4's "store sent emails, show
+  them in the UI" is what's missing, not the storage itself.
+
+Anchoring: `docs/results/anchors.json` holds one batch (`anc-000001`) with a Sepolia tx hash
+(`0x285a223179bccd958c6f20073439e986debe314c9423f6fe4ade2b90765c7c65`, block 11942865) and `verified_log_ok: true`.
+The block timestamp decodes to Oct 18 18:32 UTC = Oct 19 00:32 Dhaka, matching the file's mtime — this is a real
+live run, not a placeholder, satisfying invariant 8. Only one batch exists so far; `make anchor` needs to run again
+after more audit entries accumulate (and again as part of Prompt 19 evidence).
+
+`make evidence` (Prompt 19) is **still a stub**: `Makefile` target `evidence` just prints "not implemented yet"
+and exits 1. No `LLM_PROFILE=demo` (Sol) recordings and no Gemini recordings exist anywhere in
+`backend/data/replay/`. Both are needed before the freeze.
+
+**OpenAI spend so far:** `backend/data/tenants/llm_spend.json` (gitignored, local-only cumulative counter read by
+`llm/spend.py`) shows **$0.0722 spent** of the $7 `LLM_BUDGET_USD` cap. Plenty of headroom, but the ~$3 reserved
+for the final recording is a separate, manual discipline — the tracker doesn't know to protect it.
+
+**Replay cache / red-team staleness:** `backend/data/replay/llm/` holds 68 planner recordings + 47 extractor
+recordings + 1 brief_writer (116 total; was 65 planner / 39 extractor before P7). The cache key hashes the full
+planner request including every tool schema, so P7 adding three new T1 tools (`rank_products_for_ads`,
+`product_performance`, `ad_budget_what_if`) invalidated and forced a re-record of every planner-dependent case
+(benign questions, benign tasks, the live-LLM red-team cases) — that's where the +3 planner / +8 extractor files
+came from (commit `4df2220`, 74 replay files touched). Full details and the re-record procedure:
+[[benign-replay-rerecord]] in memory.
+
+**`docs/results/redteam.json` is stale relative to current HEAD.** Its `commit` field reads
+`8e7ccecf0fe6aad78a5001102aafb4d205b125e1+dirty` — the "onboarding fixed" commit, which is *before* P8
+(`d48d6c4`) and P7 (`4df2220`). It shows 16/16 attacks blocked, 67/67 variants blocked, 24/24 tasks succeeded, but
+that run never exercised the P7 ad-advisor tools or the P8 custom skill-upload path. Re-run `make redteam` after
+P7/P8 (and again after each remaining prompt) before trusting those numbers in the deck or README — per invariant 8,
+never carry this stale number forward as if it covers the current attack surface.
+
+Already answered by the original plan: products are tracked individually (product margins and an
+unprofitable-products leak detector exist); reminders are a T2 action (`send_invoice_reminder`) under a standing
+signed mandate; untrusted-provenance arguments force T3; loan applications are T3; a statement-upload endpoint
+exists in the backend.
+
+`make test` (831 pytest cases) passes clean as of this update.
 
 ---
 
@@ -310,6 +384,11 @@ Commit and push.
 
 ## P3 — Payments tab with a connected payment provider
 
+Note: confirmed by reading `executor/sandbox_bank.py` that `pay_recurring_bill` currently writes only to its own
+operations table, never the ledger — this prompt's "balance drops and buffer days update visibly" step is real,
+needed work, not a check on something already there. Also: the T2 cap (50000 minor units) is an open decision —
+confirm keep-vs-raise with Raiyan before starting (see Known facts above).
+
 ```
 Add a Payments tab with a connected payment provider, timeboxed to 4 hours. Use the existing browser signing (tweetnacl) for approvals.
 
@@ -349,6 +428,10 @@ Commit and push.
 ---
 
 ## P4 — Sending approved emails
+
+Note: confirmed `send_invoice_reminder` already writes a row to `SandboxMailbox`'s `outbox` table — the gap is
+purely that nothing reads it (no API route, no frontend component). This prompt's "store sent emails, show them in
+the UI" step can read that existing table rather than building new storage.
 
 ```
 Add agentic email sending (approved emails only), timeboxed to 3 hours.
@@ -404,3 +487,32 @@ Recording: one scene per take, reset command between rehearsals, picture-in-pict
 - Feature freeze Tue 13:00 Dhaka: after that, bug fixes and submission materials only.
 - Don't add anything not listed here without asking first.
 - Design: there are no more Claude Design handoffs. Design every new screen and component yourself, matching the existing screens' look. Use only theme variables, APP_NAME and <Logo />, and keep the branding check passing. Don't wait for designs.
+
+---
+
+## Maintaining this file
+
+This file is the single source of truth for remaining work. Raiyan does not edit it by hand — Claude Code owns it.
+
+- **Update it in the same commit** as the work it describes, not in a follow-up commit. When a prompt (P0–P8,
+  Prompt 19) finishes, flip its Status row to Done (or Partial, naming what's missing) in that commit, before
+  pushing.
+- **Verify before writing a status**, don't just trust what a prompt said it would do. Check the actual commit,
+  grep the code for the thing that's supposed to exist, and re-run `make test` (and `make redteam` if planner
+  tools, policy.yaml or prompts changed) rather than copying forward an old claim.
+- **Known facts only records what later prompts depend on** — tier caps, what's already wired vs. not, stale
+  suites, spend, open decisions. Don't let it become a changelog; prune a fact once no remaining prompt needs it.
+- **A Note: line under a prompt, not a rewrite.** If something already built makes a planned prompt wrong,
+  redundant, or easier than written, add a `Note:` line under that prompt's heading explaining what changed and
+  why. Never rewrite or delete prompt text for a prompt that hasn't run yet — the prompt is Raiyan's plan, and
+  silently changing it removes his ability to review the change.
+- **Red-team/benign replay staleness is a first-class fact.** Any change to `planner.md`, a tool schema (including
+  action args generated from `policy.yaml`), or `extractor.md`/`quarantine/schemas.py` invalidates cached replay
+  recordings for affected suites. Note which suites went stale and whether they were re-recorded, per
+  [[benign-replay-rerecord]] in memory.
+- **Never invent a number here.** Spend, test counts, red-team results and anchor tx hashes must come from an
+  actual run referenced in this update, same as CLAUDE.md invariant 8 requires for the deck and README.
+- **Open decisions get one line under Known facts**, not a buried question in prose, so the next session sees them
+  without re-reading the whole file. Remove the line once Raiyan answers and the decision is applied.
+- `docs/build-prompts.md` is superseded by this file (see the note at its top) and should not be edited going
+  forward; if it still exists when this file no longer needs merged content from it, it can be deleted.

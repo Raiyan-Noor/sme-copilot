@@ -1,9 +1,12 @@
 # KaChing — Claude Code prompts
 
+**SUPERSEDED as of Mon Oct 19, 07:30 Dhaka.** `docs/dev/feature-plan.md` is now the single source of truth for
+remaining work; its Known facts, Prompt 19 entry and status updates from this file have been merged there. Don't
+edit this file further — edit `docs/dev/feature-plan.md` instead.
+
 Deadline: Tue Oct 20, 23:59 Beijing = **21:59 Dhaka**
 Feature freeze: **Tue 13:00 Dhaka**
 Last updated: Mon Oct 19, 05:35 Dhaka
-Repo copy: `docs/dev/feature-plan.md` (this file is the master; replace the repo copy when it changes)
 
 ## Status
 

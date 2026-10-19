@@ -3,6 +3,9 @@
 FinTechathon 2026, International Track, Topic E. Hard deadline: **Tue Oct 20, 21:59 Dhaka (23:59 Beijing)**.
 Code freeze 15:00 Dhaka Tuesday. Everything in English.
 
+Remaining work is tracked in docs/dev/feature-plan.md. Read it before starting any task and update it in the same
+commit when you finish.
+
 `sme-copilot` is the codename: the repo, the backend and frontend package names and the Docker Compose project
 use it. It never appears in UI text. The product name, tagline, logo and colors come from the designer and live
 only in the three branding places (see Conventions).
