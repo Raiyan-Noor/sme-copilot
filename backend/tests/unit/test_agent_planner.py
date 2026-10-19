@@ -68,8 +68,10 @@ def test_reply_with_cited_facts_is_rendered(make_client):
 
 
 def test_read_tool_results_never_carry_raw_numbers(make_client):
-    steps = [calls(*[(t.name, {"fact_id": "cash.balance"} if t.name == "explain_fact" else {}) for t in READ_TOOLS
-                     if t.name != "explain_fact"]),
+    # explain_fact and ad_budget_what_if need arguments no default can fake (a fact ID; two campaigns with ad
+    # spend history, which this grocery business has none of), so each gets its own dedicated call below.
+    skip = {"explain_fact", "ad_budget_what_if"}
+    steps = [calls(*[(t.name, {}) for t in READ_TOOLS if t.name not in skip]),
              calls(("explain_fact", {"fact_id": "cash.buffer_days"})),
              text("Done.")]
     client, llm = make_client(*steps)
@@ -77,8 +79,17 @@ def test_read_tool_results_never_carry_raw_numbers(make_client):
     for result in tool_results(llm):
         assert "error" not in result, result
         flat = re.sub(r"\{fact:[^}]*\}", "", json.dumps(result))
-        flat = re.sub(r'"(invoice_id|bill_id|product_id)": "[^"]*"', "", flat)
+        flat = re.sub(r'"(invoice_id|bill_id|product_id|campaign_id|from_campaign_id|to_campaign_id)": "[^"]*"',
+                     "", flat)
         assert not re.search(r"\d", flat), flat
+
+
+def test_ad_budget_what_if_without_ad_data_is_a_clean_error(make_client):
+    # Maya is a grocery business with no ad spend export: a graceful error, not a crash or a raw number.
+    client, llm = make_client(calls(("ad_budget_what_if", {})), text("No ad data yet."))
+    ask(client)
+    [result] = tool_results(llm)
+    assert result == {"error": "no two campaigns with a known return to compare for this business"}
 
 
 def test_digit_in_reply_gets_one_reprompt(make_client):

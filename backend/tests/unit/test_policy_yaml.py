@@ -7,7 +7,8 @@ import yaml
 POLICY = Path(__file__).resolve().parents[2] / "app" / "gateway" / "policy.yaml"
 
 EXPECTED = {
-    "T1": {"get_*", "list_*", "explain_fact", "match_financing", "get_passport"},
+    "T1": {"get_*", "list_*", "explain_fact", "match_financing", "get_passport", "rank_products_for_ads",
+          "product_performance", "ad_budget_what_if"},
     "T2": {"send_invoice_reminder", "pay_recurring_bill"},
     "T3": {
         "submit_loan_application",

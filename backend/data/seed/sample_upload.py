@@ -37,10 +37,13 @@ PRODUCTS = [
     ("LEATHER-BELT", "Leather belt", "accessories", 800, 2200, 30, 0.5),
 ]
 RETURN_RATE = {"DENIM-JKT": 0.24}
-CAMPAIGNS = [  # name, platform, weekly spend (minor), return on ad spend
-    ("Festive Kurta Push", "Instagram", 6000, 3.4),
-    ("Summer Linen Sale", "Facebook", 8000, 0.55),   # costs more than it brings in
-    ("Brand Search", "Google", 3500, 2.1),
+# name, platform, weekly spend (minor), return on ad spend, product it promotes (None = brand-wide, not linked)
+CAMPAIGNS = [
+    ("Festive Kurta Push", "Instagram", 6000, 3.4, "KURTA-COT"),    # clear winner: good margin, plenty of stock
+    ("Summer Linen Sale", "Facebook", 8000, 0.55, None),            # costs more than it brings in
+    ("Brand Search", "Google", 3500, 2.1, None),
+    ("Linen Shirt Retarget", "Instagram", 4500, 2.8, "LINEN-SHIRT"),  # strong return, but almost sold out
+    ("Chino Weekend Promo", "Facebook", 5000, 1.5, "SLIM-CHINO"),    # positive ROAS, loses money after margin
 ]
 
 
@@ -88,10 +91,11 @@ def build() -> None:
     ads = []
     for week in range(13):
         d = START + timedelta(days=7 * week)
-        for name, platform, spend, roas in CAMPAIGNS:
+        for name, platform, spend, roas, product in CAMPAIGNS:
             s = round(spend * rng.uniform(0.85, 1.15))
-            ads.append([d.isoformat(), name, platform, money(s), money(round(s * roas * rng.uniform(0.9, 1.1)))])
-    write_csv(OUT / "ad_spend.csv", ["date", "campaign", "platform", "spend", "attributed_sales"], ads)
+            ads.append([d.isoformat(), name, platform, money(s), money(round(s * roas * rng.uniform(0.9, 1.1))),
+                       product or ""])
+    write_csv(OUT / "ad_spend.csv", ["date", "campaign", "platform", "spend", "attributed_sales", "product"], ads)
 
     bank, balance = [], 650000
     ref = 0

@@ -31,6 +31,9 @@ tiers:
       - explain_fact
       - match_financing
       - get_passport
+      - rank_products_for_ads
+      - product_performance
+      - ad_budget_what_if
 
   T2:
     description: Autonomous under a signed standing mandate with hard caps

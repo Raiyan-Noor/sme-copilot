@@ -19,6 +19,9 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
+from app.agent.ads_tools import (
+    NoAdsArgs, ProductArgs, WhatIfArgs, ad_budget_what_if, product_performance, rank_products_for_ads,
+)
 from app.agent.context import TurnContext, safe_label
 from app.agent.financing_tools import DraftArgs, NoFinancingArgs, get_loan_application_draft, get_passport, match_financing
 from app.engine.common import slug
@@ -502,6 +505,13 @@ READ_TOOLS: tuple[Tool, ...] = (
     Tool("get_loan_application_draft", "Prepare (not send) a draft application for an eligible product at its "
          "repayment-safe amount. Returns a draft_id for propose_action submit_loan_application.",
          DraftArgs, get_loan_application_draft),
+    Tool("rank_products_for_ads", "Which products are worth advertising more and which are excluded and why (low "
+         "stock, ads not covering margin, high returns), from the ad spend export and product records. Also "
+         "lists known ad campaigns.", NoAdsArgs, rank_products_for_ads),
+    Tool("product_performance", "One product's ad spend, return on ad spend, profit after ad spend, return rate, "
+         "sales trend, margin and stock cover.", ProductArgs, product_performance),
+    Tool("ad_budget_what_if", "Estimated change in gross profit, as a low/high range, from moving a budget "
+         "amount from one ad campaign to another.", WhatIfArgs, ad_budget_what_if),
 )
 
 

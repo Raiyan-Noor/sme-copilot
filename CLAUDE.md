@@ -125,7 +125,7 @@ make anchor       # anchor now against the live testnet (manual only; needs ANCH
 
 | Tier | Meaning | Tools |
 |---|---|---|
-| T1 | Autonomous, read/compute only | all `get_*`, `list_*`, `explain_fact`, `match_financing`, `get_passport` |
+| T1 | Autonomous, read/compute only | all `get_*`, `list_*`, `explain_fact`, `match_financing`, `get_passport`, `rank_products_for_ads`, `product_performance`, `ad_budget_what_if` |
 | T2 | Autonomous under a signed standing mandate with hard caps | `send_invoice_reminder` (invoice ≤ cap, allow-listed customer, ≤1 per customer per 3 days), `pay_recurring_bill` (≤ cap, known payee) |
 | T3 | Agent prepares, owner signs the exact payload | `submit_loan_application`, `change_payee_details` (+ out-of-band call script), `delay_supplier_payment`, `send_supplier_message`, `cancel_subscription` |
 | T4 | Not implemented, by design | — |

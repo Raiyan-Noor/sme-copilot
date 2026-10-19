@@ -15,6 +15,7 @@ from pathlib import Path
 import yaml
 
 from app.clock import Clock
+from app.engine.ad_advisor import AdAdvisorInsights, product_ad_performance
 from app.engine.ads import AdInsights, ad_facts
 from app.engine.common import today_fact
 from app.engine.core import core_facts
@@ -70,6 +71,7 @@ class Computed:
     financing: FinancingResult | None = None  # financing match and Readiness Passport; facts are in `store`
     products: ProductInsights = ProductInsights()
     ads: AdInsights = AdInsights()
+    ad_advisor: AdAdvisorInsights = AdAdvisorInsights()
 
 
 def ledger_version(conn: sqlite3.Connection) -> tuple[int, ...]:
@@ -144,6 +146,9 @@ def compute(inputs: BusinessInputs, clock: Clock) -> Computed:
     store.add_all(product_extra)
     ad_extra, ad_insights = ad_facts(inputs.ad_spend, clock, inputs.snapshot.currency)
     store.add_all(ad_extra)
+    advisor_extra, ad_advisor_insights = product_ad_performance(
+        inputs.products, inputs.sale_lines, inputs.ad_spend, clock, inputs.snapshot.currency, pack=inputs.pack)
+    store.add_all(advisor_extra)
     store.add_all(inputs.owner_facts)
     financing = financing_facts(
         store=store, snapshot=inputs.snapshot, pack=inputs.pack, clock=clock, receivables=inputs.receivables,
@@ -152,7 +157,8 @@ def compute(inputs: BusinessInputs, clock: Clock) -> Computed:
     dump = sorted((f.model_dump(mode="json") for f in store), key=lambda d: d["id"])
     digest = hashlib.sha256(json.dumps(dump, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
     return Computed(inputs=inputs, store=store, benchmarks=tuple(benchmarks), facts_sha256=digest,
-                    leaks=tuple(leaks), financing=financing, products=product_insights, ads=ad_insights)
+                    leaks=tuple(leaks), financing=financing, products=product_insights, ads=ad_insights,
+                    ad_advisor=ad_advisor_insights)
 
 
 def resolver(inputs: BusinessInputs) -> Resolver:
