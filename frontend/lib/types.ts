@@ -504,6 +504,33 @@ export interface FrequencyCap {
   window_days: number;
 }
 
+export interface GmailConnectStart {
+  authorize_url: string;
+}
+
+export interface GmailImportStarted {
+  started: boolean;
+  days: number;
+}
+
+export interface GmailPollResult {
+  processed: string[];
+}
+
+export interface GmailStatus {
+  configured: boolean;
+  missing_settings: string[];
+  state: "not_configured" | "disconnected" | "connected" | "reconnect_needed" | "unreachable";
+  email_address: string | null;
+  connected_on: string | null;
+  source: "gmail" | "sandbox";
+  message: string;
+  can_do: string[];
+  cannot_do: string[];
+  scopes: string[];
+  send_allowlist_count: number;
+}
+
 export interface HTTPValidationError {
   detail?: ValidationError[];
 }
@@ -551,7 +578,7 @@ export interface InboxList {
 
 export interface InboxRecord {
   email_id: string;
-  source: "mailbox" | "upload";
+  source: "mailbox" | "upload" | "gmail";
   received_at: string | null;
   received_on: string | null;
   processed_on: string;
@@ -567,6 +594,10 @@ export interface InboxRecord {
   sentinel: SentinelReport;
   feed: "scheduled" | "already_scheduled" | "past_due" | "not_applicable" | "held_by_sentinel" | "counterparty_unknown" | "missing_fields";
   scheduled_item_ids?: string[];
+}
+
+export interface InboxSourceChoice {
+  source: "gmail" | "sandbox";
 }
 
 export interface InboxSyncResult {

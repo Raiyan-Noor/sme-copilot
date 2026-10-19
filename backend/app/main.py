@@ -1,10 +1,12 @@
 """FastAPI app: CORS from ALLOWED_ORIGINS and passcode auth from DEMO_PASSCODE.
 
 Auth fails closed: if DEMO_PASSCODE is unset, every protected route returns 503 instead of being open.
-The passcode is compared in constant time. Only the health check, the API docs and CORS preflights are public.
+The passcode is compared in constant time. Only the health check, the API docs, CORS preflights and the Gmail
+OAuth callback (state-checked) are public. The lifespan starts the Gmail poller (GMAIL_POLL).
 """
 
 import hmac
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,25 +16,39 @@ from fastapi.responses import JSONResponse
 from app.agent.context import ConversationStore
 from app.anchoring import Chain
 from app.api import (
-    agent, anchors, audit, brief, businesses, clock, finance, financing, gateway, health, inbox, ledger, onboarding,
-    skills, trust,
+    agent, anchors, audit, brief, businesses, clock, connections, finance, financing, gateway, health, inbox, ledger,
+    onboarding, skills, trust,
 )
 from app.config import Settings, get_settings
 from app.firewall.store import UnknownFactError
 from app.ledger.schema import TenantError
 from app.packs.loader import PackError
+from app.services.gmail import ConnectError, GmailPoller
 from app.services.onboarding import OnboardingError
 from app.services.runtime import ClockNotConfigured, Runtime
 
 PASSCODE_HEADER = "X-Passcode"
-PUBLIC_PATHS = frozenset({"/health", "/docs", "/docs/oauth2-redirect", "/redoc", "/openapi.json"})
+# The Gmail OAuth callback is public: Google redirects the browser there without our header. It acts only on a
+# one-time state this server issued (services/gmail.py).
+PUBLIC_PATHS = frozenset({"/health", "/docs", "/docs/oauth2-redirect", "/redoc", "/openapi.json",
+                          connections.CALLBACK_PATH})
 
 
 def create_app(settings: Settings | None = None, anchor_chain: Chain | None = None) -> FastAPI:
     """`anchor_chain` replaces the testnet chain built from settings (tests)."""
     settings = settings or get_settings()
     # operationId = the route function's name, so a generated client gets readable method names.
-    app = FastAPI(title="sme-copilot API", version="0.1.0", generate_unique_id_function=lambda route: route.name)
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        poller = GmailPoller(app.state.runtime, settings.gmail_poll_seconds) if settings.gmail_poll else None
+        if poller:
+            poller.start()
+        yield
+        if poller:
+            poller.stop()
+
+    app = FastAPI(title="sme-copilot API", version="0.1.0", generate_unique_id_function=lambda route: route.name,
+                  lifespan=lifespan)
     passcode = settings.demo_passcode.get_secret_value()
 
     @app.middleware("http")
@@ -59,7 +75,7 @@ def create_app(settings: Settings | None = None, anchor_chain: Chain | None = No
     app.state.conversations = ConversationStore()
     for router in (health.router, businesses.router, ledger.router, finance.router, gateway.router, audit.router,
                    clock.router, agent.router, brief.router, inbox.router, financing.router, trust.router, anchors.router,
-                   onboarding.router, skills.router):
+                   onboarding.router, skills.router, connections.router):
         app.include_router(router)
     if settings.expose_test_routes:
         app.include_router(gateway.test_router)
@@ -75,6 +91,7 @@ def create_app(settings: Settings | None = None, anchor_chain: Chain | None = No
     app.add_exception_handler(PackError, error(422))
     app.add_exception_handler(ClockNotConfigured, error(503))
     app.add_exception_handler(OnboardingError, error(422))
+    app.add_exception_handler(ConnectError, error(422))
 
     def openapi() -> dict:
         """Declare the passcode header so /docs shows an Authorize button."""

@@ -7,6 +7,7 @@ TEST_ORIGIN = "http://localhost:3000"
 
 
 def make_settings(**overrides) -> Settings:
-    values = {"demo_passcode": TEST_PASSCODE, "allowed_origins": TEST_ORIGIN, "llm_replay": "replay"}
+    values = {"demo_passcode": TEST_PASSCODE, "allowed_origins": TEST_ORIGIN, "llm_replay": "replay",
+              "gmail_poll": False}
     values.update(overrides)
     return Settings(_env_file=None, **values)

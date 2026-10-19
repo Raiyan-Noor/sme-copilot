@@ -1,4 +1,4 @@
-"""Inbox processing: mailbox/upload -> quarantine (parse, extract) -> typed fields -> sentinel -> store -> forecast.
+"""Inbox processing: mailbox/upload/Gmail -> quarantine (parse, extract) -> typed fields -> sentinel -> store -> forecast.
 
 Invariant 2: raw email content flows only from the .eml file into quarantine/ (the extractor and the owner's detail
 view). What leaves is `InboxRecord`: code-parsed headers, typed provenance-tagged fields and the sentinel report.
@@ -6,8 +6,13 @@ Invariant 7: every step is in the audit log (hashes, statuses, flags; never mess
 
 The mailbox for a business is listed in the seed manifest (`mailbox.business_id`); only each email's ID and file
 are read from it, never its expected results. Emails dated after the simulated today are not delivered yet.
+
+Gmail messages (services/gmail.py) take exactly the same path: the raw RFC 822 message, attachments included, is
+saved under inbox_gmail/ for the owner's detail view and handed to `process()`. Each step is also published as a
+live event for the Inbox screen (received -> extracting -> checking -> accepted/flagged/held).
 """
 
+import hashlib
 import json
 import re
 import secrets
@@ -28,7 +33,8 @@ from app.sentinel.directory import Directory, load_directory
 from app.services.businesses import business_info, records_folder
 from app.services.runtime import Runtime
 
-EMAIL_ID = re.compile(r"^(em|up)-[a-z0-9]{3,16}$")
+EMAIL_ID = re.compile(r"^(em|up|gm)-[a-z0-9]{3,16}$")
+GMAIL_ID = re.compile(r"^[0-9a-f]{3,16}$")
 
 
 @dataclass(frozen=True)
@@ -45,6 +51,16 @@ def store_for(rt: Runtime, business_id: str) -> InboxStore:
 
 def upload_dir(rt: Runtime, business_id: str) -> Path:
     return rt.data_dir / business_id / "inbox_uploads"
+
+
+def gmail_dir(rt: Runtime, business_id: str) -> Path:
+    return rt.data_dir / business_id / "inbox_gmail"
+
+
+def gmail_email_id(message_id: str) -> str:
+    """Our inbox ID for a Gmail message ID (normally 16 hex digits; anything else is hashed into the same shape)."""
+    mid = message_id.lower()
+    return "gm-" + (mid if GMAIL_ID.match(mid) else hashlib.sha256(message_id.encode()).hexdigest()[:16])
 
 
 def mailbox_files(rt: Runtime, seed_source: str | None) -> list[tuple[str, Path]]:
@@ -64,8 +80,11 @@ def mailbox_files(rt: Runtime, seed_source: str | None) -> list[tuple[str, Path]
 
 def raw_path(rt: Runtime, business_id: str, email_id: str) -> Path | None:
     """Where the owner's detail view reads the raw message from."""
-    if email_id.startswith("up-"):
-        p = upload_dir(rt, business_id) / f"{email_id}.eml"
+    if not EMAIL_ID.match(email_id):
+        return None
+    if email_id.startswith(("up-", "gm-")):
+        folder = upload_dir if email_id.startswith("up-") else gmail_dir
+        p = folder(rt, business_id) / f"{email_id}.eml"
         return p if p.is_file() else None
     with rt.business(business_id) as conn:
         source = business_info(conn).seed_source
@@ -86,6 +105,12 @@ class InboxProcessor:
         self.business_id = business_id
         self.extractor = Extractor(llm if llm is not None else rt.llm, rt.audit)
         self.store = store_for(rt, business_id)
+        self.events = rt.inbox_events
+
+    def _event(self, raw: RawEmail, source: str, stage: str, flags: list[str] | None = None) -> None:
+        self.events.publish(self.business_id, kind="message", email_id=raw.email_id, source=source, stage=stage,
+                            sender=raw.from_display_name or raw.from_address, subject=raw.subject[:200],
+                            flags=flags or [])
 
     def _directory(self, conn: sqlite3.Connection) -> tuple[Directory, str]:
         info = business_info(conn)
@@ -127,6 +152,23 @@ class InboxProcessor:
         (folder / f"{email_id}.eml").write_bytes(data)
         return self.process(raw, "upload")
 
+    def ingest_gmail(self, message_id: str, data: bytes) -> InboxRecord | None:
+        """One message fetched from the connected Gmail account. None if it was already processed."""
+        email_id = gmail_email_id(message_id)
+        if self.store.has(email_id):
+            return None
+        try:
+            raw = parse_email(email_id, data)
+        except ValueError:
+            self.rt.audit.append("quarantine.parse_failed", {"business_id": self.business_id, "email_id": email_id,
+                                                             "source": "gmail"})
+            self.events.publish(self.business_id, kind="message", email_id=email_id, source="gmail", stage="failed")
+            return None
+        folder = gmail_dir(self.rt, self.business_id)
+        folder.mkdir(parents=True, exist_ok=True)
+        (folder / f"{email_id}.eml").write_bytes(data)
+        return self.process(raw, "gmail")
+
     def process(self, raw: RawEmail, source: str) -> InboxRecord:
         audit = self.rt.audit
         eid = raw.email_id
@@ -135,6 +177,8 @@ class InboxProcessor:
             "from_domain": raw.from_domain, "reply_to_domain": raw.reply_to_domain, "auth": raw.auth,
             "attachments": [{"filename": a.filename, "kind": a.kind, "sha256": a.sha256} for a in raw.attachments],
         })
+        self._event(raw, source, "received")
+        self._event(raw, source, "extracting")
 
         extractions: list[Extraction] = [
             self.extractor.run("email", "email", email_message(raw.subject, raw.body_text), email_id=eid)]
@@ -160,6 +204,7 @@ class InboxProcessor:
                 attachments.append(AttachmentInfo(filename=a.filename, kind=a.kind, sha256=a.sha256,
                                                   extraction="skipped"))
         signals = scan(*texts)
+        self._event(raw, source, "checking")
 
         today = self.rt.clock.today()
         with self.rt.business(self.business_id) as conn:
@@ -199,6 +244,8 @@ class InboxProcessor:
         if feed != "not_applicable":
             audit.append("inbox.forecast_feed", {"business_id": self.business_id, "email_id": eid, "outcome": feed,
                                                  "scheduled_item_ids": [s.id for s in items]})
+        verdict = "held" if report.hold else "flagged" if report.flags else "accepted"
+        self._event(raw, source, verdict, [fl.code for fl in report.flags])
         return record
 
 

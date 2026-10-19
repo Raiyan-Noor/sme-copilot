@@ -617,8 +617,8 @@ def confirm_contacts(rt, business_id: str, contacts_in: list[ContactIn]) -> int:
 # ---- Step 5: inbox ------------------------------------------------------------------------------------------------
 
 def set_inbox(rt, business_id: str, connection: Literal["sandbox", "gmail"]) -> str:
-    if connection == "gmail":
-        raise OnboardingError("Gmail is not connected in this build yet; use the sandbox inbox")
+    if connection == "gmail" and rt.gmail.status(business_id).state != "connected":
+        raise OnboardingError("Connect Gmail first (or use the sandbox inbox)")
     with _onboarded(rt, business_id) as conn:
         set_meta(conn, META_INBOX, connection)
     rt.audit.append("onboarding.inbox_connected", {"business_id": business_id, "connection": connection})
@@ -863,6 +863,7 @@ def delete_business(rt, business_id: str) -> None:
     with rt.business(business_id) as conn:
         if not business_info(conn).onboarded:
             raise OnboardingError("only businesses created by onboarding can be deleted")
+    rt.gmail.disconnect(business_id)  # revoke a connected Gmail grant with Google before its record is deleted
     rt.forget(business_id)
     gc.collect()  # per-call SQLite connections (inbox store) close when collected; Windows keeps open files
     (rt.data_dir / f"{business_id}.sqlite").unlink(missing_ok=True)

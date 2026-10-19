@@ -1912,6 +1912,65 @@
         }
       }
     },
+    "/businesses/{business_id}/inbox/stream": {
+      "get": {
+        "tags": [
+          "inbox"
+        ],
+        "summary": "Stream Inbox",
+        "description": "Live progress of mail through quarantine and the sentinel, from Gmail, the sandbox mailbox or an upload.",
+        "operationId": "stream_inbox",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "After"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Server-sent events: `message` (one email's stage: received, extracting, checking, then accepted, flagged, held or failed) and `connection` (the Gmail connection's new status).",
+            "content": {
+              "text/event-stream": {}
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/businesses/{business_id}/inbox/upload": {
       "post": {
         "tags": [
@@ -3295,6 +3354,292 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SkillPreview"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/connections/gmail": {
+      "get": {
+        "tags": [
+          "connections"
+        ],
+        "summary": "Gmail Status",
+        "description": "Connection state, the connected address, and in plain language what the app can and cannot do with it.",
+        "operationId": "gmail_status",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GmailStatus"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/connections/gmail/connect": {
+      "post": {
+        "tags": [
+          "connections"
+        ],
+        "summary": "Gmail Connect",
+        "description": "Start the OAuth flow: the Google consent URL (state + PKCE) to open in a popup.",
+        "operationId": "gmail_connect",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GmailConnectStart"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/connections/gmail/disconnect": {
+      "post": {
+        "tags": [
+          "connections"
+        ],
+        "summary": "Gmail Disconnect",
+        "description": "Revoke the grant with Google and delete it here.",
+        "operationId": "gmail_disconnect",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GmailStatus"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/connections/gmail/source": {
+      "put": {
+        "tags": [
+          "connections"
+        ],
+        "summary": "Gmail Source",
+        "description": "Switch between reading (and sending) through Gmail and the sandbox inbox.",
+        "operationId": "gmail_source",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InboxSourceChoice"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GmailStatus"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/connections/gmail/poll": {
+      "post": {
+        "tags": [
+          "connections"
+        ],
+        "summary": "Gmail Poll",
+        "description": "Check Gmail now instead of waiting for the background poll.",
+        "operationId": "gmail_poll",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GmailPollResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/connections/gmail/import": {
+      "post": {
+        "tags": [
+          "connections"
+        ],
+        "summary": "Gmail Import Recent",
+        "description": "Import the last 7 days of inbox mail through the same pipeline. Runs after the response; progress arrives\non the inbox event stream.",
+        "operationId": "gmail_import_recent",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GmailImportStarted"
                 }
               }
             }
@@ -6075,6 +6420,154 @@
         ],
         "title": "FrequencyCap"
       },
+      "GmailConnectStart": {
+        "properties": {
+          "authorize_url": {
+            "type": "string",
+            "title": "Authorize Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "authorize_url"
+        ],
+        "title": "GmailConnectStart"
+      },
+      "GmailImportStarted": {
+        "properties": {
+          "started": {
+            "type": "boolean",
+            "title": "Started"
+          },
+          "days": {
+            "type": "integer",
+            "title": "Days"
+          }
+        },
+        "type": "object",
+        "required": [
+          "started",
+          "days"
+        ],
+        "title": "GmailImportStarted"
+      },
+      "GmailPollResult": {
+        "properties": {
+          "processed": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Processed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "processed"
+        ],
+        "title": "GmailPollResult"
+      },
+      "GmailStatus": {
+        "properties": {
+          "configured": {
+            "type": "boolean",
+            "title": "Configured"
+          },
+          "missing_settings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Missing Settings"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "not_configured",
+              "disconnected",
+              "connected",
+              "reconnect_needed",
+              "unreachable"
+            ],
+            "title": "State"
+          },
+          "email_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email Address"
+          },
+          "connected_on": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Connected On"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "gmail",
+              "sandbox"
+            ],
+            "title": "Source"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "can_do": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Can Do"
+          },
+          "cannot_do": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Cannot Do"
+          },
+          "scopes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Scopes"
+          },
+          "send_allowlist_count": {
+            "type": "integer",
+            "title": "Send Allowlist Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "configured",
+          "missing_settings",
+          "state",
+          "email_address",
+          "connected_on",
+          "source",
+          "message",
+          "can_do",
+          "cannot_do",
+          "scopes",
+          "send_allowlist_count"
+        ],
+        "title": "GmailStatus"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -6269,7 +6762,8 @@
             "type": "string",
             "enum": [
               "mailbox",
-              "upload"
+              "upload",
+              "gmail"
             ],
             "title": "Source"
           },
@@ -6394,6 +6888,23 @@
           "feed"
         ],
         "title": "InboxRecord"
+      },
+      "InboxSourceChoice": {
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": [
+              "gmail",
+              "sandbox"
+            ],
+            "title": "Source"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source"
+        ],
+        "title": "InboxSourceChoice"
       },
       "InboxSyncResult": {
         "properties": {

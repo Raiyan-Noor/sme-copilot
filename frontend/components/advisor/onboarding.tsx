@@ -43,6 +43,7 @@ import type {
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
+import { GmailConsent, useGmailConnection } from "./gmail-connection";
 import { type SkillChoice, SkillPicker } from "./skill-picker";
 import { StageLine } from "./stage-line";
 
@@ -336,27 +337,26 @@ export function Onboarding() {
             </ChatBubble>
           ) : null}
           {step === "inbox" ? (
-            <div className="ka-onb__row">
-              <Button variant="secondary" iconLeft={Mail} disabled title="Gmail connection arrives in the next build">
-                Connect Gmail (soon)
-              </Button>
-              <Button
-                iconLeft={Inbox}
-                loading={busy}
-                onClick={() =>
-                  run(async () => {
-                    setView(await api.setInbox(id, { connection: "sandbox" }));
-                    say("inbox", "Use the sandbox inbox");
-                    setStep("summary");
-                  })
-                }
-              >
-                Use sandbox inbox
-              </Button>
-              <Button variant="ghost" onClick={() => (say("inbox", "Later"), setStep("summary"))}>
-                Later
-              </Button>
-            </div>
+            <InboxStep
+              id={id}
+              busy={busy}
+              onSandbox={() =>
+                run(async () => {
+                  setView(await api.setInbox(id, { connection: "sandbox" }));
+                  say("inbox", "Use the sandbox inbox");
+                  setStep("summary");
+                })
+              }
+              onGmail={(address, importRecent) =>
+                run(async () => {
+                  setView(await api.setInbox(id, { connection: "gmail" }));
+                  if (importRecent) await api.gmailImportRecent(id);
+                  say("inbox", `Connect Gmail (${address})${importRecent ? " and import the last 7 days" : ""}`);
+                  setStep("summary");
+                })
+              }
+              onLater={() => (say("inbox", "Later"), setStep("summary"))}
+            />
           ) : at("summary") ? (
             <Owner text={said.inbox} />
           ) : null}
@@ -1111,5 +1111,86 @@ function MandateCard({
         Lasts {MANDATE_DAYS} days. Signed with the key in this browser; you can lower or end it any time.
       </span>
     </Card>
+  );
+}
+
+/**
+ * Step 5: where invoices arrive. "Connect Gmail" first explains in plain words what the app can and cannot do, then
+ * opens Google's consent screen in a popup (this page keeps its place). Once connected, the owner can also import
+ * the last 7 days; otherwise only mail that arrives from now on is read.
+ */
+function InboxStep({
+  id,
+  busy,
+  onSandbox,
+  onGmail,
+  onLater,
+}: {
+  id: string;
+  busy: boolean;
+  onSandbox: () => void;
+  onGmail: (address: string, importRecent: boolean) => void;
+  onLater: () => void;
+}) {
+  const gmail = useGmailConnection(id);
+  const [asking, setAsking] = useState(false);
+  const s = gmail.status;
+  const connected = s?.state === "connected" && s.email_address;
+
+  if (connected) {
+    return (
+      <>
+        <ChatBubble role="copilot" name={APP_NAME}>
+          Connected to {s.email_address}. I&apos;ll read new mail from now on. Want me to look through the last 7 days
+          too?
+        </ChatBubble>
+        <div className="ka-onb__row">
+          <Button iconLeft={Mail} loading={busy} onClick={() => onGmail(s.email_address!, true)}>
+            Import last 7 days
+          </Button>
+          <Button variant="secondary" disabled={busy} onClick={() => onGmail(s.email_address!, false)}>
+            Only new mail
+          </Button>
+        </div>
+      </>
+    );
+  }
+  return (
+    <div className="ka-sec">
+      {asking && s ? (
+        <GmailConsent
+          status={s}
+          connecting={gmail.connecting}
+          onContinue={gmail.connect}
+          onCancel={() => setAsking(false)}
+        />
+      ) : (
+        <div className="ka-onb__row">
+          <Button
+            variant="secondary"
+            iconLeft={Mail}
+            disabled={!s || s.state === "not_configured"}
+            title={s?.state === "not_configured" ? "Gmail is not set up on this server" : undefined}
+            onClick={() => setAsking(true)}
+          >
+            Connect Gmail
+          </Button>
+          <Button iconLeft={Inbox} loading={busy} onClick={onSandbox}>
+            Use sandbox inbox
+          </Button>
+          <Button variant="ghost" onClick={onLater}>
+            Later
+          </Button>
+        </div>
+      )}
+      {s?.state === "not_configured" ? (
+        <span className="kc-caption">Gmail is not set up on this server yet, so the sandbox inbox is the way in.</span>
+      ) : null}
+      {gmail.error ? (
+        <span className="kc-caption" style={{ color: "var(--danger)" }}>
+          {gmail.error}
+        </span>
+      ) : null}
+    </div>
   );
 }

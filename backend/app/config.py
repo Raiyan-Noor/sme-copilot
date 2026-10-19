@@ -1,6 +1,6 @@
 """Runtime settings, read from the environment and the repo-root .env (gitignored).
 
-Secrets (API keys, ANCHOR_PRIVATE_KEY) are SecretStr so they never appear in reprs or logs. The anchor chain ID is
+Secrets (API keys, ANCHOR_PRIVATE_KEY, the Gmail client secret and token key) are SecretStr so they never appear in reprs or logs. The anchor chain ID is
 checked against the testnet allow-list at load time (invariant 9): a mainnet chain ID makes the app refuse to start.
 """
 
@@ -63,6 +63,21 @@ class Settings(BaseSettings):
     # Send from a worker thread so core flows never wait on the RPC. Tests turn it off to run deterministically.
     anchor_background: bool = True
 
+    # Gmail (real inbox via OAuth). Unset client ID = the "Connect Gmail" button explains it is not configured.
+    gmail_client_id: str = ""
+    gmail_client_secret: SecretStr = SecretStr("")
+    # Must match the redirect URI registered on the OAuth client in Google Cloud.
+    gmail_redirect_uri: str = "http://localhost:8000/inbox/gmail/callback"
+    # 64 hex chars (32 bytes): encrypts each business's Gmail refresh token at rest.
+    gmail_token_key: SecretStr = SecretStr("")
+    # Background poll of connected inboxes (history API from the last seen historyId). Tests poll by hand.
+    gmail_poll: bool = True
+    gmail_poll_seconds: float = Field(default=7.0, ge=2.0)
+    # Comma-separated addresses real Gmail sends may go to; anything else lands in the simulated outbox, labelled.
+    demo_send_allowlist: str = ""
+    # Where the OAuth popup's "connected" message is posted; defaults to the first ALLOWED_ORIGINS entry.
+    frontend_url: str = ""
+
     @field_validator("anchor_chain_id")
     @classmethod
     def _testnet_only(cls, v: int) -> int:
@@ -74,6 +89,14 @@ class Settings(BaseSettings):
     @property
     def origins(self) -> list[str]:
         return [o.strip() for o in self.allowed_origins.split(",") if o.strip()]
+
+    @property
+    def send_allowlist(self) -> frozenset[str]:
+        return frozenset(a.strip().lower() for a in self.demo_send_allowlist.split(",") if a.strip())
+
+    @property
+    def frontend_origin(self) -> str:
+        return (self.frontend_url or (self.origins[0] if self.origins else "")).rstrip("/")
 
 
 @lru_cache

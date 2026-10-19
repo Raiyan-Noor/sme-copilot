@@ -28,7 +28,7 @@ class AttachmentInfo(BaseModel):
 
 class InboxRecord(BaseModel):
     email_id: str
-    source: Literal["mailbox", "upload"]
+    source: Literal["mailbox", "upload", "gmail"]
     received_at: datetime | None
     received_on: date | None
     processed_on: date

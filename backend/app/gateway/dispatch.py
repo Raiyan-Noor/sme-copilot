@@ -11,7 +11,9 @@ from collections.abc import Callable
 from datetime import date
 from pathlib import Path
 
+from app.connections.gmail import MailRoute
 from app.executor import reminder_sender
+from app.executor.mail_sender import MailSender
 from app.executor.sandbox_bank import SandboxBank
 from app.executor.sandbox_mailbox import SandboxMailbox
 from app.gateway.drafts import LoanDraftStore
@@ -43,13 +45,15 @@ def check_args(tool: str, args: dict) -> str | None:
 
 
 class Executors:
-    def __init__(self, data_dir: Path | None, loan_drafts: LoanDraftStore | None = None):
+    def __init__(self, data_dir: Path | None, loan_drafts: LoanDraftStore | None = None,
+                 mail: MailRoute | None = None):
         self.loan_drafts = loan_drafts or LoanDraftStore(data_dir / "loan_drafts" if data_dir else None)
         self.bank = SandboxBank(data_dir / "sandbox_bank.sqlite" if data_dir else ":memory:")
         self.mailbox = SandboxMailbox(data_dir / "sandbox_mailbox.sqlite" if data_dir else ":memory:")
+        self.mail = MailSender(self.mailbox, mail)
         self._run: dict[str, Callable[[dict, date], dict]] = {
             "send_invoice_reminder": lambda a, d: reminder_sender.send_invoice_reminder(
-                self.mailbox, a["customer_id"], a["invoice_id"], d),
+                self.mail,a["customer_id"], a["invoice_id"], d),
             "pay_recurring_bill": lambda a, d: self.bank.pay(a["payee_id"], a["amount_minor"], a["bill_id"], d),
             "submit_loan_application": self._submit_loan_application,
             "change_payee_details": lambda a, d: self.bank.change_payee(a["payee_id"], a["account_token"], d),

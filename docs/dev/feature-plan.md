@@ -2,7 +2,7 @@
 
 Deadline: Tue Oct 20, 23:59 Beijing = **21:59 Dhaka**
 Feature freeze: **Tue 13:00 Dhaka**
-Last updated: Mon Oct 19, 07:30 Dhaka
+Last updated: Mon Oct 19, evening Dhaka (P6)
 
 This file is now the single source of truth for remaining work (`docs/build-prompts.md` is superseded — see the
 note at its top). See "Maintaining this file" at the end before editing it.
@@ -22,8 +22,8 @@ Verified against `git log`, the code on disk and a full `pytest` run (831 passed
 | F4 | Onboarding from zero | Done (P1, P1 follow-up fix) |
 | F5 | Payments tab | Not started (P3) |
 | F6 | Product and ad knowledge in Skill Packs | Merged into P1 |
-| F7 | Transactions tab | Partial (P5) — uncommitted work in progress in the shared tree |
-| F8 | Real Gmail inbox via OAuth (read + send approved emails) | Not started (P6) |
+| F7 | Transactions tab | Done (P5, commit `c606eab`) |
+| F8 | Real Gmail inbox via OAuth (read + send approved emails) | Done (P6) — built and tested against a mocked Google; not yet connected to the live demo account (needs GMAIL_CLIENT_ID/SECRET in `.env`) |
 | F9 | Ad advisor: discuss which product to advertise more | Done (P7) |
 | F10 | Proactive "what you didn't think of" questions from the Skill Pack | Merged into P1 |
 | F11 | Upload a custom skill.md on the opening page; open skills library | Done (P8) |
@@ -50,7 +50,7 @@ P7 uses the product and ad data onboarding imports. P5 comes early because uploa
 their results in the Transactions tab. P6 comes before P2 and P4 so the console and email sending can use the real
 inbox.
 
-**Remaining order from here:** P5 → P6 → P2 → P3 → P4 → Prompt 19.
+**Remaining order from here:** P2 → P3 → P4 → Prompt 19.
 
 **Demo email plan:** the console injects sandbox attacks that real email can't fake (lookalike domains, spoofed senders); real emails are sent live from your phone to the demo Gmail inbox.
 
@@ -121,6 +121,23 @@ signed mandate; untrusted-provenance arguments force T3; loan applications are T
 exists in the backend.
 
 `make test` (831 pytest cases) passes clean as of this update.
+
+**P6 (Gmail) as built, Mon Oct 19 evening:** full `pytest` run 854 passed (replay mode), branding and frontend-types
+checks pass. No planner prompt, tool schema, policy.yaml or extractor input changed, so no replay recordings went
+stale and `make redteam` was not re-run for P6. What later prompts can reuse:
+- Live inbox events: `GET /businesses/{id}/inbox/stream` (SSE; `message` events with stages received → extracting →
+  checking → accepted/flagged/held/failed, and `connection` events). Every path that calls
+  `InboxProcessor.process()` publishes them (sandbox sync, uploads, Gmail), so P2's console gets the live stages for
+  free if it delivers through `process()`.
+- Sending: `executor/mail_sender.py` `MailSender.send(kind, recipient_id, subject, body, details, today)` sends via
+  Gmail only when Gmail is connected and active, the recipient is a known contact with an email on file, and the
+  address is on DEMO_SEND_ALLOWLIST; otherwise it writes to the sandbox outbox with a `label` saying why. Every send
+  (real or simulated) is a row in the existing `outbox` table with `transport`. `send_invoice_reminder` already uses
+  it with a fixed code-written template (no amount in the body); `send_supplier_message` still writes to the outbox
+  directly.
+- Connections section lives at the top of the **Inbox tab** (status, connect, disconnect, Gmail/sandbox switch).
+- `.env` needs GMAIL_CLIENT_ID and GMAIL_CLIENT_SECRET (not there as of this update); GMAIL_TOKEN_KEY was generated
+  into `.env`. Redirect URI default: `http://localhost:8000/inbox/gmail/callback` (GMAIL_REDIRECT_URI).
 
 ---
 
@@ -345,6 +362,10 @@ Commit and push. Then tell me exactly what I need to do to connect the demo acco
 
 ## P2 — Live demo console
 
+Note (after P6): the live stages already exist. Deliver console mail through `InboxProcessor.process()` and the
+Inbox tab shows received → extracting → checks → verdict over `GET /businesses/{id}/inbox/stream`, with a toast when
+something is held.
+
 ```
 Add a live demo console, timeboxed to 3 hours. This is a demo tool, not part of the product.
 
@@ -428,6 +449,10 @@ Commit and push.
 ---
 
 ## P4 — Sending approved emails
+
+Note (after P6): the transport exists. `executor/mail_sender.py` routes every approved email to Gmail or the sandbox
+outbox (allowlist-gated) and records it in `outbox` with `transport`; reminders already go through it with a fixed
+template. P4 still owns firewall-checked bodies, the approval card with draft editing, `send_email`, and the outbox UI.
 
 Note: confirmed `send_invoice_reminder` already writes a row to `SandboxMailbox`'s `outbox` table — the gap is
 purely that nothing reads it (no API route, no frontend component). This prompt's "store sent emails, show them in

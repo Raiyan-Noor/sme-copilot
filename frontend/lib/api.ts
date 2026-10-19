@@ -12,6 +12,11 @@ import type {
   AuditVerifyResult,
   Contacts,
   FinishResult,
+  GmailConnectStart,
+  GmailImportStarted,
+  GmailPollResult,
+  GmailStatus,
+  InboxSourceChoice,
   InboxChoice,
   InboxRecord,
   NewBusiness,
@@ -215,6 +220,15 @@ export const api = {
   inboxItem: (id: string, emailId: string) => request<InboxDetail>("GET", `${biz(id)}/inbox/${enc(emailId)}`),
   syncInbox: (id: string) => request<InboxSyncResult>("POST", `${biz(id)}/inbox/sync`),
 
+  // Gmail connection (OAuth; the refresh token never leaves the server)
+  gmailStatus: (id: string) => request<GmailStatus>("GET", `${biz(id)}/connections/gmail`),
+  gmailConnect: (id: string) => request<GmailConnectStart>("POST", `${biz(id)}/connections/gmail/connect`),
+  gmailDisconnect: (id: string) => request<GmailStatus>("POST", `${biz(id)}/connections/gmail/disconnect`),
+  gmailSource: (id: string, body: InboxSourceChoice) =>
+    request<GmailStatus>("PUT", `${biz(id)}/connections/gmail/source`, { body }),
+  gmailPoll: (id: string) => request<GmailPollResult>("POST", `${biz(id)}/connections/gmail/poll`),
+  gmailImportRecent: (id: string) => request<GmailImportStarted>("POST", `${biz(id)}/connections/gmail/import`),
+
   // Financing and the Readiness Passport
   financing: (id: string) => request<FinancingResponse>("GET", `${biz(id)}/financing`),
   passport: (id: string) => request<PassportResponse>("GET", `${biz(id)}/passport`),
@@ -328,4 +342,33 @@ export async function* transactionStream(
     signal,
   });
   yield* sseFrames(res);
+}
+
+/** One live inbox event (GET /inbox/stream). Mirrors app/services/inbox_events.py `InboxEvent`. */
+export interface InboxStreamEvent {
+  seq: number;
+  kind: "message" | "connection";
+  email_id: string | null;
+  source: string | null;
+  stage: "received" | "extracting" | "checking" | "accepted" | "flagged" | "held" | "failed" | null;
+  sender: string | null;
+  subject: string | null;
+  flags: string[];
+  connection: GmailStatus | null;
+}
+
+/**
+ * Each email's progress through quarantine and the sentinel (from Gmail, the sandbox mailbox or an upload), and
+ * changes to the Gmail connection, as they happen. Yields `message` and `connection` events.
+ */
+export async function* inboxStream(
+  businessId: string,
+  signal?: AbortSignal,
+): AsyncGenerator<{ event: string; data: InboxStreamEvent }> {
+  const res = await fetch(`${API_URL}${biz(businessId)}/inbox/stream`, {
+    headers: { ...authHeaders(), Accept: "text/event-stream" },
+    cache: "no-store",
+    signal,
+  });
+  for await (const frame of sseFrames(res)) yield frame as { event: string; data: InboxStreamEvent };
 }

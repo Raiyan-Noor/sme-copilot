@@ -1,26 +1,81 @@
 "use client";
 
 import { Ban, Copy, EyeOff, Phone, RotateCw, ShieldAlert, ShieldCheck } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { useBusinessKey } from "@/components/business-context";
 import { AlertBanner } from "@/components/kc/alert-banner";
+import { Badge } from "@/components/kc/badge";
 import { Button } from "@/components/kc/button";
 import { FactNumber } from "@/components/kc/fact";
 import { Table } from "@/components/kc/misc";
 import { StatusPill } from "@/components/kc/status-pill";
 import { Skeleton } from "@/components/ui/skeleton";
-import { api } from "@/lib/api";
+import { api, inboxStream, type InboxStreamEvent } from "@/lib/api";
 import { errorMessage } from "@/lib/errors";
 import { flagLabel, sentence, shortDate } from "@/lib/format";
-import type { Flag, InboxDetail, InboxItem } from "@/lib/types";
+import type { Flag, InboxDetail, InboxItem, InboxList } from "@/lib/types";
 import { useApi } from "@/lib/use-api";
 
 import { PanelFrame } from "./detail-panel";
+import { GmailConnectionCard, useGmailConnection } from "./gmail-connection";
 import { useAdvisor } from "./state";
 
 const moneyFact = (item: InboxItem) => item.facts.find((f) => f.unit === "money");
 const sender = (item: InboxItem) => item.record.from_display_name || item.record.from_address;
+
+const SOURCE: Record<string, string> = { gmail: "Gmail", mailbox: "Sandbox", upload: "Upload" };
+
+type Live = InboxStreamEvent & { done: boolean };
+const STAGES = ["received", "extracting", "checking"];
+const STAGE_LABEL: Record<string, string> = {
+  received: "Received",
+  extracting: "Reading in quarantine…",
+  checking: "Running fraud checks…",
+  held: "Held",
+  failed: "Could not read",
+};
+
+function livePill(r: Live) {
+  if (r.stage === "held" || r.stage === "failed")
+    return <StatusPill size="sm" status="blocked" label={STAGE_LABEL[r.stage]} />;
+  if (r.stage === "flagged") return <StatusPill size="sm" status="waiting" label="Check first" />;
+  return <StatusPill size="sm" status="executed" label="Checked" />;
+}
+
+/** Messages moving through the pipeline right now: received, reading in quarantine, checks, verdict. */
+function LiveRows({ rows }: { rows: Live[] }) {
+  if (!rows.length) return null;
+  return (
+    <div className="ka-live" aria-live="polite">
+      {rows.map((r) => {
+        const at = STAGES.indexOf(r.stage ?? "received");
+        const bad = r.stage === "held" || r.stage === "failed";
+        return (
+          <div key={r.email_id ?? r.seq} className="ka-live__row">
+            <Badge variant="outline">{SOURCE[r.source ?? ""] ?? "Email"}</Badge>
+            <div className="ka-live__who">
+              <div style={{ fontWeight: 500 }}>{r.sender ?? "New email"}</div>
+              <div className="kc-caption">{r.subject}</div>
+            </div>
+            <div className="ka-live__steps" aria-hidden>
+              {[0, 1, 2, 3].map((i) => (
+                <span
+                  key={i}
+                  className={
+                    "ka-live__step" +
+                    (r.done ? (bad && i === 3 ? " is-bad" : " is-done") : i <= at ? " is-done" : "")
+                  }
+                />
+              ))}
+            </div>
+            {r.done ? livePill(r) : <span className="kc-caption">{STAGE_LABEL[r.stage ?? "received"]}</span>}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 function riskPill(item: InboxItem) {
   const s = item.record.sentinel;
@@ -33,13 +88,57 @@ export function InboxPanel() {
   const { pushPanel, toast } = useAdvisor();
   const { id, key } = useBusinessKey("inbox-panel");
   const inbox = useApi(key, () => api.inbox(id));
+  const [last, setLast] = useState<InboxList | undefined>(undefined);
+  if (inbox.data && inbox.data !== last) setLast(inbox.data);
+  const data = inbox.data ?? last; // keep the table on screen while a live update reloads it
+  const gmail = useGmailConnection(id);
+  const { setStatus } = gmail;
   const [syncing, setSyncing] = useState(false);
+  const [live, setLive] = useState<Live[]>([]);
+  const reload = useRef(inbox.reload);
+  useEffect(() => {
+    reload.current = inbox.reload;
+  }, [inbox.reload]);
+
+  useEffect(() => {
+    if (!key) return;
+    const ctl = new AbortController();
+    (async () => {
+      try {
+        for await (const { data: e } of inboxStream(id, ctl.signal)) {
+          if (e.kind === "connection" && e.connection) {
+            setStatus(e.connection);
+            continue;
+          }
+          if (!e.email_id) continue;
+          const done = !STAGES.includes(e.stage ?? "received");
+          setLive((rows) => [{ ...e, done }, ...rows.filter((r) => r.email_id !== e.email_id)].slice(0, 6));
+          if (!done) continue;
+          reload.current();
+          if (e.stage === "held")
+            toast({
+              variant: "danger",
+              title: `Held: ${e.sender ?? "an email"}`,
+              description: e.flags.length ? e.flags.map((f) => flagLabel(f as Flag["code"])).join(" · ") : undefined,
+            });
+          window.setTimeout(() => setLive((rows) => rows.filter((r) => r.email_id !== e.email_id)), 4000);
+        }
+      } catch {
+        // Stream closed (navigation, server restart): the list still loads on demand.
+      }
+    })();
+    return () => ctl.abort();
+  }, [id, key, setStatus, toast]);
 
   const sync = async () => {
     setSyncing(true);
     try {
+      const fromGmail =
+        gmail.status?.source === "gmail" && gmail.status.state !== "reconnect_needed"
+          ? (await api.gmailPoll(id)).processed.length
+          : 0;
       const r = await api.syncInbox(id);
-      const n = r.processed.length;
+      const n = r.processed.length + fromGmail;
       toast({
         variant: r.held.length ? "danger" : "default",
         title: n === 0 ? "No new email" : n === 1 ? "One new email checked" : `${n} new emails checked`,
@@ -60,7 +159,7 @@ export function InboxPanel() {
   return (
     <PanelFrame
       title="Inbox"
-      description={inbox.data ? `${inbox.data.total} finance emails · ${inbox.data.held} held` : "Finance emails"}
+      description={data ? `${data.total} finance emails · ${data.held} held` : "Finance emails"}
       footer={
         <Button variant="secondary" size="sm" iconLeft={RotateCw} loading={syncing} onClick={sync}>
           Check for new email
@@ -71,13 +170,15 @@ export function InboxPanel() {
         <p className="ka-text" style={{ color: "var(--danger)" }}>
           Could not load the inbox: {errorMessage(inbox.error)}
         </p>
-      ) : !inbox.data ? (
+      ) : !data ? (
         <Skeleton className="h-64 w-full" />
       ) : (
         <div className="ka-stack">
+          <GmailConnectionCard gmail={gmail} />
+          <LiveRows rows={live} />
           <Table<InboxItem>
             rowKey={(r) => r.record.email_id}
-            rows={inbox.data.items}
+            rows={data.items}
             empty="No finance email yet. Check for new email to fetch it."
             onRowClick={(r) => pushPanel({ view: "email", emailId: r.record.email_id })}
             columns={[
@@ -86,7 +187,10 @@ export function InboxPanel() {
                 header: "From",
                 render: (r) => (
                   <div>
-                    <div style={{ fontWeight: 500 }}>{sender(r)}</div>
+                    <div style={{ fontWeight: 500, display: "flex", alignItems: "center", gap: 8 }}>
+                      {sender(r)}
+                      <Badge variant="outline">{SOURCE[r.record.source] ?? r.record.source}</Badge>
+                    </div>
                     <div className="kc-caption" style={{ color: r.record.sentinel.hold ? "var(--danger)" : undefined }}>
                       {r.record.sentinel.flags?.length
                         ? r.record.sentinel.flags.map((f) => flagLabel(f.code)).join(" · ")

@@ -4,7 +4,11 @@ The owner may see raw message text (detail view); the planner never does (invari
 returned as Facts (invariant 4) built from the typed fields, with the inbox item as their source.
 """
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+import asyncio
+from typing import Annotated
+
+from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from app.api.deps import BusinessId, RuntimeDep
@@ -70,6 +74,33 @@ def sync_inbox(business_id: BusinessId, rt: RuntimeDep) -> InboxSyncResult:
     held = [e for e in report.processed if (r := proc.store.get(e)) and r.sentinel.hold]
     return InboxSyncResult(processed=report.processed, skipped_existing=report.skipped_existing,
                            not_yet_delivered=report.not_yet_delivered, failed=report.failed, held=held)
+
+
+async def _inbox_events(rt, business_id: str, request: Request, after: int | None, *, poll_seconds: float = 0.5):
+    """Inbox events after `after` (default: from now) as SSE frames. A plain generator so tests can drive it."""
+    seq = rt.inbox_events.latest() if after is None else after
+    while not await request.is_disconnected():
+        for event in rt.inbox_events.since(business_id, seq):
+            seq = event.seq
+            yield f"id: {event.seq}\nevent: {event.kind}\ndata: {event.model_dump_json()}\n\n"
+        await asyncio.sleep(poll_seconds)
+
+
+@router.get(
+    "/businesses/{business_id}/inbox/stream",
+    response_class=StreamingResponse,
+    responses={200: {"content": {"text/event-stream": {}},
+                     "description": "Server-sent events: `message` (one email's stage: received, extracting, "
+                                    "checking, then accepted, flagged, held or failed) and `connection` (the Gmail "
+                                    "connection's new status)."}},
+)
+def stream_inbox(business_id: BusinessId, request: Request, rt: RuntimeDep,
+                 after: Annotated[int | None, Query(ge=0)] = None) -> StreamingResponse:
+    """Live progress of mail through quarantine and the sentinel, from Gmail, the sandbox mailbox or an upload."""
+    with rt.business(business_id):
+        pass
+    return StreamingResponse(_inbox_events(rt, business_id, request, after), media_type="text/event-stream",
+                             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 
 @router.post("/businesses/{business_id}/inbox/upload", response_model=InboxItem)

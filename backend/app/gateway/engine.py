@@ -23,6 +23,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.audit import AuditLog
 from app.clock import Clock
+from app.connections.gmail import MailRoute
 from app.gateway.dispatch import ACTION_ARGS, Executors, check_args
 from app.gateway.mandate import MandateRecord, SignedPayload, StandingTerms, args_hash, verify_signature
 from app.gateway.policy import Policy, Tier, load_policy
@@ -89,13 +90,14 @@ class Gateway:
         clock: Clock,
         policy: Policy | None = None,
         data_dir: Path | None = None,
+        mail: MailRoute | None = None,
     ):
         self.store = store
         self.audit = audit
         self.clock = clock
         self.policy = policy or load_policy()
         self.data_dir = data_dir  # the tenant directory, or None for an in-memory gateway
-        self.executors = Executors(data_dir)
+        self.executors = Executors(data_dir, mail=mail)
         self.loan_drafts = self.executors.loan_drafts
         assert set(self.policy.t2) | set(self.policy.t3) == set(ACTION_ARGS), "policy.yaml and dispatch disagree"
 
@@ -106,8 +108,10 @@ class Gateway:
         self.executors.mailbox.close()
 
     @classmethod
-    def for_tenant(cls, tenant_dir: Path, audit: AuditLog, clock: Clock, policy: Policy | None = None) -> "Gateway":
-        return cls(GatewayStore(tenant_dir / "gateway.sqlite"), audit, clock, policy, tenant_dir)
+    def for_tenant(cls, tenant_dir: Path, audit: AuditLog, clock: Clock, policy: Policy | None = None,
+                   mail: MailRoute | None = None) -> "Gateway":
+        """`mail`: how approved emails reach contacts (Gmail when connected, else the sandbox outbox)."""
+        return cls(GatewayStore(tenant_dir / "gateway.sqlite"), audit, clock, policy, tenant_dir, mail)
 
     # Owner keys
     def enroll_owner_key(self, public_key_hex: str) -> None:

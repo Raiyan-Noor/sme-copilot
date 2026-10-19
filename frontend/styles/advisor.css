@@ -560,3 +560,17 @@ a{color:var(--brand-primary)}a:hover{color:var(--brand-primary-hover)}
 .ka-rail .kc-kpi__value{white-space:normal}
 .ka-check input,.ka-callnum input{accent-color:var(--brand-primary);width:16px;height:16px;flex-shrink:0}
 .ka-chip:disabled{opacity:.5;cursor:default}
+/* Inbox: Gmail connection and live pipeline (P6) */
+.ka-gmail{display:flex;flex-direction:column;gap:12px;padding:16px;border-radius:var(--radius-medium);border:1px solid var(--border)}
+.ka-gmail__head{display:flex;align-items:center;gap:12px}
+.ka-gmail__consent{display:flex;flex-direction:column;gap:12px}
+.ka-gmail__list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.ka-gmail__list li{display:grid;grid-template-columns:16px minmax(0,1fr);gap:8px;font-size:14px;line-height:20px}
+.ka-gmail__list li svg{margin-top:2px}
+.ka-live{display:flex;flex-direction:column;gap:8px}
+.ka-live__row{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:var(--radius-medium);background:var(--surface-raised);animation:kc-fade .2s ease-out}
+.ka-live__who{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ka-live__steps{display:flex;gap:4px;align-items:center}
+.ka-live__step{width:8px;height:8px;border-radius:50%;background:var(--border)}
+.ka-live__step.is-done{background:var(--brand-primary)}
+.ka-live__step.is-bad{background:var(--danger)}

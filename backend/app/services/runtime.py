@@ -11,6 +11,8 @@ use it creates data_dir, restores the simulated clock, opens the audit log (conf
 - Gateways (invariants 1, 6): one per business, state under data_dir/<business_id>/. Every action goes through one.
 - Anchoring (invariant 9): one AnchorService over the audit log, data_dir/_anchoring/anchors.sqlite; subscribed to every
   append so it can cut a batch every ANCHOR_BATCH_SIZE entries. Sends run in the background.
+- Inbox events: an in-memory feed of each message's progress through the pipeline, streamed to the Inbox screen.
+- Gmail (services/gmail.py): OAuth connections, the background poller and the mail route the gateway sends with.
 - Fact cache: keyed by business, active pack, simulated date and ledger version, so a page refresh does not
   recompute (or re-log) the same facts. Each fresh computation is logged with a hash of every fact it produced.
 """
@@ -31,6 +33,7 @@ from app.gateway import Gateway
 from app.llm.adapter import LLMAdapter
 from app.services.businesses import bootstrap_from_seed, business_info, open_business, seed_profiles
 from app.services.finance import Computed, compute, ledger_version, load_inputs, records_version
+from app.services.inbox_events import InboxEvents
 
 FACT_CACHE_SIZE = 16
 
@@ -51,6 +54,8 @@ class Runtime:
         self._gateways: dict[str, Gateway] = {}
         self._facts: dict[tuple, Computed] = {}
         self._llm: LLMAdapter | None = None
+        self.inbox_events = InboxEvents()
+        self._gmail = None
 
     # Setup
     @property
@@ -92,6 +97,16 @@ class Runtime:
             if self._llm is None:
                 self._llm = LLMAdapter.from_settings(self.settings, self.audit)
             return self._llm
+
+    @property
+    def gmail(self):
+        """The Gmail connection service (services/gmail.py), built on first use."""
+        from app.services.gmail import GmailService  # it imports services.inbox, which imports this module
+
+        with self._lock:
+            if self._gmail is None:
+                self._gmail = GmailService(self)
+            return self._gmail
 
     # Clock
     def _clock_file(self) -> Path:
@@ -147,7 +162,8 @@ class Runtime:
         with self._lock:
             gw = self._gateways.get(business_id)
             if gw is None:
-                gw = Gateway.for_tenant(self.data_dir / business_id, self.audit, self.clock)
+                gw = Gateway.for_tenant(self.data_dir / business_id, self.audit, self.clock,
+                                        mail=self.gmail.mail_route(business_id))
                 self._gateways[business_id] = gw
             return gw
 

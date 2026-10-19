@@ -168,8 +168,9 @@ in replay mode · nothing above violated.
 ## Don't
 
 - Don't add features outside the plan's must-build list before it's done (see `docs/build-prompts.md` order).
-- Don't call real banks, real email or any network service except the two LLM providers and the configured
-  testnet RPC.
+- Don't call real banks, real email or any network service except the two LLM providers, the configured
+  testnet RPC and, once the owner connects it, the Gmail API (`connections/gmail.py` reads; only
+  `executor/gmail_sender.py` sends, and only to DEMO_SEND_ALLOWLIST addresses).
 - Don't put secrets in code; use `.env` (gitignored). Never log or commit API keys, `ANCHOR_PRIVATE_KEY` or the
   owner key.
 - Don't build wallet features, token transfers or anything that moves value on-chain. Crypto wallets stay out of
