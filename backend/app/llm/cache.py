@@ -16,6 +16,7 @@ import hashlib
 import json
 import os
 import re
+import threading
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -76,10 +77,19 @@ class RequestCache:
             return
         path = self._path(namespace, key)
         path.parent.mkdir(parents=True, exist_ok=True)
-        tmp = path.with_suffix(f".{os.getpid()}.tmp")
+        # Unique per thread: two requests recording the same key at once (e.g. two /audit/verify calls) must not
+        # write the same temp file, which Windows refuses.
+        tmp = path.with_suffix(f".{os.getpid()}.{threading.get_ident()}.tmp")
         entry = {"namespace": namespace, "key": key, "request": content, "response": response}
-        tmp.write_text(json.dumps(entry, sort_keys=True, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
-        tmp.replace(path)
+        try:
+            tmp.write_text(json.dumps(entry, sort_keys=True, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+            tmp.replace(path)
+        except PermissionError:
+            # Windows: another thread is replacing or reading the same entry. Same key, same request, so the entry it
+            # writes stands; re-raise only if nothing was stored at all.
+            tmp.unlink(missing_ok=True)
+            if not path.is_file():
+                raise
 
     def fetch(self, namespace: str, content: Any, call: Callable[[], dict[str, Any]]) -> CacheOutcome:
         """Return the cached response for `content`, or (record/off) run `call` and maybe store its result."""
