@@ -50,6 +50,17 @@ def test_clean_known_invoice_has_no_flags():
     assert (r.sender_status, r.flags, r.risk, r.hold) == ("known", [], "none", False)
 
 
+def test_unreadable_message_with_a_code_side_high_flag_is_held():
+    """If the model could not read the message (outage), a lookalike sender still holds it; a clean one does not."""
+    unread = DocumentFields(extraction_status={"email": "unavailable"})
+    r = _assess(unread, sender="ar@goldengra1n.example")
+    assert "lookalike_domain" in r.codes and r.hold and not r.payment_requested
+    clean = _assess(unread)
+    assert clean.flags == [] and not clean.hold
+    read_ok = _assess(DocumentFields(extraction_status={"email": "ok"}), sender="ar@goldengra1n.example")
+    assert "lookalike_domain" in read_ok.codes and not read_ok.hold  # read fine and no payment asked: review only
+
+
 def test_lookalike_sender_with_new_account_is_bank_change_and_held():
     r = _assess(_invoice(payee_account_token=_u("acct_new"), payee_account_last4="9918"),
                 sender="ar@goldengra1n.example")

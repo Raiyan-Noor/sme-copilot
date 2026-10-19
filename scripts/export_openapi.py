@@ -1,6 +1,6 @@
 """Write docs/openapi.json, the API contract the frontend's lib/types.ts mirrors. Run by `make openapi`.
 
-Deterministic: built from code with fixed settings (no .env), including the testing routes. A test fails if the
+Deterministic: built from code with fixed settings (no .env), including the testing and demo-console routes. A test fails if the
 committed file drifts from the app, so re-run this after changing any route or model.
 """
 
@@ -17,7 +17,7 @@ def build_schema() -> dict:
     from app.config import Settings
     from app.main import create_app
 
-    app = create_app(Settings(_env_file=None, demo_passcode="unused", expose_test_routes=True))
+    app = create_app(Settings(_env_file=None, demo_passcode="unused", expose_test_routes=True, demo_mode=True))
     return app.openapi()
 
 

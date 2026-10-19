@@ -10,6 +10,7 @@ import type {
   AnchorStatus,
   Answer,
   AuditVerifyResult,
+  ConsoleInfo,
   Contacts,
   FinishResult,
   GmailConnectStart,
@@ -22,6 +23,7 @@ import type {
   NewBusiness,
   OnboardingView,
   ResetResult,
+  SendResult,
   SkillPreview,
   Skip,
   StartingPoint,
@@ -218,6 +220,12 @@ export const api = {
   // Inbox (quarantined extractor + sentinel)
   inbox: (id: string) => request<InboxList>("GET", `${biz(id)}/inbox`),
   inboxItem: (id: string, emailId: string) => request<InboxDetail>("GET", `${biz(id)}/inbox/${enc(emailId)}`),
+  // Demo console (only mounted when the server runs with DEMO_MODE)
+  demoConsole: (id: string) => request<ConsoleInfo>("GET", `${biz(id)}/demo/console`),
+  demoSendPreset: (id: string, preset: string) =>
+    request<SendResult>("POST", `${biz(id)}/demo/send-preset`, { body: { preset } }),
+  demoSendCustom: (id: string, form: FormData) =>
+    request<SendResult>("POST", `${biz(id)}/demo/send-custom`, { body: form }),
   syncInbox: (id: string) => request<InboxSyncResult>("POST", `${biz(id)}/inbox/sync`),
 
   // Gmail connection (OAuth; the refresh token never leaves the server)

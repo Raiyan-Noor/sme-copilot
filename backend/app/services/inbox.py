@@ -33,7 +33,7 @@ from app.sentinel.directory import Directory, load_directory
 from app.services.businesses import business_info, records_folder
 from app.services.runtime import Runtime
 
-EMAIL_ID = re.compile(r"^(em|up|gm)-[a-z0-9]{3,16}$")
+EMAIL_ID = re.compile(r"^(em|up|gm|dc)-[a-z0-9]{3,16}$")
 GMAIL_ID = re.compile(r"^[0-9a-f]{3,16}$")
 
 
@@ -63,6 +63,11 @@ def gmail_email_id(message_id: str) -> str:
     return "gm-" + (mid if GMAIL_ID.match(mid) else hashlib.sha256(message_id.encode()).hexdigest()[:16])
 
 
+def console_dir(rt: Runtime, business_id: str) -> Path:
+    """Where the demo console's sandbox-mailbox messages are kept (services/demo_console.py)."""
+    return rt.data_dir / business_id / "inbox_console"
+
+
 def mailbox_files(rt: Runtime, seed_source: str | None) -> list[tuple[str, Path]]:
     manifest = rt.settings.seed_dir / "manifest.json"
     if not seed_source or not manifest.is_file():
@@ -82,8 +87,8 @@ def raw_path(rt: Runtime, business_id: str, email_id: str) -> Path | None:
     """Where the owner's detail view reads the raw message from."""
     if not EMAIL_ID.match(email_id):
         return None
-    if email_id.startswith(("up-", "gm-")):
-        folder = upload_dir if email_id.startswith("up-") else gmail_dir
+    if email_id.startswith(("up-", "gm-", "dc-")):
+        folder = {"up-": upload_dir, "gm-": gmail_dir, "dc-": console_dir}[email_id[:3]]
         p = folder(rt, business_id) / f"{email_id}.eml"
         return p if p.is_file() else None
     with rt.business(business_id) as conn:
@@ -151,6 +156,15 @@ class InboxProcessor:
         folder.mkdir(parents=True, exist_ok=True)
         (folder / f"{email_id}.eml").write_bytes(data)
         return self.process(raw, "upload")
+
+    def deliver_console(self, email_id: str, data: bytes) -> InboxRecord:
+        """One message the demo console put in the sandbox mailbox. It takes the same path as mail from anywhere
+        else: quarantined extractor, then the sentinel; nothing here can reach an executor."""
+        raw = parse_email(email_id, data)
+        folder = console_dir(self.rt, self.business_id)
+        folder.mkdir(parents=True, exist_ok=True)
+        (folder / f"{email_id}.eml").write_bytes(data)
+        return self.process(raw, "console")
 
     def ingest_gmail(self, message_id: str, data: bytes) -> InboxRecord | None:
         """One message fetched from the connected Gmail account. None if it was already processed."""

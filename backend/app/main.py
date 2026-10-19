@@ -16,7 +16,7 @@ from fastapi.responses import JSONResponse
 from app.agent.context import ConversationStore
 from app.anchoring import Chain
 from app.api import (
-    agent, anchors, audit, brief, businesses, clock, connections, finance, financing, gateway, health, inbox, ledger,
+    agent, anchors, audit, brief, businesses, clock, connections, demo_console, finance, financing, gateway, health, inbox, ledger,
     onboarding, skills, trust,
 )
 from app.config import Settings, get_settings
@@ -79,6 +79,8 @@ def create_app(settings: Settings | None = None, anchor_chain: Chain | None = No
         app.include_router(router)
     if settings.expose_test_routes:
         app.include_router(gateway.test_router)
+    if settings.demo_mode:  # the console does not exist at all in normal mode
+        app.include_router(demo_console.router)
 
     def error(status: int, prefix: str = ""):
         async def handler(_: Request, exc: Exception) -> JSONResponse:

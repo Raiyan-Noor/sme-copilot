@@ -54,6 +54,7 @@ class Runtime:
         self._gateways: dict[str, Gateway] = {}
         self._facts: dict[tuple, Computed] = {}
         self._llm: LLMAdapter | None = None
+        self._demo_llm: LLMAdapter | None = None
         self.inbox_events = InboxEvents()
         self._gmail = None
 
@@ -97,6 +98,16 @@ class Runtime:
             if self._llm is None:
                 self._llm = LLMAdapter.from_settings(self.settings, self.audit)
             return self._llm
+
+    @property
+    def demo_llm(self) -> LLMAdapter:
+        """The demo console's adapter: always live (record/replay off), so console mail is read by a real model in
+        real time. Same budget cap, spend counter and Gemini fallback as the main adapter."""
+        with self._lock:
+            if self._demo_llm is None:
+                live = self.settings.model_copy(update={"llm_replay": "off"})
+                self._demo_llm = LLMAdapter.from_settings(live, self.audit)
+            return self._demo_llm
 
     @property
     def gmail(self):

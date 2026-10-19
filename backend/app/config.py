@@ -36,6 +36,9 @@ class Settings(BaseSettings):
     sim_start: date | None = None
     # Testing routes in /docs (e.g. propose an action directly, without the planner). Still fully gated.
     expose_test_routes: bool = True
+    # The live demo console (api/demo_console.py): a simulated sender for recording the demo. Off by default; when
+    # off its routes are not mounted at all.
+    demo_mode: bool = False
 
     # LLM
     openai_api_key: SecretStr = SecretStr("")

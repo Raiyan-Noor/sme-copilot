@@ -6,10 +6,10 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { useBusiness } from "@/components/business-context";
 import type { FactRef } from "@/components/kc/fact";
 import type { ToastData } from "@/components/kc/misc";
-import { chatStream } from "@/lib/api";
+import { chatStream, inboxStream } from "@/lib/api";
 import { errorMessage } from "@/lib/errors";
-import { nowTime } from "@/lib/format";
-import type { ActionEvent, Decision, ReplyEvent, StageEvent } from "@/lib/types";
+import { flagLabel, nowTime } from "@/lib/format";
+import type { ActionEvent, Decision, Flag, ReplyEvent, StageEvent } from "@/lib/types";
 
 import type { Stage } from "./stage-line";
 
@@ -150,6 +150,28 @@ export function AdvisorProvider({ children }: { children: React.ReactNode }) {
     },
     [dismissToast],
   );
+
+  // ---- Mail alerts: a held or flagged email toasts wherever the owner is, whether it came from Gmail, the sandbox
+  // inbox or the demo console. The Inbox panel shows the same stream as live rows.
+  useEffect(() => {
+    if (!businessId) return;
+    const ctl = new AbortController();
+    (async () => {
+      try {
+        for await (const { data: e } of inboxStream(businessId, ctl.signal)) {
+          if (e.kind !== "message" || (e.stage !== "held" && e.stage !== "flagged")) continue;
+          toast({
+            variant: e.stage === "held" ? "danger" : "default",
+            title: `${e.stage === "held" ? "Held" : "Check first"}: ${e.sender ?? "an email"}`,
+            description: e.flags.length ? e.flags.map((f) => flagLabel(f as Flag["code"])).join(" · ") : undefined,
+          });
+        }
+      } catch {
+        // Stream closed (navigation, server restart): alerts resume on the next page load.
+      }
+    })();
+    return () => ctl.abort();
+  }, [businessId, toast]);
 
   // ---- Conversations
   const [conversations, setConversations] = useState<Conversation[]>([

@@ -15,11 +15,14 @@ import { errorMessage } from "@/lib/errors";
 
 import { ApprovalSheet } from "./approval-sheet";
 import { Conversation } from "./conversation";
+import { DemoConsole } from "./demo-console";
 import { DetailPanel } from "./detail-panel";
 import { Onboarding } from "./onboarding";
 import { Rail, TodaySheet } from "./rail";
 import { Sidebar } from "./sidebar";
 import { AdvisorProvider, BRIEF_ID, NEW_ID, useAdvisor } from "./state";
+
+const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 
 function useMQ(query: string): boolean {
   return useSyncExternalStore(
@@ -197,6 +200,8 @@ function PerBusiness() {
   const pathname = usePathname();
   // Start fresh: a new business is set up full-screen, outside any existing business's view.
   if (pathname === "/start") return <Onboarding />;
+  // Demo console (a recording tool): only when the build has NEXT_PUBLIC_DEMO_MODE on; otherwise the route is a 404.
+  if (pathname === "/demo-console" && DEMO_MODE) return <DemoConsole />;
   // A business switch starts a fresh day view: its own brief, conversations and approvals.
   return (
     <AdvisorProvider key={business?.id ?? "none"}>

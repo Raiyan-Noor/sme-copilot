@@ -24,7 +24,12 @@ import { useAdvisor } from "./state";
 const moneyFact = (item: InboxItem) => item.facts.find((f) => f.unit === "money");
 const sender = (item: InboxItem) => item.record.from_display_name || item.record.from_address;
 
-const SOURCE: Record<string, string> = { gmail: "Gmail", mailbox: "Sandbox", upload: "Upload" };
+const SOURCE: Record<string, string> = {
+  gmail: "Gmail",
+  mailbox: "Sandbox",
+  upload: "Upload",
+  console: "Demo console",
+};
 
 type Live = InboxStreamEvent & { done: boolean };
 const STAGES = ["received", "extracting", "checking"];
@@ -115,12 +120,6 @@ export function InboxPanel() {
           setLive((rows) => [{ ...e, done }, ...rows.filter((r) => r.email_id !== e.email_id)].slice(0, 6));
           if (!done) continue;
           reload.current();
-          if (e.stage === "held")
-            toast({
-              variant: "danger",
-              title: `Held: ${e.sender ?? "an email"}`,
-              description: e.flags.length ? e.flags.map((f) => flagLabel(f as Flag["code"])).join(" · ") : undefined,
-            });
           window.setTimeout(() => setLive((rows) => rows.filter((r) => r.email_id !== e.email_id)), 4000);
         }
       } catch {
@@ -128,7 +127,7 @@ export function InboxPanel() {
       }
     })();
     return () => ctl.abort();
-  }, [id, key, setStatus, toast]);
+  }, [id, key, setStatus]);
 
   const sync = async () => {
     setSyncing(true);
@@ -221,7 +220,7 @@ export function InboxPanel() {
   );
 }
 
-function evidence(flag: Flag): string {
+export function evidence(flag: Flag): string {
   const parts = Object.entries(flag.evidence ?? {})
     .filter(([, v]) => typeof v === "string" && v)
     .map(([k, v]) => `${sentence(k)}: ${v}`);

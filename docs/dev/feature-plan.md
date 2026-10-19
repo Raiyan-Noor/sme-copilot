@@ -2,7 +2,7 @@
 
 Deadline: Tue Oct 20, 23:59 Beijing = **21:59 Dhaka**
 Feature freeze: **Tue 13:00 Dhaka**
-Last updated: Mon Oct 19, evening Dhaka (P6)
+Last updated: Mon Oct 19, night Dhaka (P2)
 
 This file is now the single source of truth for remaining work (`docs/build-prompts.md` is superseded — see the
 note at its top). See "Maintaining this file" at the end before editing it.
@@ -18,7 +18,7 @@ Verified against `git log`, the code on disk and a full `pytest` run (831 passed
 | Prompt 19 | Evidence and docs: `make evidence`, Sol demo-profile recordings, Gemini recordings | Not started — `make evidence` is still a stub (`exit 1`); no Sol or Gemini recordings exist yet |
 | F1 | Document upload | Merged into F4 |
 | F2 | Sending approved emails | Not started (P4) |
-| F3 | Live demo console | Not started (P2) |
+| F3 | Live demo console | Done (P2) — verified live against OpenAI for all 7 presets on both seeded businesses; needs `DEMO_MODE=true` (server) and `NEXT_PUBLIC_DEMO_MODE=true` (frontend) to appear |
 | F4 | Onboarding from zero | Done (P1, P1 follow-up fix) |
 | F5 | Payments tab | Not started (P3) |
 | F6 | Product and ad knowledge in Skill Packs | Merged into P1 |
@@ -50,7 +50,7 @@ P7 uses the product and ad data onboarding imports. P5 comes early because uploa
 their results in the Transactions tab. P6 comes before P2 and P4 so the console and email sending can use the real
 inbox.
 
-**Remaining order from here:** P2 → P3 → P4 → Prompt 19.
+**Remaining order from here:** P3 → P4 → Prompt 19.
 
 **Demo email plan:** the console injects sandbox attacks that real email can't fake (lookalike domains, spoofed senders); real emails are sent live from your phone to the demo Gmail inbox.
 
@@ -120,7 +120,7 @@ unprofitable-products leak detector exist); reminders are a T2 action (`send_inv
 signed mandate; untrusted-provenance arguments force T3; loan applications are T3; a statement-upload endpoint
 exists in the backend.
 
-`make test` (831 pytest cases) passes clean as of this update.
+`make test` passes clean as of the P2 update: 885 pytest cases (was 854 after P6), plus the branding and frontend-types checks.
 
 **P6 (Gmail) as built, Mon Oct 19 evening:** full `pytest` run 854 passed (replay mode), branding and frontend-types
 checks pass. No planner prompt, tool schema, policy.yaml or extractor input changed, so no replay recordings went
@@ -138,6 +138,31 @@ stale and `make redteam` was not re-run for P6. What later prompts can reuse:
 - Connections section lives at the top of the **Inbox tab** (status, connect, disconnect, Gmail/sandbox switch).
 - `.env` needs GMAIL_CLIENT_ID and GMAIL_CLIENT_SECRET (not there as of this update); GMAIL_TOKEN_KEY was generated
   into `.env`. Redirect URI default: `http://localhost:8000/inbox/gmail/callback` (GMAIL_REDIRECT_URI).
+
+**P2 (demo console) as built, Mon Oct 19 night:**
+- Backend: `services/demo_console.py` + `api/demo_console.py`, mounted only when `DEMO_MODE=true` (otherwise the routes
+  do not exist; tested). `GET /businesses/{id}/demo/console` (presets + which checks are rule-based), `POST .../demo/send-preset`,
+  `POST .../demo/send-custom` (multipart, optional PDF/PNG/JPEG). Presets are written at send time from the business's
+  own records (supplier, customer, owner names/domains; fresh invoice number each send), not copied from the seed
+  manifest, so they work for Maya and the fashion shop. A preset says `available: false` with a reason if the business
+  lacks a supplier/customer or has under 3 past payments (unusual-amount).
+- Delivery: `InboxProcessor.deliver_console` (source `console`, ids `dc-…`, raw files under `inbox_console/`) -> the
+  same quarantine -> sentinel path; live stages come from the existing inbox SSE stream. The extractor uses
+  `rt.demo_llm`, an adapter with replay **off** (always live; same budget cap and Gemini fallback). Console mail is
+  never replayed, so there are no console recordings and no replay files went stale.
+- **Rule-based vs model:** works with no model: `lookalike_domain`, `reply_to_mismatch`, `display_name_spoof`, `urgency`
+  and `instruction_like_text` text patterns, `hidden_text`. Need the model's reading first: `bank_detail_change`,
+  `first_time_payee`, `amount_anomaly`, `amount_mismatch`, `duplicate_invoice`, `receipt_total_mismatch`. **Behaviour
+  change in `sentinel/checks.py`:** if any extraction is not `ok` (model down/invalid) and a high-severity flag fired,
+  the message is now held (`hold = high and (payment or unread)`), since it can't be shown not to ask for money.
+- Live check (not CI): all 7 presets on Maya and on the fashion shop returned the expected verdict with a real
+  OpenAI model on a scratch copy of the data, about $0.047 of real OpenAI spend in total (so the real
+  `llm_spend.json` counter of 0.0722 USD above is now ~$0.05 short of the true figure).
+- Frontend: `/demo-console` (`components/advisor/demo-console.tsx`): presets, compose form, live stage rows and verdict
+  cards with plain-language flag reasons and the call script, and the owner's app (`/inbox`) in an iframe on the
+  right for side-by-side recording. Gated by `NEXT_PUBLIC_DEMO_MODE`. A held/flagged email now toasts on every
+  screen (moved from the Inbox panel into `AdvisorProvider`).
+- Not done: the Morning Brief does not change when mail is flagged (toast only); no `make` target to start in demo mode.
 
 ---
 

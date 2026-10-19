@@ -263,6 +263,9 @@ def assess(h: Headers, f: DocumentFields, owner: OwnerView, text: TextEvidence, 
     if ordered and not rec:
         rec.append("owner_review")
 
+    # If the model could not read the message (outage, invalid output) we cannot tell whether it asks for money, so a
+    # high-severity code-side flag (lookalike sender, spoofed name, hidden text, instruction patterns) holds it.
+    unread = any(status != "ok" for status in f.extraction_status.values()) if f.extraction_status else False
     report = SentinelReport(
         sender_status=status,
         sender_counterparty_id=sender_cp.id if sender_cp and status in ("known", "own_business") else None,
@@ -271,7 +274,7 @@ def assess(h: Headers, f: DocumentFields, owner: OwnerView, text: TextEvidence, 
         payment_requested=payment,
         flags=ordered,
         risk="hold" if high else "review" if ordered else "none",
-        hold=high and payment,
+        hold=high and (payment or unread),
         recommended=rec,
     )
     if "verify_by_phone_before_paying" in rec:

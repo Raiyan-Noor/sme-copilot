@@ -3712,6 +3712,163 @@
           }
         }
       }
+    },
+    "/businesses/{business_id}/demo/console": {
+      "get": {
+        "tags": [
+          "demo-console"
+        ],
+        "summary": "Console Info",
+        "description": "The preset buttons for this business, and which sentinel checks are rule-based versus model-assisted.",
+        "operationId": "console_info",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsoleInfo"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/demo/send-preset": {
+      "post": {
+        "tags": [
+          "demo-console"
+        ],
+        "summary": "Send Preset",
+        "description": "Deliver one preset email: live model, then the sentinel. Progress streams on the inbox SSE feed meanwhile.",
+        "operationId": "send_preset",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PresetSend"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SendResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/demo/send-custom": {
+      "post": {
+        "tags": [
+          "demo-console"
+        ],
+        "summary": "Send Custom",
+        "description": "Deliver a composed email (spoofed sender allowed), with an optional PDF or image attachment.",
+        "operationId": "send_custom",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_send_custom"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SendResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -4789,6 +4946,49 @@
         ],
         "title": "Body_preview_skill"
       },
+      "Body_send_custom": {
+        "properties": {
+          "sender_name": {
+            "type": "string",
+            "title": "Sender Name",
+            "default": ""
+          },
+          "sender_email": {
+            "type": "string",
+            "title": "Sender Email",
+            "default": ""
+          },
+          "subject": {
+            "type": "string",
+            "title": "Subject",
+            "default": ""
+          },
+          "body": {
+            "type": "string",
+            "title": "Body",
+            "default": ""
+          },
+          "reply_to": {
+            "type": "string",
+            "title": "Reply To",
+            "default": ""
+          },
+          "attachment": {
+            "anyOf": [
+              {
+                "type": "string",
+                "contentMediaType": "application/octet-stream"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attachment"
+          }
+        },
+        "type": "object",
+        "title": "Body_send_custom"
+      },
       "Body_upload_email": {
         "properties": {
           "file": {
@@ -5198,6 +5398,38 @@
           "due"
         ],
         "title": "ComingUpItem"
+      },
+      "ConsoleInfo": {
+        "properties": {
+          "presets": {
+            "items": {
+              "$ref": "#/components/schemas/Preset"
+            },
+            "type": "array",
+            "title": "Presets"
+          },
+          "rule_based_checks": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Rule Based Checks"
+          },
+          "model_assisted_checks": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Model Assisted Checks"
+          }
+        },
+        "type": "object",
+        "required": [
+          "presets",
+          "rule_based_checks",
+          "model_assisted_checks"
+        ],
+        "title": "ConsoleInfo"
       },
       "ContactIn": {
         "properties": {
@@ -6763,7 +6995,8 @@
             "enum": [
               "mailbox",
               "upload",
-              "gmail"
+              "gmail",
+              "console"
             ],
             "title": "Source"
           },
@@ -8633,6 +8866,77 @@
         ],
         "title": "PnlResponse"
       },
+      "Preset": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "group": {
+            "type": "string",
+            "enum": [
+              "normal",
+              "attack"
+            ],
+            "title": "Group"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "expected": {
+            "type": "string",
+            "enum": [
+              "accepted",
+              "flagged",
+              "held"
+            ],
+            "title": "Expected"
+          },
+          "available": {
+            "type": "boolean",
+            "title": "Available",
+            "default": true
+          },
+          "unavailable_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unavailable Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "group",
+          "description",
+          "expected"
+        ],
+        "title": "Preset"
+      },
+      "PresetSend": {
+        "properties": {
+          "preset": {
+            "type": "string",
+            "title": "Preset"
+          }
+        },
+        "type": "object",
+        "required": [
+          "preset"
+        ],
+        "title": "PresetSend"
+      },
       "ProductBrief": {
         "properties": {
           "best_margin": {
@@ -9433,6 +9737,61 @@
         ],
         "title": "RuleResult",
         "description": "One rule. `reason` is code-written text with `{fact:<id>}` placeholders and no digits outside them."
+      },
+      "SendResult": {
+        "properties": {
+          "email_id": {
+            "type": "string",
+            "title": "Email Id"
+          },
+          "preset": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preset"
+          },
+          "record": {
+            "$ref": "#/components/schemas/InboxRecord"
+          },
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "accepted",
+              "flagged",
+              "held"
+            ],
+            "title": "Verdict"
+          },
+          "expected": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "accepted",
+                  "flagged",
+                  "held"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email_id",
+          "preset",
+          "record",
+          "verdict"
+        ],
+        "title": "SendResult"
       },
       "SentinelReport": {
         "properties": {

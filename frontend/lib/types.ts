@@ -203,6 +203,15 @@ export interface Body_preview_skill {
   file: Blob;
 }
 
+export interface Body_send_custom {
+  sender_name?: string;
+  sender_email?: string;
+  subject?: string;
+  body?: string;
+  reply_to?: string;
+  attachment?: Blob | null;
+}
+
 export interface Body_upload_email {
   file: Blob;
 }
@@ -287,6 +296,12 @@ export interface ComingUpItem {
   label: string;
   amount: Fact;
   due: Fact;
+}
+
+export interface ConsoleInfo {
+  presets: Preset[];
+  rule_based_checks: string[];
+  model_assisted_checks: string[];
 }
 
 export interface ContactIn {
@@ -578,7 +593,7 @@ export interface InboxList {
 
 export interface InboxRecord {
   email_id: string;
-  source: "mailbox" | "upload" | "gmail";
+  source: "mailbox" | "upload" | "gmail" | "console";
   received_at: string | null;
   received_on: string | null;
   processed_on: string;
@@ -932,6 +947,20 @@ export interface PnlResponse {
   periods: PnlPeriod[];
 }
 
+export interface Preset {
+  key: string;
+  label: string;
+  group: "normal" | "attack";
+  description: string;
+  expected: "accepted" | "flagged" | "held";
+  available?: boolean;
+  unavailable_reason?: string | null;
+}
+
+export interface PresetSend {
+  preset: string;
+}
+
 export interface ProductBrief {
   best_margin?: ProductLine | null;
   worst_margin?: ProductLine | null;
@@ -1077,6 +1106,14 @@ export interface RuleResult {
   threshold_fact_id: string;
   eligible_from_fact_id?: string | null;
   reason: string;
+}
+
+export interface SendResult {
+  email_id: string;
+  preset: string | null;
+  record: InboxRecord;
+  verdict: "accepted" | "flagged" | "held";
+  expected?: "accepted" | "flagged" | "held" | null;
 }
 
 export interface SentinelReport {
