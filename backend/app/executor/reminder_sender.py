@@ -15,7 +15,7 @@ from app.executor.mail_sender import MailSender
 def send_invoice_reminder(sender: MailSender, customer_id: str, invoice_id: str, today: date) -> dict:
     route = sender.route
     business = route.business_name() if route else ""
-    rcpt = route.recipient(customer_id) if route else None
+    rcpt = sender.lookup(customer_id)
     hello = f"Hello {rcpt.name}," if rcpt and rcpt.name else "Hello,"
     body = "\n\n".join([
         hello,

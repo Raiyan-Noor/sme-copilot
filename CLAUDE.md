@@ -130,7 +130,7 @@ make anchor       # anchor now against the live testnet (manual only; needs ANCH
 |---|---|---|
 | T1 | Autonomous, read/compute only | all `get_*`, `list_*`, `explain_fact`, `match_financing`, `get_passport`, `rank_products_for_ads`, `product_performance`, `ad_budget_what_if` |
 | T2 | Autonomous under a signed standing mandate with hard caps | `send_invoice_reminder` (invoice ≤ cap, allow-listed customer, ≤1 per customer per 3 days), `pay_recurring_bill` (≤ cap, known payee) |
-| T3 | Agent prepares, owner signs the exact payload | `submit_loan_application`, `change_payee_details` (+ out-of-band call script), `delay_supplier_payment`, `send_supplier_message`, `cancel_subscription`, `pay_invoice` (Payments tab only, not in the planner's registry; signature binds payee + amount + account) |
+| T3 | Agent prepares, owner signs the exact payload | `submit_loan_application`, `change_payee_details` (+ out-of-band call script), `delay_supplier_payment`, `send_supplier_message`, `cancel_subscription`, `pay_invoice` (Payments tab only, not in the planner's registry; signature binds payee + amount + account), `send_email` (signature binds the recipient + the exact draft text; known contacts only; never a flagged sender; denied, not escalated, if any argument is untrusted) |
 | T4 | Not implemented, by design | — |
 
 System tool: `anchor` is registered in `policy.yaml` as T1 (system caller only, testnet-only, rate-capped). It

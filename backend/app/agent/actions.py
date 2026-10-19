@@ -11,6 +11,11 @@ gateway's status (`executed`, `pending_approval` or `denied`) and rule. What it 
   content. Anything else (a value it made up or copied from the owner's message) is `untrusted`, so the gateway
   forces owner approval.
 - The `reason` passes the Numeric Firewall, because the owner sees it on the approval card.
+- An email (`send_email`) is written as `recipient_id`, `subject` and `body`, the text with `{fact:<id>}` placeholders
+  for every amount and date. Code renders it through the Numeric Firewall into a stored draft (any digit outside a
+  placeholder rejects the email), and the gateway sees only the recipient and the draft's ID. Citing a fact that came
+  from quarantined content makes the draft untrusted, which the gateway denies: an email's contents never come from
+  an email.
 
 Tool names are free text on purpose: a request for a Tier 4 action (prices, hiring, large debt) reaches the gateway,
 which denies it as an unknown tool and logs a violation (invariant 5).
@@ -22,16 +27,26 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from app.agent.context import TurnContext
+from app.agent.email_compose import EmailRejected, compose
 from app.agent.events import ActionEvent, ReplySegment
 from app.firewall.digit_check import check_output
 from app.firewall.render import render
 from app.gateway import ArgValue, Decision, ProposedAction, load_policy
 from app.gateway.dispatch import ACTION_ARGS
+from app.gateway.emails import build_draft
 
 
 # Actions the owner starts from a screen, not the assistant: the Payments tab proposes `pay_invoice` in code, with
 # the payee's account on file and the amount from the business's own records. The planner neither sees nor proposes it.
 NOT_FOR_PLANNER = frozenset({"pay_invoice"})
+
+
+# Actions whose planner-facing arguments differ from the gateway's: the planner writes text, code turns it into a draft.
+PLANNER_ARGS = {
+    "send_email": ("send_email(recipient_id, subject, body): drafts an email to a known contact and waits for the "
+                   "owner's signature; subject and body are plain text, every amount or date a {fact:<id>} "
+                   "placeholder from a tool result, no other digits"),
+}
 
 
 def _is_fact_arg(name: str, typ: type) -> bool:
@@ -46,6 +61,9 @@ def action_catalog() -> str:
     parts = []
     for tool, spec in ACTION_ARGS.items():
         if tool in NOT_FOR_PLANNER:
+            continue
+        if tool in PLANNER_ARGS:
+            parts.append(PLANNER_ARGS[tool])
             continue
         args = ", ".join(n + ("=fact" if _is_fact_arg(n, t) else "") for n, t in spec.items())
         how = "runs within the owner's standing limit" if tool in policy.t2 else "waits for the owner's signature"
@@ -117,6 +135,32 @@ def _resolve(ctx: TurnContext, name: str, raw: Any) -> ArgValue:
     raise ArgError(f"{name}: unsupported argument type")
 
 
+def _take_email_text(call: ProposeArgs) -> tuple[str, str] | None:
+    """For `send_email`: remove `subject` and `body` from the arguments (they are text, not IDs, and get no
+    provenance of their own) and return them. Anything but two strings is refused."""
+    if call.tool != "send_email":
+        return None
+    subject, body = call.args.pop("subject", None), call.args.pop("body", None)
+    if not isinstance(subject, str) or not isinstance(body, str):
+        raise ArgError("send_email needs recipient_id, subject and body, the last two as plain text")
+    return subject, body
+
+
+def _email_action(ctx: TurnContext, action: ProposedAction, text: tuple[str, str], reason: str) -> ProposedAction:
+    """Render the email through the firewall, store it as a draft and return the action the gateway will see:
+    recipient and draft ID. The draft is untrusted if it cites a fact from quarantined content (invariant 3)."""
+    recipient = action.args.get("recipient_id")
+    if recipient is None or not isinstance(recipient.value, str):
+        raise EmailRejected("bad_email_text", "recipient_id is required")
+    composed = compose(ctx.store, text[0], text[1], reason)
+    draft_id, _ = ctx.gateway.save_email_draft(build_draft(
+        recipient_id=recipient.value, subject=composed.subject, body=composed.body, reason=composed.reason,
+        origin="planner", facts=composed.facts))
+    taint = any(ctx.provenance_of_fact(f["id"]) == "untrusted" for f in composed.facts)
+    return ProposedAction(tool=action.tool, args={
+        "recipient_id": recipient, "draft_id": ArgValue(value=draft_id, provenance="untrusted" if taint else "trusted")})
+
+
 def propose_action(ctx: TurnContext, raw_arguments: str) -> tuple[dict[str, Any], ActionEvent | None]:
     """Run one proposal. Returns (what the planner sees, the event the owner's UI sees)."""
     try:
@@ -125,6 +169,7 @@ def propose_action(ctx: TurnContext, raw_arguments: str) -> tuple[dict[str, Any]
         if call.tool in NOT_FOR_PLANNER:
             return {"error": f"{call.tool} is not available to the assistant; the owner starts it from the Payments "
                              "screen"}, None
+        email_text = _take_email_text(call)
         args = {name: _resolve(ctx, name, raw) for name, raw in call.args.items()}
         action = ProposedAction(tool=call.tool, args=args)
     except json.JSONDecodeError:
@@ -138,6 +183,14 @@ def propose_action(ctx: TurnContext, raw_arguments: str) -> tuple[dict[str, Any]
     if not reason_check.ok:
         return {"error": "reason rejected by the Numeric Firewall: write numbers only as {fact:<id>} "
                          "placeholders from tool results"}, None
+    if email_text is not None:
+        try:
+            action = _email_action(ctx, action, email_text, call.reason)
+        except EmailRejected as exc:
+            if exc.rule == "numeric_firewall":
+                return {"error": "email rejected by the Numeric Firewall: write numbers and dates only as "
+                                 "{fact:<id>} placeholders from tool results, in the subject and the body"}, None
+            return {"error": f"email rejected: {exc}"}, None
 
     decision: Decision = ctx.gateway.propose(action)
     rendered = render(call.reason, ctx.store)

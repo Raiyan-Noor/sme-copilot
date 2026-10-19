@@ -79,6 +79,7 @@ class ReminderOutcome(BaseModel):
     rule: str | None = None
     approval_id: str | None = None
     mandate_id: int | None = None
+    tool: str = "send_invoice_reminder"  # "send_email" when the reminder was drafted for the owner to sign
 
 
 class DoneItem(BaseModel):
@@ -90,11 +91,20 @@ class DoneItem(BaseModel):
     date: Fact
 
 
+class EmailPreview(BaseModel):
+    """A drafted email waiting for the owner's signature: who it goes to and its subject. The full text, with every
+    number traced to a fact, is on the approval sheet."""
+
+    recipient: str
+    subject: str
+
+
 class NeedsYouItem(BaseModel):
     approval_id: str
     tool: str
     summary: str
     reasons: list[str]
+    email: EmailPreview | None = None
 
 
 class ComingUpItem(BaseModel):
@@ -198,7 +208,7 @@ def _shortfall(store: FactStore, horizon: str = "30d") -> str:
 
 
 def build(computed: Computed, profile: Profile, today: date, reminders: list[ReminderOutcome],
-          pending: list[Approval]) -> tuple[dict[str, Any], MorningBrief]:
+          pending: list[Approval], emails: dict[str, dict] | None = None) -> tuple[dict[str, Any], MorningBrief]:
     """The LLM's input bundle and a brief skeleton (structured sections, template paragraphs), from code only."""
     cite = _Cite(computed.store)
     names = profile.counterparty_names
@@ -225,7 +235,7 @@ def build(computed: Computed, profile: Profile, today: date, reminders: list[Rem
             status = "waiting_for_approval" if r.status == "pending_approval" else "not_sent"
             not_done.append({**entry, "status": status, "why": why})
             summary = f"Reminder to {who(r.customer_id)} not sent: {why}"
-            not_done_items.append(DoneItem(tool="send_invoice_reminder", status=r.status, rule=r.rule,
+            not_done_items.append(DoneItem(tool=r.tool, status=r.status, rule=r.rule,
                                            summary=summary, amount=cite.fact(amount_id), date=as_of))
 
     needs_you, needs_items = [], []
@@ -233,7 +243,10 @@ def build(computed: Computed, profile: Profile, today: date, reminders: list[Rem
         party = next((names[v] for v in a.args.values() if isinstance(v, str) and v in names), None)
         summary = tool_words(a.tool) + (f" for {party}" if party else "")
         needs_you.append({"action": a.tool, "for": party, "why": rule_words(a.reasons[0] if a.reasons else None)})
-        needs_items.append(NeedsYouItem(approval_id=a.id, tool=a.tool, summary=summary, reasons=a.reasons))
+        mail = (emails or {}).get(a.id)
+        preview = EmailPreview(recipient=mail["recipient_name"], subject=mail["subject"]) if mail else None
+        needs_items.append(NeedsYouItem(approval_id=a.id, tool=a.tool, summary=summary, reasons=a.reasons,
+                                        email=preview))
 
     coming, coming_items = [], []
     horizon = today + timedelta(days=COMING_UP_DAYS)
@@ -361,7 +374,7 @@ def template_paragraphs(b: dict[str, Any]) -> list[str]:
     needs = [f"{tool_words(n['action'])}" + (f" for {n['for']}" if n.get("for") else "")
              for n in b["pending_approvals"]]
     needs += [f"reminder to {n['customer']} ({n['why']})" for n in b["not_done_overnight"]
-              if n["why"] != RULE_WORDS["frequency_cap"]]
+              if n["why"] != RULE_WORDS["frequency_cap"] and n.get("status") != "waiting_for_approval"]
     if needs:
         out.append("Needs you today: " + "; ".join(needs) + ".")
     done = [f"reminder sent to {e['customer']}" + (f" for {e['invoice_amount']}" if e.get("invoice_amount") else "")
@@ -390,9 +403,11 @@ def _paragraphs(text: str) -> list[str]:
 
 
 def write(llm: Any, computed: Computed, profile: Profile, today: date, reminders: list[ReminderOutcome],
-          pending: list[Approval], audit: AuditLog, could_also_check: list[str] = ()) -> MorningBrief:
-    """Build the bundle, ask the brief writer, firewall the draft (one re-prompt), else use the template."""
-    bundle, brief = build(computed, profile, today, reminders, pending)
+          pending: list[Approval], audit: AuditLog, could_also_check: list[str] = (),
+          emails: dict[str, dict] | None = None) -> MorningBrief:
+    """Build the bundle, ask the brief writer, firewall the draft (one re-prompt), else use the template.
+    `emails`: approval ID -> email view (recipient and subject) for the drafted emails waiting for a signature."""
+    bundle, brief = build(computed, profile, today, reminders, pending, emails)
     brief = brief.model_copy(update={"products": product_brief(computed), "ads": ad_brief(computed),
                                      "could_also_check": list(could_also_check)})
     brief = brief.model_copy(update={"facts": {**brief.facts, **_section_facts(brief)}})

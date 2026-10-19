@@ -31,10 +31,11 @@ from pydantic import BaseModel
 from app.connections.crypto import TokenCipher, TokenKeyMissing
 from app.connections.gmail import (
     SCOPES, Connection, ConnectionStore, GmailError, GmailReader, GmailSendAccess, GoogleOAuth, InboxSource,
-    MailRoute, Recipient, authorize_url, pkce_pair,
+    FlaggedSenders, MailRoute, Recipient, authorize_url, pkce_pair,
 )
 from app.connections.http import Transport, UrllibTransport
 from app.quarantine.mime import MAX_EMAIL_BYTES
+from app.quarantine.store import InboxStore
 from app.sentinel.directory import load_directory
 from app.services.businesses import business_info, list_businesses, records_folder
 
@@ -410,7 +411,26 @@ class GmailService:
                 return None
             return GmailSendAccess(conn.email_address, lambda: self.access_token(business_id), self.http)
 
-        return MailRoute(business_name, recipient, gmail, rt.settings.send_allowlist)
+        def flagged_senders() -> FlaggedSenders:
+            path = rt.data_dir / business_id / "inbox.sqlite"
+            addresses: set[str] = set()
+            ids: set[str] = set()
+            for r in InboxStore(path).all() if path.is_file() else []:
+                if not r.sentinel.flags:
+                    continue
+                addresses.update(a.lower() for a in (r.from_address, r.reply_to_address) if a)
+                if r.sentinel.sender_counterparty_id:
+                    ids.add(r.sentinel.sender_counterparty_id)
+            return FlaggedSenders(frozenset(addresses), frozenset(ids))
+
+        def contacts() -> list[tuple[str, str, str, str]]:
+            with rt.business(business_id) as conn:
+                info = business_info(conn)
+                directory = load_directory(conn, records_folder(conn, rt.settings.seed_dir), info.name)
+            return [(cp.id, cp.name, cp.kind, sorted(cp.emails)[0]) for cp in directory.counterparties.values()
+                    if cp.emails and cp.kind in ("customer", "supplier")]
+
+        return MailRoute(business_name, recipient, gmail, rt.settings.send_allowlist, flagged_senders, contacts)
 
 
 class GmailPoller:

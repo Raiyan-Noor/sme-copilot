@@ -52,7 +52,7 @@ function Shell() {
 
   const panelOpen = a.stack.length > 0;
   const top = a.stack[a.stack.length - 1];
-  const wide = top?.view === "email" || top?.view === "transactions" || top?.view === "payments";
+  const wide = top?.view === "email" || top?.view === "transactions" || top?.view === "payments" || top?.view === "outbox";
 
   useEffect(() => {
     const k = (e: KeyboardEvent) => {

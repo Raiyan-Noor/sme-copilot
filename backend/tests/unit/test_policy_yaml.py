@@ -17,6 +17,7 @@ EXPECTED = {
         "send_supplier_message",
         "cancel_subscription",
         "pay_invoice",
+        "send_email",
     },
     "T4": set(),
 }

@@ -12,6 +12,10 @@ is unused. The nonce is consumed before execution, so the same signature can nev
 
 Unknown tools, system tools and anything T4-like are denied and logged as violations (invariant 5). Every decision,
 stored mandate and execution is appended to the audit log (invariant 7).
+
+Emails (`send_email`, T3) are drafts first: `save_email_draft` stores the exact text content-addressed and logs it,
+the owner may revise it (`revise_email` replaces the pending approval with a new one for the new text, so a signature
+for the old text can never send the new one), and `decline` closes an approval without executing it.
 """
 
 import secrets
@@ -27,6 +31,7 @@ from app.clock import Clock
 from app.connections.gmail import MailRoute
 from app.connections.sandboxpay import PaymentRoute
 from app.gateway.dispatch import ACTION_ARGS, Executors, check_args
+from app.gateway.emails import MAX_BODY, MAX_SUBJECT, AddedRecipient, build_draft
 from app.gateway.mandate import MandateRecord, SignedPayload, StandingTerms, args_hash, verify_signature
 from app.gateway.policy import Policy, Tier, load_policy
 from app.gateway.store import Approval, GatewayStore
@@ -138,11 +143,14 @@ class Gateway:
         if tier == "T1":
             return self._log(action, Decision(status="denied", tool=tool, tier=tier, rule="t1_is_not_an_action"))
 
-        bad = check_args(tool, action.values()) or self.executors.precheck(tool, action.values())
+        bad = check_args(tool, action.values())
+        untrusted = action.untrusted()
+        if not bad and untrusted and tier == "T3" and self.policy.t3[tool].deny_untrusted_args:
+            bad = "untrusted_args_denied"  # content from an email can never make the assistant send one
+        bad = bad or self.executors.precheck(tool, action.values())
         if bad:
             return self._log(action, Decision(status="denied", tool=tool, tier=tier, rule=bad))
 
-        untrusted = action.untrusted()
         if untrusted or tier == "T3":
             reasons = [f"untrusted_provenance:{','.join(untrusted)}"] if untrusted else ["tier_T3"]
             return self._log(action, self._request_approval(action, tier, reasons))
@@ -257,6 +265,96 @@ class Gateway:
         return self._log_approval(approval_id, payload, Decision(
             status="executed", tool=tool, tier=self.policy.tier_of(tool), effective_tier="T3",
             mandate_id=mandate.id, result=result))
+
+    def decline(self, approval_id: str) -> bool:
+        """The owner declines a pending approval: it can never be signed afterwards. False if it is not pending."""
+        approval = self.store.get_approval(approval_id)
+        if approval is None or approval.status != "pending":
+            return False
+        self.store.set_approval_status(approval_id, "declined")
+        self.audit.append("gateway.approval_declined", {"approval_id": approval_id, "tool": approval.tool,
+                                                        "nonce": approval.payload.nonce})
+        return True
+
+    # Emails
+    def save_email_draft(self, doc: dict[str, Any]) -> tuple[str, str]:
+        """Store a draft email (content-addressed) and log it. The text itself stays in the draft store; the log
+        carries its hash, who wrote it and which facts it was rendered from (invariant 7)."""
+        draft_id, sha256 = self.executors.email_drafts.save(doc)
+        self.audit.append("email.drafted", {
+            "draft_id": draft_id, "sha256": sha256, "recipient_id": doc["recipient_id"], "origin": doc["origin"],
+            "fact_ids": [f["id"] for f in doc.get("facts", [])], "edited_from": doc.get("edited_from"),
+            "subject_chars": len(doc["subject"]), "body_chars": len(doc["body"]),
+        })
+        return draft_id, sha256
+
+    def email_view(self, args: dict[str, Any]) -> dict[str, Any] | None:
+        """What the owner reads before signing a `send_email`: recipient, subject, full body and why. None if the
+        draft is missing or altered (the approval cannot execute either)."""
+        status, doc, sha256 = self.executors.email_drafts.load(str(args.get("draft_id", "")))
+        if status != "ok" or doc is None:
+            return None
+        recipients = self.executors.recipients
+        rcpt = recipients.get(doc["recipient_id"])
+        return {
+            "draft_id": args["draft_id"], "sha256": sha256, "recipient_id": doc["recipient_id"],
+            "recipient_name": rcpt.name if rcpt else "", "recipient_email": rcpt.email if rcpt else None,
+            "added_by_owner": recipients.added_by_owner(doc["recipient_id"]), "subject": doc["subject"],
+            "body": doc["body"], "reason": doc["reason"], "origin": doc["origin"],
+            "edited": bool(doc.get("edited_from")), "about": doc.get("about") or {},
+            "fact_ids": [f["id"] for f in doc.get("facts", [])],
+        }
+
+    def revise_email(self, approval_id: str, subject: str, body: str) -> Decision:
+        """The owner edits a pending email. The new text becomes a new draft and a new approval to sign; the old
+        approval is closed, so a signature over the old text can never send the new one (invariant 6). The owner's
+        own words are not LLM output, so digits they type are theirs; placeholders are not allowed in an edit."""
+        old = self.store.get_approval(approval_id)
+        if old is None or old.tool != "send_email" or old.status != "pending":
+            return Decision(status="denied", tool="send_email", rule="not_a_pending_email")
+        subject, body = subject.strip(), body.strip()
+        if not subject or not body or len(subject) > MAX_SUBJECT or len(body) > MAX_BODY:
+            return Decision(status="denied", tool="send_email", rule="bad_email_text")
+        if "{fact" in (subject + body).lower() or "\n" in subject or "\r" in subject:
+            return Decision(status="denied", tool="send_email", rule="bad_email_text")
+        status, doc, _ = self.executors.email_drafts.load(str(old.args.get("draft_id", "")))
+        if status != "ok" or doc is None:
+            return Decision(status="denied", tool="send_email", rule=status)
+        new = build_draft(recipient_id=doc["recipient_id"], subject=subject, body=body, reason=doc["reason"],
+                          origin=doc["origin"], facts=[], about=doc.get("about"), edited_from=old.args["draft_id"])
+        draft_id, _ = self.save_email_draft(new)
+        action = ProposedAction(tool="send_email", args={
+            "recipient_id": ArgValue(value=doc["recipient_id"], provenance="trusted"),
+            "draft_id": ArgValue(value=draft_id, provenance="trusted")})
+        bad = self.executors.precheck("send_email", action.values())
+        if bad:
+            return self._log(action, Decision(status="denied", tool="send_email", tier="T3", rule=bad))
+        decision = self._request_approval(action, "T3", old.reasons)
+        self.store.set_approval_status(approval_id, "superseded")
+        self.audit.append("email.revised", {
+            "old_approval_id": approval_id, "new_approval_id": decision.approval.approval_id,
+            "old_draft_id": old.args["draft_id"], "new_draft_id": draft_id})
+        return self._log(action, decision)
+
+    def add_email_recipient(self, name: str, email: str) -> AddedRecipient:
+        """Add an address the contact book does not have. The API demands the address typed twice and an explicit
+        confirmation first; the planner has no way here. Raises ValueError for an invalid address."""
+        added = self.executors.recipients.add(name, email, self.clock.today())
+        self.audit.append("email.recipient_added", {"recipient_id": added.id,
+                                                    "domain": added.email.rsplit("@", 1)[-1]})
+        return added
+
+    def email_contacts(self) -> list[tuple[str, str, str, str]]:
+        """(id, name, kind, email) of everyone that can be emailed: the contact book, then owner-added addresses."""
+        return self.executors.recipients.contacts()
+
+    def email_recipient(self, recipient_id: str):
+        """The contact (name, email) behind an ID, or None."""
+        return self.executors.recipients.get(recipient_id)
+
+    def outbox(self) -> list[dict]:
+        """Every email sent or simulated for this business, oldest first (read-only)."""
+        return self.executors.mailbox.outbox()
 
     # Standing mandates
     def register_standing_mandate(

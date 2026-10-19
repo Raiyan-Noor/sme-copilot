@@ -9,9 +9,11 @@ Every send, real or simulated, is recorded in the outbox; the gateway logs the r
 Invariant 1: import only from app.gateway.
 """
 
+import hashlib
+from collections.abc import Callable
 from datetime import date
 
-from app.connections.gmail import GmailError, MailRoute
+from app.connections.gmail import GmailError, MailRoute, Recipient
 from app.executor import gmail_sender
 from app.executor.sandbox_mailbox import SandboxMailbox
 
@@ -21,16 +23,22 @@ def _domain(address: str) -> str:
 
 
 class MailSender:
-    def __init__(self, mailbox: SandboxMailbox, route: MailRoute | None):
+    """`lookup` resolves a recipient ID: the contact book, then recipients the owner added (gateway/emails.py)."""
+
+    def __init__(self, mailbox: SandboxMailbox, route: MailRoute | None,
+                 lookup: Callable[[str], Recipient | None] | None = None):
         self.mailbox = mailbox
         self.route = route
+        self.lookup = lookup or (route.recipient if route else (lambda _id: None))
 
     def send(self, kind: str, recipient_id: str, subject: str, body: str, details: dict, today: date) -> dict:
+        """Send or simulate one email. The full text is kept in the outbox row; the returned result (which the
+        gateway audits) carries only a hash of the body."""
         route = self.route
-        rcpt = route.recipient(recipient_id) if route else None
+        rcpt = self.lookup(recipient_id)
         email = (rcpt.email or "").strip().lower() if rcpt else ""
         access = route.gmail() if route else None
-        record = {**details, "subject": subject}
+        record = {**details, "subject": subject, "body": body}
         if access is None:
             label = "simulated: Gmail is not the connected inbox"
         elif not email:
@@ -47,6 +55,12 @@ class MailSender:
             else:
                 out = self.mailbox.send(kind, recipient_id, {**record, "transport": "gmail",
                                                              "gmail_message_id": message_id}, today)
-                return {**out, "transport": "gmail", "to_domain": _domain(email)}
+                return {**_audited(out, body), "transport": "gmail", "to_domain": _domain(email)}
         out = self.mailbox.send(kind, recipient_id, {**record, "transport": "sandbox", "label": label}, today)
-        return {**out, "transport": "sandbox", "label": label}
+        return {**_audited(out, body), "transport": "sandbox", "label": label}
+
+
+def _audited(out: dict, body: str) -> dict:
+    """A sent email's result for the audit log: the body replaced by its SHA-256 (the text is in the outbox)."""
+    return {**{k: v for k, v in out.items() if k != "body"},
+            "body_sha256": hashlib.sha256(body.encode("utf-8")).hexdigest()}

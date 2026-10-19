@@ -1,9 +1,10 @@
 "use client";
 
-import { ArrowLeft, CircleCheck, PenLine, Phone, ShieldAlert } from "lucide-react";
+import { ArrowLeft, CircleCheck, Mail, Pencil, PenLine, Phone, ShieldAlert, UserPlus } from "lucide-react";
 import { useCallback, useState } from "react";
 
 import { useBusiness } from "@/components/business-context";
+import { Badge } from "@/components/kc/badge";
 import { Button } from "@/components/kc/button";
 import { TraceScope, type FactRef } from "@/components/kc/fact";
 import { Sheet } from "@/components/kc/sheet";
@@ -13,7 +14,7 @@ import { api } from "@/lib/api";
 import { errorMessage } from "@/lib/errors";
 import { money, reasonLabel, ruleLabel, sentence, shortDate, toolTitle } from "@/lib/format";
 import { ensureEnrolled, signMessage } from "@/lib/owner-key";
-import type { ApprovalView, Decision } from "@/lib/types";
+import type { ApprovalView, Decision, EmailView } from "@/lib/types";
 import { useApi } from "@/lib/use-api";
 
 import { useAdvisor } from "./state";
@@ -25,6 +26,89 @@ function argValue(key: string, value: unknown, currency: string): string {
   return String(value);
 }
 
+const ORIGIN: Record<string, string> = {
+  planner: "Written by the assistant",
+  overnight: "Drafted overnight from your records",
+  owner: "Written by you",
+};
+
+/**
+ * The email the owner signs: recipient, subject and the full body exactly as stored, and why it was prepared. The
+ * owner can edit the draft; every number in an assistant-written body was rendered from a fact in your records.
+ */
+function EmailSection({
+  email,
+  editing,
+  onEdit,
+}: {
+  email: EmailView;
+  editing: { subject: string; body: string } | null;
+  onEdit: (e: { subject: string; body: string } | null) => void;
+}) {
+  return (
+    <section className="ka-sec" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <h3 className="kc-label" style={{ color: "var(--text-muted)", display: "flex", gap: 8, alignItems: "center" }}>
+        <Mail size={16} strokeWidth={1.5} aria-hidden /> The email
+      </h3>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+        <Badge variant="neutral">{ORIGIN[email.origin] ?? email.origin}</Badge>
+        {email.edited ? <Badge variant="brand">Edited by you</Badge> : null}
+        {email.added_by_owner ? (
+          <Badge variant="neutral" icon={UserPlus}>
+            New address you added
+          </Badge>
+        ) : null}
+      </div>
+      <dl className="ka-tx-detail">
+        <dt>To</dt>
+        <dd>
+          {email.recipient_name}
+          {email.recipient_email ? <span className="kc-caption"> · {email.recipient_email}</span> : null}
+        </dd>
+        <dt>Why</dt>
+        <dd>{email.reason}</dd>
+      </dl>
+      {editing ? (
+        <div className="ka-mailform">
+          <input
+            value={editing.subject}
+            maxLength={120}
+            onChange={(e) => onEdit({ ...editing, subject: e.target.value })}
+            aria-label="Subject"
+          />
+          <textarea
+            value={editing.body}
+            maxLength={2000}
+            onChange={(e) => onEdit({ ...editing, body: e.target.value })}
+            aria-label="Message"
+          />
+          <p className="kc-caption">
+            These are your words, so check any amount or date you type. The assistant&apos;s numbers come from your
+            records; yours do not.
+          </p>
+        </div>
+      ) : (
+        <>
+          <div className="ka-text">
+            <strong>{email.subject}</strong>
+          </div>
+          <div className="ka-mailbody">{email.body}</div>
+          <div>
+            <Button
+              size="sm"
+              variant="ghost"
+              iconLeft={Pencil}
+              onClick={() => onEdit({ subject: email.subject, body: email.body })}
+            >
+              Edit the draft
+            </Button>
+          </div>
+        </>
+      )}
+    </section>
+  );
+}
+
 /**
  * The approval sheet: everything the owner signs, shown exactly as the gateway stored it. Signing happens here, in
  * the browser, with the key from IndexedDB (invariant 6): the server's canonical `message` for the payload
@@ -32,7 +116,7 @@ function argValue(key: string, value: unknown, currency: string): string {
  * result shown is the gateway's decision, never an assumption that it worked (invariant 1).
  */
 export function ApprovalSheet() {
-  const { approval, closeApproval, resolve, resolved, toast } = useAdvisor();
+  const { approval, openApproval, closeApproval, resolve, resolved, addPending, toast } = useAdvisor();
   const { business, session } = useBusiness();
   const id = business?.id ?? "";
   const approvalId = approval?.approvalId ?? null;
@@ -44,8 +128,11 @@ export function ApprovalSheet() {
   const [called, setCalled] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [decision, setDecision] = useState<Decision | null>(null);
+  const [editing, setEditing] = useState<{ subject: string; body: string } | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const close = useCallback(() => {
+    setEditing(null);
     setTraceFact(null);
     setError(null);
     setDecision(null);
@@ -87,13 +174,51 @@ export function ApprovalSheet() {
     }
   };
 
+  // Editing an email replaces the approval: the new text is a new draft with a new payload, so a signature for the old
+  // text can never send the new one. The sheet moves to the new approval.
+  const saveEdit = async () => {
+    if (!v || !editing) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const d = await api.reviseEmail(id, v.approval_id, editing);
+      if (d.status === "pending_approval" && d.approval) {
+        resolve(v.approval_id, "superseded");
+        addPending([d.approval.approval_id]);
+        setEditing(null);
+        openApproval({ approvalId: d.approval.approval_id, context: approval?.context });
+        toast({ title: "Draft updated", description: "Read it once more, then sign." });
+      } else {
+        setError(`The change was not accepted: ${ruleLabel(d.rule ?? "denied")}.`);
+      }
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const decline = () => {
     if (v) resolve(v.approval_id, "declined");
     toast({ title: "Declined", description: "Nothing was sent." });
     close();
   };
 
-  const footer = traceFact ? null : decision ? (
+  const footer = traceFact ? null : editing ? (
+    <>
+      <Button
+        iconLeft={PenLine}
+        loading={saving}
+        disabled={!editing.subject.trim() || !editing.body.trim()}
+        onClick={saveEdit}
+      >
+        Save changes
+      </Button>
+      <Button variant="secondary" onClick={() => setEditing(null)} disabled={saving}>
+        Keep the original
+      </Button>
+    </>
+  ) : decision ? (
     <Button variant="secondary" onClick={close}>
       Done
     </Button>
@@ -166,19 +291,23 @@ export function ApprovalSheet() {
             ) : null}
             {approval.context ? <div className="ka-text">{approval.context}</div> : null}
 
-            <section className="ka-sec">
-              <h3 className="kc-label" style={{ color: "var(--text-muted)" }}>
-                The details
-              </h3>
-              <dl className="kc-approval__facts">
-                {Object.entries(v.args).map(([k, val]) => (
-                  <div key={k} className="kc-approval__fact">
-                    <dt>{sentence(k.replace(/_minor$/, ""))}</dt>
-                    <dd style={{ overflowWrap: "anywhere" }}>{argValue(k, val, currency)}</dd>
-                  </div>
-                ))}
-              </dl>
-            </section>
+            {v.email ? (
+              <EmailSection email={v.email} editing={editing} onEdit={setEditing} />
+            ) : (
+              <section className="ka-sec">
+                <h3 className="kc-label" style={{ color: "var(--text-muted)" }}>
+                  The details
+                </h3>
+                <dl className="kc-approval__facts">
+                  {Object.entries(v.args).map(([k, val]) => (
+                    <div key={k} className="kc-approval__fact">
+                      <dt>{sentence(k.replace(/_minor$/, ""))}</dt>
+                      <dd style={{ overflowWrap: "anywhere" }}>{argValue(k, val, currency)}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </section>
+            )}
 
             {untrusted.length > 0 ? (
               <section className="kc-alert kc-alert--fraud">

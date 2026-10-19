@@ -375,7 +375,7 @@ def test_bad_conversation_id_is_rejected(make_client):
 
 def test_propose_action_lists_exactly_the_gateway_actions():
     """The planner is told every action the gateway accepts, with its exact argument names, and nothing else."""
-    from app.agent.actions import NOT_FOR_PLANNER, PROPOSE_ACTION_SCHEMA
+    from app.agent.actions import NOT_FOR_PLANNER, PLANNER_ARGS, PROPOSE_ACTION_SCHEMA
     from app.firewall.digit_check import is_numeric_char
     from app.gateway.dispatch import ACTION_ARGS
 
@@ -384,6 +384,9 @@ def test_propose_action_lists_exactly_the_gateway_actions():
         assert f"{tool}(" not in description, tool
     for tool, spec in ACTION_ARGS.items():
         if tool in NOT_FOR_PLANNER:
+            continue
+        if tool in PLANNER_ARGS:  # the planner writes an email's text; code turns it into the draft the gateway sees
+            assert f"{tool}(recipient_id, subject, body)" in description  # never the gateway's draft_id
             continue
         assert f"{tool}(" in description and all(arg in description for arg in spec), tool
     for t4 in ("price", "hire", "fire", "contract"):

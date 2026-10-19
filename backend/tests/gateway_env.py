@@ -27,10 +27,10 @@ class Owner:
 
 
 class Env:
-    def __init__(self, tmp_path: Path):
+    def __init__(self, tmp_path: Path, mail=None):
         self.clock = SimClock(TODAY)
         self.audit = AuditLog(tmp_path / "audit.jsonl", self.clock)
-        self.gateway = Gateway.for_tenant(tmp_path, self.audit, self.clock)
+        self.gateway = Gateway.for_tenant(tmp_path, self.audit, self.clock, mail=mail)
         self.owner = Owner()
         self.gateway.enroll_owner_key(self.owner.public_key)
         self._nonce = 0

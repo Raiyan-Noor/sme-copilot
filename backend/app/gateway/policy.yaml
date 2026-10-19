@@ -6,6 +6,8 @@
 #   - T2 runs only under a valid, unexpired, Ed25519-signed standing mandate; caps below are hard ceilings the
 #     mandate may lower but never raise (invariant 6).
 #   - T3 runs only after the owner signs the exact payload {action, args_hash, nonce, expiry}.
+#   - A T3 tool marked deny_untrusted_args is denied, not escalated, when any argument is untrusted (send_email:
+#     content from an email can never make the assistant email someone, not even with the owner's signature).
 #   - T4 has no tools, by design (invariant 5). Matching requests get analysis only and are logged as violations.
 #   - T2 rules name which argument carries the amount (amount_arg) and which is checked against the mandate's
 #     signed allow-list (allowlist_arg). Breaking a T2 cap, allow-list or frequency rule is denied, not escalated.
@@ -63,6 +65,8 @@ tiers:
       delay_supplier_payment: {}
       send_supplier_message: {}
       cancel_subscription: {}
+      send_email:                       # one email; the signature binds the recipient and the exact draft text
+        deny_untrusted_args: true       # an email never goes out because content inside an email said so
 
   T4:
     description: Not implemented, by design. Analysis only; attempts are logged as violations.

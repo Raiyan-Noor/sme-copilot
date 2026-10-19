@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { CashPanel } from "./panel-cash";
 import { FinancingPanel } from "./panel-financing";
 import { EmailPanel, InboxPanel } from "./panel-inbox";
+import { OutboxPanel } from "./panel-outbox";
 import { PaymentsPanel } from "./panel-payments";
 import { TransactionsPanel } from "./panel-transactions";
 import { TrustPanel } from "./panel-trust";
@@ -101,6 +102,8 @@ function View({ entry }: { entry: PanelEntry }) {
       return <TransactionsPanel openId={entry.txId} />;
     case "payments":
       return <PaymentsPanel openId={entry.paymentId} />;
+    case "outbox":
+      return <OutboxPanel />;
   }
 }
 

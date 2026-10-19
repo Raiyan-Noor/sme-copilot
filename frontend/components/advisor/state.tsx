@@ -6,14 +6,14 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { useBusiness } from "@/components/business-context";
 import type { FactRef } from "@/components/kc/fact";
 import type { ToastData } from "@/components/kc/misc";
-import { chatStream, inboxStream } from "@/lib/api";
+import { api, chatStream, inboxStream } from "@/lib/api";
 import { errorMessage } from "@/lib/errors";
 import { flagLabel, money, nowTime, ruleLabel } from "@/lib/format";
 import type { ActionEvent, Decision, Flag, ReplyEvent, StageEvent } from "@/lib/types";
 
 import type { Stage } from "./stage-line";
 
-export type PanelView = "cash" | "financing" | "inbox" | "trust" | "email" | "trace" | "transactions" | "payments";
+export type PanelView = "cash" | "financing" | "inbox" | "trust" | "email" | "trace" | "transactions" | "payments" | "outbox";
 export type TrustTab = "limits" | "audit" | "anchors" | "redteam";
 export type PanelEntry = {
   view: PanelView;
@@ -29,6 +29,7 @@ const ROUTE_PANEL: Record<string, PanelView> = {
   "/cash-flow": "cash",
   "/transactions": "transactions",
   "/payments": "payments",
+  "/outbox": "outbox",
   "/financing": "financing",
   "/inbox": "inbox",
   "/trust": "trust",
@@ -37,6 +38,7 @@ const PANEL_ROUTE: Partial<Record<PanelView, string>> = {
   cash: "/cash-flow",
   transactions: "/transactions",
   payments: "/payments",
+  outbox: "/outbox",
   financing: "/financing",
   inbox: "/inbox",
   trust: "/trust",
@@ -55,7 +57,7 @@ export type Msg =
 export type Conversation = { id: string; title: string; msgs: Msg[]; serverId?: string; busy: boolean };
 
 export type ApprovalOpen = { approvalId: string; context?: React.ReactNode };
-export type Resolution = "executed" | "denied" | "declined";
+export type Resolution = "executed" | "denied" | "declined" | "superseded";
 
 type Toast = ToastData & { id: number };
 
@@ -233,12 +235,14 @@ export function AdvisorProvider({ children }: { children: React.ReactNode }) {
   const resolve = useCallback(
     (approvalId: string, how: Resolution, decision?: Decision) => {
       setResolved((r) => ({ ...r, [approvalId]: how }));
+      // A decline is the owner's decision, so the gateway closes the approval and logs it (a signature can never use it).
+      if (how === "declined" && businessId) void api.declineApproval(businessId, approvalId).catch(() => undefined);
       if (how === "executed" && decision) {
         const target = active === NEW_ID ? BRIEF_ID : active;
         update(target, (c) => ({ ...c, msgs: [...c.msgs, { t: "signed", decision, at: nowTime() }] }));
       }
     },
-    [active, update],
+    [active, update, businessId],
   );
 
   // A pathname of /ask opens a fresh conversation, as the skeleton's Ask route did.

@@ -283,11 +283,23 @@ class GmailSendAccess:
 
 
 @dataclass(frozen=True)
+class FlaggedSenders:
+    """Senders of emails the Inbox Sentinel flagged: their addresses (From and Reply-To) and, for a known sender, the
+    contact's ID. The gateway never lets an email go to one of them; they get the verification call instead."""
+
+    addresses: frozenset[str] = frozenset()
+    counterparty_ids: frozenset[str] = frozenset()
+
+
+@dataclass(frozen=True)
 class MailRoute:
     """How the gateway's mail executor reaches this business's contacts. `gmail()` is None unless Gmail is connected,
-    healthy and the active inbox; `allowlist` is DEMO_SEND_ALLOWLIST (real sends go only to those addresses)."""
+    healthy and the active inbox; `allowlist` is DEMO_SEND_ALLOWLIST (real sends go only to those addresses).
+    `flagged_senders()` reads the processed inbox for the flagged-sender rule of `send_email`."""
 
     business_name: Callable[[], str]
     recipient: Callable[[str], Recipient | None]
     gmail: Callable[[], GmailSendAccess | None]
     allowlist: frozenset[str]
+    flagged_senders: Callable[[], FlaggedSenders] = FlaggedSenders
+    contacts: Callable[[], list[tuple[str, str, str, str]]] = list  # (id, name, kind, email) with an email on file

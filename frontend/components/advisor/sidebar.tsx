@@ -11,6 +11,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Plus,
+  Send,
   ShieldCheck,
   X,
 } from "lucide-react";
@@ -50,11 +51,14 @@ export function Sidebar({
   onToggle: () => void;
   onCloseDrawer: () => void;
 }) {
-  const { conversations, active, setActive, newConversation, openPanel, toast } = useAdvisor();
+  const { conversations, active, setActive, newConversation, openPanel, toast, waiting, stack } = useAdvisor();
   const { businesses, business, select, session, resetSession } = useBusiness();
   const { id, key } = useBusinessKey("inbox");
   const inbox = useApi(key, () => api.inbox(id));
   const packs = useApi(`packs:${session}`, api.packs);
+  // Emails waiting for a signature: reloads when approvals change or the Outbox panel closes after a send.
+  const outbox = useApi(key ? `sidebar-outbox:${id}:${session}:${waiting}:${stack.length}` : null, () => api.outbox(id));
+  const toSign = outbox.data?.waiting.length ?? 0;
   const [menu, setMenu] = useState(false);
   const router = useRouter();
   const flagged = inbox.data?.held ?? 0;
@@ -78,11 +82,12 @@ export function Sidebar({
   };
 
   const links = [
-    { id: "inbox" as const, label: "Inbox", icon: Inbox, count: flagged },
-    { id: "transactions" as const, label: "Transactions", icon: List, count: 0 },
-    { id: "payments" as const, label: "Payments", icon: Banknote, count: 0 },
-    { id: "financing" as const, label: "Financing", icon: Landmark, count: 0 },
-    { id: "trust" as const, label: "Limits and trust", icon: ShieldCheck, count: 0 },
+    { id: "inbox" as const, label: "Inbox", icon: Inbox, count: flagged, unit: "flagged" },
+    { id: "outbox" as const, label: "Outbox", icon: Send, count: toSign, unit: "to sign" },
+    { id: "transactions" as const, label: "Transactions", icon: List, count: 0, unit: "" },
+    { id: "payments" as const, label: "Payments", icon: Banknote, count: 0, unit: "" },
+    { id: "financing" as const, label: "Financing", icon: Landmark, count: 0, unit: "" },
+    { id: "trust" as const, label: "Limits and trust", icon: ShieldCheck, count: 0, unit: "" },
   ];
 
   return (
@@ -158,8 +163,8 @@ export function Sidebar({
               <span className="t">{l.label}</span>
             )}
             {!mini && l.count ? (
-              <span className="ka-nav__count" aria-label={`${l.count} flagged`}>
-                {l.count} flagged
+              <span className="ka-nav__count" aria-label={`${l.count} ${l.unit}`}>
+                {l.count} {l.unit}
               </span>
             ) : null}
           </button>

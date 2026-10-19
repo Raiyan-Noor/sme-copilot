@@ -131,6 +131,7 @@ export interface ApprovalView {
   payload: SignedPayload;
   message: string;
   requires_out_of_band_call_script: boolean;
+  email?: EmailView | null;
 }
 
 export interface ApproveRequest {
@@ -308,6 +309,13 @@ export interface ConsoleInfo {
   model_assisted_checks: string[];
 }
 
+export interface Contact {
+  id: string;
+  name: string;
+  kind: string;
+  email: string;
+}
+
 export interface ContactIn {
   name: string;
   kind: "supplier" | "customer" | "payee";
@@ -361,6 +369,10 @@ export interface Decision {
   result?: Record<string, unknown> | null;
 }
 
+export interface DeclineResult {
+  declined: boolean;
+}
+
 /** Everything downstream code (sentinel, forecast feed, planner tool) may use from one email and its files. */
 export interface DocumentFields {
   category?: "invoice" | "payment_request" | "bank_detail_change" | "purchase_order" | "payment_confirmation" | "promise_to_pay" | "overdue_notice" | "loan_offer" | "other_financial" | "not_financial" | null;
@@ -403,6 +415,46 @@ export interface DoneItem {
   summary: string;
   amount?: Fact | null;
   date: Fact;
+}
+
+export interface EmailCompose {
+  recipient_id: string;
+  subject: string;
+  body: string;
+}
+
+/**
+ * A drafted email waiting for the owner's signature: who it goes to and its subject. The full text, with every
+ * number traced to a fact, is on the approval sheet.
+ */
+export interface EmailPreview {
+  recipient: string;
+  subject: string;
+}
+
+export interface EmailRevision {
+  subject: string;
+  body: string;
+}
+
+/**
+ * One email as the owner reads it before signing, or after it went out. The body is final text: every number in
+ * it was rendered from a fact (planner and overnight drafts) or typed by the owner (`edited`, origin `owner`).
+ */
+export interface EmailView {
+  draft_id: string;
+  sha256: string;
+  recipient_id: string;
+  recipient_name: string;
+  recipient_email: string | null;
+  added_by_owner: boolean;
+  subject: string;
+  body: string;
+  reason: string;
+  origin: string;
+  edited: boolean;
+  about?: Record<string, string>;
+  fact_ids?: string[];
 }
 
 export interface ErrorEvent {
@@ -773,6 +825,7 @@ export interface NeedsYouItem {
   tool: string;
   summary: string;
   reasons: string[];
+  email?: EmailPreview | null;
 }
 
 export interface NewBusiness {
@@ -825,6 +878,29 @@ export interface OnchainCheck {
   block_number: number | null;
   block_timestamp: number | null;
   explorer_url: string | null;
+}
+
+export interface Outbox {
+  sent: OutboxEmail[];
+  waiting: WaitingEmail[];
+}
+
+export interface OutboxEmail {
+  id: number;
+  ref: string;
+  kind: string;
+  on_date: string;
+  recipient_id: string;
+  recipient_name: string;
+  recipient_email: string | null;
+  subject: string;
+  body?: string | null;
+  /** gmail (really sent) or sandbox (simulated; `label` says why) */
+  transport: string;
+  label?: string | null;
+  origin?: string | null;
+  draft_id?: string | null;
+  gmail_message_id?: string | null;
 }
 
 export interface OvernightReport {
@@ -1121,6 +1197,13 @@ export interface Receipt {
   document: Record<string, unknown>;
 }
 
+export interface RecipientCreate {
+  name: string;
+  email: string;
+  confirm_email: string;
+  confirmed?: boolean;
+}
+
 export interface RedteamAttack {
   id: string;
   name: string;
@@ -1182,6 +1265,7 @@ export interface ReminderOutcome {
   rule?: string | null;
   approval_id?: string | null;
   mandate_id?: number | null;
+  tool?: string;
 }
 
 export interface ReplyEvent {
@@ -1484,4 +1568,10 @@ export interface ValidationError {
   type: string;
   input?: unknown;
   ctx?: Record<string, unknown>;
+}
+
+export interface WaitingEmail {
+  approval_id: string;
+  expires: string;
+  email: EmailView;
 }

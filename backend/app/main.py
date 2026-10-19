@@ -17,7 +17,8 @@ from fastapi.responses import JSONResponse
 from app.agent.context import ConversationStore
 from app.anchoring import Chain
 from app.api import (
-    agent, anchors, audit, brief, businesses, clock, connections, demo_console, finance, financing, gateway, health, inbox, ledger,
+    agent, anchors, audit, brief, businesses, clock, connections, demo_console, emails, finance, financing, gateway, health,
+    inbox, ledger,
     onboarding, payments, skills, trust,
 )
 from app.config import Settings, get_settings
@@ -82,7 +83,7 @@ def create_app(settings: Settings | None = None, anchor_chain: Chain | None = No
     app.state.conversations = ConversationStore()
     for router in (health.router, businesses.router, ledger.router, finance.router, gateway.router, audit.router,
                    clock.router, agent.router, brief.router, inbox.router, financing.router, trust.router, anchors.router,
-                   onboarding.router, skills.router, connections.router, payments.router):
+                   onboarding.router, skills.router, connections.router, payments.router, emails.router):
         app.include_router(router)
     if settings.expose_test_routes:
         app.include_router(gateway.test_router)

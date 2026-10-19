@@ -13,6 +13,7 @@ const TOOL_TITLES: Record<string, string> = {
   send_supplier_message: "Message a supplier",
   cancel_subscription: "Cancel a subscription",
   pay_invoice: "Pay an invoice",
+  send_email: "Send an email",
 };
 
 const TOOL_SHORT: Record<string, string> = {
@@ -24,6 +25,7 @@ const TOOL_SHORT: Record<string, string> = {
   send_supplier_message: "Supplier messages",
   cancel_subscription: "Cancel subscriptions",
   pay_invoice: "One-off payments",
+  send_email: "Emails",
 };
 
 const T1_SHORT: Record<string, string> = {
@@ -87,6 +89,15 @@ const RULE_LABELS: Record<string, string> = {
   over_daily_cap: "Above the daily limit you approved at the payment service",
   token_revoked: "The payment service connection was revoked",
   account_closed: "The payee's bank refused it (account closed)",
+  unknown_recipient: "That address is not one of your contacts",
+  recipient_has_no_email: "There is no email address on file for this contact",
+  recipient_flagged_sender: "This sender's email was flagged, so call them on a number you already had instead",
+  untrusted_args_denied: "An email never goes out because something in an email said so",
+  draft_tampered: "The email text changed after it was prepared, so it was not sent",
+  draft_mismatch: "The email does not belong to this recipient",
+  unknown_draft: "That email draft no longer exists",
+  bad_email_text: "The email needs a one-line subject and a short body",
+  not_a_pending_email: "This email is no longer waiting for you",
 };
 
 export const sentence = (code: string) => {

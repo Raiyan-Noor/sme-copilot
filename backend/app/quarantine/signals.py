@@ -31,6 +31,10 @@ INSTRUCTION_PATTERNS: dict[str, re.Pattern[str]] = {
     "data_exfiltration": re.compile(
         r"\b(export|send|forward|upload|share)\b[^.\n]{0,60}\b(transactions|statements?|ledger|bank\s+data|"
         r"customer\s+list|records)\b[^.\n]{0,60}\bto\b", _I),
+    "email_directive": re.compile(
+        r"\b(please\s+)?(also\s+)?(e-?mail|send\s+(an?\s+)?(e-?mail|message)|forward\s+(this|it|the)|write\s+to)"
+        r"\b[^.\n]{0,60}\b(to|cc|bcc)\b[^.\n]{0,60}(@|\b(all|every|each)\b[^.\n]{0,20}\b(customers?|suppliers?|"
+        r"contacts?|clients?)\b)", _I),
     "concealment": re.compile(
         r"\bdo\s+not\s+(mention|tell|inform|show)\b|\bdon'?t\s+(mention|tell)\b|\bkeep\s+(this|it)\s+(secret|"
         r"quiet|confidential|between\s+us)", _I),

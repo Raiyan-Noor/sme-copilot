@@ -41,6 +41,7 @@ class T3Rule(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     requires_out_of_band_call_script: bool = False
+    deny_untrusted_args: bool = False
 
 
 class Policy(BaseModel):

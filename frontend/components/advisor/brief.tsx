@@ -28,6 +28,7 @@ const RESOLVED: Record<Resolution, { status: PillStatus; note: string }> = {
   executed: { status: "executed", note: "Signed by you. The result is in the audit log." },
   denied: { status: "blocked", note: "The gateway refused it. Nothing was sent." },
   declined: { status: "blocked", note: "Declined. Nothing was sent." },
+  superseded: { status: "blocked", note: "You edited it. The new version is waiting for your signature." },
 };
 
 export function Resolved({
@@ -197,11 +198,21 @@ function NeedsYou({ item, brief }: { item: NeedsYouItem; brief: MorningBrief }) 
   const { openApproval, resolved, resolve, toast } = useAdvisor();
   const how = resolved[item.approval_id];
   const summary = <FactText text={item.summary} facts={brief.facts} />;
+  const description = item.email ? (
+    <>
+      {summary}
+      <span style={{ display: "block", marginTop: 4 }}>
+        To {item.email.recipient}: {item.email.subject}
+      </span>
+    </>
+  ) : (
+    summary
+  );
   return (
     <ApprovalCard
       status={how ? RESOLVED[how].status : "waiting"}
       title={toolTitle(item.tool)}
-      description={summary}
+      description={description}
       limitNote={item.reasons.map(reasonLabel).join(" ")}
       resolvedNote={how ? RESOLVED[how].note : undefined}
       onApprove={() => openApproval({ approvalId: item.approval_id, context: summary })}

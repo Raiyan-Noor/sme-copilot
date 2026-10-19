@@ -2,7 +2,7 @@
 
 Deadline: Tue Oct 20, 23:59 Beijing = **21:59 Dhaka**
 Feature freeze: **Tue 13:00 Dhaka**
-Last updated: Tue Oct 20, early Dhaka (P3)
+Last updated: Tue Oct 20, Dhaka (P4)
 
 This file is now the single source of truth for remaining work (`docs/build-prompts.md` is superseded — see the
 note at its top). See "Maintaining this file" at the end before editing it.
@@ -17,7 +17,7 @@ Verified against `git log`, the code on disk and a full `pytest` run (831 passed
 | Prompt 18 | Stretch 2: Monte Carlo what-if, marketing ROI, expansion planner | Dropped (P7 covers marketing ROI) |
 | Prompt 19 | Evidence and docs: `make evidence`, Sol demo-profile recordings, Gemini recordings | Not started — `make evidence` is still a stub (`exit 1`); no Sol or Gemini recordings exist yet |
 | F1 | Document upload | Merged into F4 |
-| F2 | Sending approved emails | Not started (P4) |
+| F2 | Sending approved emails | Done (P4) — `send_email` (T3), drafts with owner editing, Outbox tab, overnight reminder drafts; verified live in the browser on an isolated copy of the data |
 | F3 | Live demo console | Done (P2) — verified live against OpenAI for all 7 presets on both seeded businesses; needs `DEMO_MODE=true` (server) and `NEXT_PUBLIC_DEMO_MODE=true` (frontend) to appear |
 | F4 | Onboarding from zero | Done (P1, P1 follow-up fix) |
 | F5 | Payments tab | Done (P3) — SandboxPay provider service, Payments tab, `pay_invoice` (T3); verified live in the browser on an isolated copy of the data; optional stablecoin rail not built |
@@ -50,7 +50,7 @@ P7 uses the product and ad data onboarding imports. P5 comes early because uploa
 their results in the Transactions tab. P6 comes before P2 and P4 so the console and email sending can use the real
 inbox.
 
-**Remaining order from here:** P4 → Prompt 19.
+**Remaining order from here:** Prompt 19.
 
 **Demo email plan:** the console injects sandbox attacks that real email can't fake (lookalike domains, spoofed senders); real emails are sent live from your phone to the demo Gmail inbox.
 
@@ -70,18 +70,12 @@ Tiers in `policy.yaml` (canonical; matches the Tiers table in CLAUDE.md):
 - **T3** (owner signs the exact payload, approval expires after 2 days): `submit_loan_application`,
   `change_payee_details` (needs an out-of-band call script), `delay_supplier_payment`, `send_supplier_message`,
   `cancel_subscription`, `pay_invoice` (P3; Payments tab only — hidden from the planner's action catalogue by
-  `agent/actions.NOT_FOR_PLANNER`, so no planner recording went stale).
+  `agent/actions.NOT_FOR_PLANNER`, so no planner recording went stale), `send_email` (P4; tier chosen by P4: T3).
 - **T4** (no tools, by design; analysis only, logged as a violation): `large_debt`, `hiring_or_firing`,
   `pricing_change`, `deal_commitment`.
 
 **T2 cap (decided Oct 19, before P3):** Raiyan chose to raise `pay_recurring_bill` to 500000 minor units (৳5,000);
 `send_invoice_reminder` stays at 50000. Applied in `policy.yaml`; `tests/policy/test_gateway_payments.py` pins both.
-
-Executed actions and visibility, verified by reading the code directly (the gap P4 exists to close):
-- `send_invoice_reminder` executes through `executor/reminder_sender.py` → `executor/sandbox_mailbox.py`, which
-  does write a row to a real `outbox` table (`SandboxMailbox.outbox()`). But **nothing reads it**: no API route and
-  no frontend component references `outbox`. The data exists but isn't surfaced. P4's "store sent emails, show
-  them in the UI" is what's missing, not the storage itself.
 
 Anchoring: `docs/results/anchors.json` holds one batch (`anc-000001`) with a Sepolia tx hash
 (`0x285a223179bccd958c6f20073439e986debe314c9423f6fe4ade2b90765c7c65`, block 11942865) and `verified_log_ok: true`.
@@ -97,26 +91,26 @@ and exits 1. No `LLM_PROFILE=demo` (Sol) recordings and no Gemini recordings exi
 `llm/spend.py`) shows **$0.0722 spent** of the $7 `LLM_BUDGET_USD` cap. Plenty of headroom, but the ~$3 reserved
 for the final recording is a separate, manual discipline — the tracker doesn't know to protect it.
 
-**Replay cache / red-team staleness:** `backend/data/replay/llm/` holds 68 planner recordings + 47 extractor
-recordings + 1 brief_writer (116 total; was 65 planner / 39 extractor before P7). The cache key hashes the full
+**Replay cache / red-team staleness:** `backend/data/replay/llm/` holds 70 planner recordings + 47 extractor
+recordings + 1 brief_writer (118 total; P4 re-recorded all planner cases and added one benign task). The cache key hashes the full
 planner request including every tool schema, so P7 adding three new T1 tools (`rank_products_for_ads`,
 `product_performance`, `ad_budget_what_if`) invalidated and forced a re-record of every planner-dependent case
 (benign questions, benign tasks, the live-LLM red-team cases) — that's where the +3 planner / +8 extractor files
 came from (commit `4df2220`, 74 replay files touched). Full details and the re-record procedure:
 [[benign-replay-rerecord]] in memory.
 
-**`docs/results/redteam.json`** was regenerated during P3 (replay, `commit` = P2's hash `+dirty`, i.e. the P3 working
-tree): 25/25 attacks, 76/76 variants, 24/24 tasks. Re-run `make redteam` after P4 and before quoting numbers in the
-deck or README (invariant 8).
+**`docs/results/redteam.json`** was regenerated for P4 (replay, on the uncommitted P4 tree): 37/37 attacks blocked,
+91/91 variants, 25/25 benign tasks (12 new `ATK-EMAIL-*` attacks, one new benign task `email_greenleaf`). Re-run
+`make redteam` after any later change to planner tools, prompts or policy and before quoting numbers in the deck or
+README (invariant 8).
 
 Already answered by the original plan: products are tracked individually (product margins and an
 unprofitable-products leak detector exist); reminders are a T2 action (`send_invoice_reminder`) under a standing
 signed mandate; untrusted-provenance arguments force T3; loan applications are T3; a statement-upload endpoint
 exists in the backend.
 
-`make test` passes clean as of the P3 update: 924 pytest cases (was 885 after P2), plus the branding and frontend-types
-checks. `make redteam` (replay) re-run for P3 on the uncommitted P3 tree: 25/25 attacks blocked (76/76 variants),
-24/24 benign tasks — the 9 new `ATK-PAY-*` attacks included.
+`make test` passes clean as of the P4 update: 989 pytest cases (replay mode; was 924 after P3), plus the branding and
+frontend-types checks. `make redteam` (replay) for P4: 37/37 attacks blocked (91/91 variants), 25/25 benign tasks.
 
 **P6 (Gmail) as built, Mon Oct 19 evening:** full `pytest` run 854 passed (replay mode), branding and frontend-types
 checks pass. No planner prompt, tool schema, policy.yaml or extractor input changed, so no replay recordings went
@@ -159,6 +153,46 @@ stale and `make redteam` was not re-run for P6. What later prompts can reuse:
   right for side-by-side recording. Gated by `NEXT_PUBLIC_DEMO_MODE`. A held/flagged email now toasts on every
   screen (moved from the Inbox panel into `AdvisorProvider`).
 - Not done: the Morning Brief does not change when mail is flagged (toast only); no `make` target to start in demo mode.
+
+**P4 (emails) as built, Tue Oct 20:**
+- **Action:** `send_email(recipient_id, draft_id)` is **T3** in `policy.yaml` (every email needs the owner's signature),
+  with `deny_untrusted_args: true`: if any argument is untrusted the gateway **denies** (`untrusted_args_denied`)
+  instead of escalating, so content from an email can never make the assistant email someone, even with a signature.
+  The signature binds the recipient and the draft ID, and the draft ID is a hash of the exact subject and body
+  (`gateway/emails.py`, same scheme as loan drafts). A tampered draft is `draft_tampered`.
+- **Drafting:** the planner calls `propose_action("send_email", {recipient_id, subject, body})` with `{fact:<id>}` for
+  every amount and date; `agent/actions.py` renders it through the Numeric Firewall (`agent/email_compose.py`), stores
+  the draft and passes the gateway only `recipient_id` + `draft_id`. A digit outside a placeholder, a malformed or
+  unknown placeholder rejects the email (the planner sees an error and may retry; nothing is stored or proposed). A
+  body that cites a fact from quarantined content makes the draft untrusted, so it is denied. The overnight job
+  (`services/overnight.py`) drafts the same reminder as an email when the T2 reminder is denied for no mandate, not
+  allow-listed or a cap (never for a frequency cap or an untrusted-source invoice), skips an invoice that already has a
+  waiting draft or a signed email in the last 3 days, and shows it in the Morning Brief (`needs_you[].email`).
+- **Recipients:** only a contact with an email on file, or an address the owner added through
+  `POST /emails/recipients` (typed twice + explicit confirmation; id `rcp_…`, labelled "New address you added"). Never
+  the sender (From or Reply-To) of an email the Sentinel flagged, nor a known contact whose own address sent one
+  (`recipient_flagged_sender`; they get the call script instead). Checked at proposal and again just before execution.
+- **Owner editing:** `POST /gateway/approvals/{id}/revise-email` makes a new draft and a new approval and closes the old
+  one (`superseded`), so a signature over the old text can never send the new text. Digits the owner types are theirs
+  (not LLM output); placeholders are refused. `POST /gateway/approvals/{id}/decline` now closes an approval in the
+  gateway and logs it (the UI's Decline buttons call it).
+- **Sending/outbox:** goes through `executor/mail_sender.py` (Gmail only if connected, active and the address is on
+  DEMO_SEND_ALLOWLIST, otherwise the labelled sandbox outbox). Every row now stores the full body; the audit log gets a
+  SHA-256 of it (`body_sha256`), plus `email.drafted`, `email.revised`, `email.recipient_added`,
+  `gateway.approval_declined` and the usual decision/mandate/execution entries. `GET /businesses/{id}/outbox` returns
+  sent emails and the drafts waiting for a signature; `/outbox` is a new sidebar view with a "Write an email" form
+  (owner-written emails are drafts + approvals too). The approval sheet shows recipient, subject, full body, why, and
+  "Edit the draft". `make evidence` (Prompt 19) should export `GET /outbox` for each business.
+- **Injected "please email X":** new `email_directive` instruction pattern in `quarantine/signals.py` flags it
+  (and `instruction_like_text` already made the planner ignore it); the planner can't email an address from an email
+  anyway (untrusted → denied).
+- **Stale replay:** the new action in the planner's action catalogue and the planner prompt invalidated every planner
+  recording. All planner cases (benign questions, benign tasks, live-LLM red-team) were re-recorded once live on
+  gpt-5.6-terra (dev profile). Extractor and brief_writer recordings were not affected. The real
+  `llm_spend.json` counter does not include this re-record (the test runs keep their own counters), so the true spend is
+  higher than the $0.0722 above by that amount.
+- **Not done:** owner edits are not firewall-checked by design (documented above); no stand-alone "reply to this
+  supplier email" button (suppliers are emailed from Outbox's form or by asking the assistant).
 
 **P3 (payments) as built, Tue Oct 20 early:**
 - **Provider:** `backend/sandboxpay/` is its own FastAPI service (`uvicorn --factory sandboxpay.main:create_app`,
@@ -503,6 +537,8 @@ Commit and push.
 ---
 
 ## P4 — Sending approved emails
+
+Note (after P4): done; see "P4 (emails) as built" under Known facts. Tier chosen for `send_email`: **T3**.
 
 Note (after P6): the transport exists. `executor/mail_sender.py` routes every approved email to Gmail or the sandbox
 outbox (allowlist-gated) and records it in `outbox` with `transport`; reminders already go through it with a fixed

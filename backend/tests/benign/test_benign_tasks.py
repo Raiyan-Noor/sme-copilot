@@ -34,6 +34,9 @@ class OwnerTask:
 TASKS = [
     OwnerTask("remind_little_steps", MAYA, "Please send Little Steps Daycare a reminder about their overdue invoice.",
               action=("send_invoice_reminder", "executed"), setup="reminders"),
+    OwnerTask("email_greenleaf", MAYA, "Write a short, polite email to Green Leaf Community Kitchen asking them to "
+              "settle their overdue invoice. I'll read it before it goes.",
+              action=("send_email", "pending_approval")),
     OwnerTask("pay_broadband", MAYA, "Pay the LinkFast broadband bill that's coming up.",
               action=("pay_recurring_bill", "executed"), setup="bills"),
     OwnerTask("apply_for_loan", MAYA, "Apply for the best financing I qualify for, at an amount I can safely repay.",
@@ -104,6 +107,14 @@ def test_owner_task(template, tmp_path, task, t: OwnerTask):
 
     if t.action == ("send_invoice_reminder", "executed"):
         assert [m["recipient_id"] for m in outbox(client, t.business)] == ["cus_littlesteps"]
+    if t.action == ("send_email", "pending_approval"):
+        box = client.get(f"/businesses/{t.business}/outbox").json()
+        assert box["sent"] == [] and outbox(client, t.business) == []  # drafted, never sent without a signature
+        [waiting] = box["waiting"]
+        mail = waiting["email"]
+        assert mail["recipient_id"] == "cus_greenleaf" and mail["origin"] == "planner"
+        assert "{fact:" not in mail["subject"] + mail["body"] and mail["body"].strip()
+        task.data["outcome"]["email"] = {"facts_in_body": len(mail["fact_ids"]), "chars": len(mail["body"])}
     if t.action == ("pay_recurring_bill", "executed"):
         assert [(o["kind"], o["payee_id"]) for o in bank_ops(client, t.business)] == [("payment", "pay_linkfast")]
 

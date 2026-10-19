@@ -18,6 +18,7 @@ from fastapi import APIRouter, HTTPException, Path
 from pydantic import BaseModel, Field
 
 from app.api.deps import BusinessId, RuntimeDep
+from app.api.emails import EmailView, email_view
 from app.gateway import Decision, MandateResult, ProposedAction, SignedPayload, StandingTerms
 
 router = APIRouter(tags=["gateway"])
@@ -48,12 +49,22 @@ class ApprovalView(BaseModel):
     payload: SignedPayload
     message: str
     requires_out_of_band_call_script: bool
+    email: EmailView | None = None  # for send_email: the recipient and the exact subject and body being signed
 
 
 class ApproveRequest(BaseModel):
     signature: SignatureHex
     public_key: PublicKeyHex
     out_of_band_confirmed: bool = False
+
+
+class DeclineResult(BaseModel):
+    declined: bool
+
+
+class EmailRevision(BaseModel):
+    subject: str = Field(min_length=1, max_length=120)
+    body: str = Field(min_length=1, max_length=2000)
 
 
 class StandingMandateDraftRequest(BaseModel):
@@ -102,7 +113,8 @@ def get_approval(business_id: BusinessId, approval_id: ApprovalId, rt: RuntimeDe
     return ApprovalView(approval_id=approval.id, tool=approval.tool, status=approval.status, args=approval.args,
                         reasons=approval.reasons, payload=approval.payload,
                         message=approval.payload.message().decode(),
-                        requires_out_of_band_call_script=bool(t3 and t3.requires_out_of_band_call_script))
+                        requires_out_of_band_call_script=bool(t3 and t3.requires_out_of_band_call_script),
+                        email=email_view(gw, approval.args) if approval.tool == "send_email" else None)
 
 
 @router.post("/businesses/{business_id}/gateway/approvals/{approval_id}/approve", response_model=Decision)
@@ -113,6 +125,19 @@ def approve(business_id: BusinessId, approval_id: ApprovalId, body: ApproveReque
                                                out_of_band_confirmed=body.out_of_band_confirmed)
     rt.anchors.request("owner_signed")  # end of an approval scenario; runs in the background (invariant 9)
     return decision
+
+
+@router.post("/businesses/{business_id}/gateway/approvals/{approval_id}/decline", response_model=DeclineResult)
+def decline(business_id: BusinessId, approval_id: ApprovalId, rt: RuntimeDep) -> DeclineResult:
+    """The owner declines a pending approval: nothing runs and it can never be signed afterwards."""
+    return DeclineResult(declined=rt.gateway(business_id).decline(approval_id))
+
+
+@router.post("/businesses/{business_id}/gateway/approvals/{approval_id}/revise-email", response_model=Decision)
+def revise_email(business_id: BusinessId, approval_id: ApprovalId, body: EmailRevision, rt: RuntimeDep) -> Decision:
+    """The owner edits a pending email. The old approval is closed and a new one for the new text is returned; the
+    owner signs that one, so a signature over the old text can never send the new one."""
+    return rt.gateway(business_id).revise_email(approval_id, body.subject, body.body)
 
 
 @router.post("/businesses/{business_id}/gateway/mandates/draft", response_model=StandingMandateDraft)

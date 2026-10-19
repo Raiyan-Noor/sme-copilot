@@ -1248,6 +1248,128 @@
         }
       }
     },
+    "/businesses/{business_id}/gateway/approvals/{approval_id}/decline": {
+      "post": {
+        "tags": [
+          "gateway"
+        ],
+        "summary": "Decline",
+        "description": "The owner declines a pending approval: nothing runs and it can never be signed afterwards.",
+        "operationId": "decline",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          },
+          {
+            "name": "approval_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^apr_[0-9a-f]{16}$",
+              "title": "Approval Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeclineResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/gateway/approvals/{approval_id}/revise-email": {
+      "post": {
+        "tags": [
+          "gateway"
+        ],
+        "summary": "Revise Email",
+        "description": "The owner edits a pending email. The old approval is closed and a new one for the new text is returned; the\nowner signs that one, so a signature over the old text can never send the new one.",
+        "operationId": "revise_email",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          },
+          {
+            "name": "approval_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^apr_[0-9a-f]{16}$",
+              "title": "Approval Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailRevision"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Decision"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/businesses/{business_id}/gateway/mandates/draft": {
       "post": {
         "tags": [
@@ -4330,6 +4452,214 @@
         }
       }
     },
+    "/businesses/{business_id}/outbox": {
+      "get": {
+        "tags": [
+          "emails"
+        ],
+        "summary": "Get Outbox",
+        "description": "Every email sent or simulated (newest first) and the drafts waiting for the owner's signature.",
+        "operationId": "get_outbox",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Outbox"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/emails/contacts": {
+      "get": {
+        "tags": [
+          "emails"
+        ],
+        "summary": "List Contacts",
+        "description": "People the owner can email: contacts with an address on file, then addresses the owner added.",
+        "operationId": "list_contacts",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Contact"
+                  },
+                  "title": "Response List Contacts"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/emails/recipients": {
+      "post": {
+        "tags": [
+          "emails"
+        ],
+        "summary": "Add Recipient",
+        "description": "Add an address that is not in the contact book. Needs the address typed twice and an explicit confirmation:\na new address is the one way an email could be steered somewhere unexpected.",
+        "operationId": "add_recipient",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecipientCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Contact"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/businesses/{business_id}/emails/draft": {
+      "post": {
+        "tags": [
+          "emails"
+        ],
+        "summary": "Compose Email",
+        "description": "The owner writes an email. It is stored as a draft and proposed through the gateway like any other: the\nresult is `pending_approval` (sign it on the approval sheet) or `denied` with the rule (unknown recipient,\nflagged sender). The owner's own words may contain digits; placeholders are not allowed.",
+        "operationId": "compose_email",
+        "parameters": [
+          {
+            "name": "business_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 63,
+              "description": "Business ID, e.g. maya-corner-store",
+              "title": "Business Id"
+            },
+            "description": "Business ID, e.g. maya-corner-store"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailCompose"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Decision"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/businesses/{business_id}/gateway/propose": {
       "post": {
         "tags": [
@@ -5289,6 +5619,16 @@
           "requires_out_of_band_call_script": {
             "type": "boolean",
             "title": "Requires Out Of Band Call Script"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EmailView"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -6118,6 +6458,34 @@
         ],
         "title": "ConsoleInfo"
       },
+      "Contact": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "email"
+        ],
+        "title": "Contact"
+      },
       "ContactIn": {
         "properties": {
           "name": {
@@ -6441,6 +6809,19 @@
           "tool"
         ],
         "title": "Decision"
+      },
+      "DeclineResult": {
+        "properties": {
+          "declined": {
+            "type": "boolean",
+            "title": "Declined"
+          }
+        },
+        "type": "object",
+        "required": [
+          "declined"
+        ],
+        "title": "DeclineResult"
       },
       "DocumentFields": {
         "properties": {
@@ -6783,6 +7164,163 @@
           "date"
         ],
         "title": "DoneItem"
+      },
+      "EmailCompose": {
+        "properties": {
+          "recipient_id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Recipient Id"
+          },
+          "subject": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Subject"
+          },
+          "body": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Body"
+          }
+        },
+        "type": "object",
+        "required": [
+          "recipient_id",
+          "subject",
+          "body"
+        ],
+        "title": "EmailCompose"
+      },
+      "EmailPreview": {
+        "properties": {
+          "recipient": {
+            "type": "string",
+            "title": "Recipient"
+          },
+          "subject": {
+            "type": "string",
+            "title": "Subject"
+          }
+        },
+        "type": "object",
+        "required": [
+          "recipient",
+          "subject"
+        ],
+        "title": "EmailPreview",
+        "description": "A drafted email waiting for the owner's signature: who it goes to and its subject. The full text, with every\nnumber traced to a fact, is on the approval sheet."
+      },
+      "EmailRevision": {
+        "properties": {
+          "subject": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Subject"
+          },
+          "body": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Body"
+          }
+        },
+        "type": "object",
+        "required": [
+          "subject",
+          "body"
+        ],
+        "title": "EmailRevision"
+      },
+      "EmailView": {
+        "properties": {
+          "draft_id": {
+            "type": "string",
+            "title": "Draft Id"
+          },
+          "sha256": {
+            "type": "string",
+            "title": "Sha256"
+          },
+          "recipient_id": {
+            "type": "string",
+            "title": "Recipient Id"
+          },
+          "recipient_name": {
+            "type": "string",
+            "title": "Recipient Name"
+          },
+          "recipient_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recipient Email"
+          },
+          "added_by_owner": {
+            "type": "boolean",
+            "title": "Added By Owner"
+          },
+          "subject": {
+            "type": "string",
+            "title": "Subject"
+          },
+          "body": {
+            "type": "string",
+            "title": "Body"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "origin": {
+            "type": "string",
+            "title": "Origin"
+          },
+          "edited": {
+            "type": "boolean",
+            "title": "Edited"
+          },
+          "about": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "About",
+            "default": {}
+          },
+          "fact_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Fact Ids",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "draft_id",
+          "sha256",
+          "recipient_id",
+          "recipient_name",
+          "recipient_email",
+          "added_by_owner",
+          "subject",
+          "body",
+          "reason",
+          "origin",
+          "edited"
+        ],
+        "title": "EmailView",
+        "description": "One email as the owner reads it before signing, or after it went out. The body is final text: every number in\nit was rendered from a fact (planner and overnight drafts) or typed by the owner (`edited`, origin `owner`)."
       },
       "ErrorEvent": {
         "properties": {
@@ -8639,6 +9177,16 @@
             },
             "type": "array",
             "title": "Reasons"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EmailPreview"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -8968,6 +9516,146 @@
         ],
         "title": "OnchainCheck",
         "description": "One batch checked against the chain. `match` only if the transaction is a confirmed 0-value self-transaction\non the allow-listed chain whose data equals the root recomputed here."
+      },
+      "Outbox": {
+        "properties": {
+          "sent": {
+            "items": {
+              "$ref": "#/components/schemas/OutboxEmail"
+            },
+            "type": "array",
+            "title": "Sent"
+          },
+          "waiting": {
+            "items": {
+              "$ref": "#/components/schemas/WaitingEmail"
+            },
+            "type": "array",
+            "title": "Waiting"
+          }
+        },
+        "type": "object",
+        "required": [
+          "sent",
+          "waiting"
+        ],
+        "title": "Outbox"
+      },
+      "OutboxEmail": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "ref": {
+            "type": "string",
+            "title": "Ref"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "on_date": {
+            "type": "string",
+            "title": "On Date"
+          },
+          "recipient_id": {
+            "type": "string",
+            "title": "Recipient Id"
+          },
+          "recipient_name": {
+            "type": "string",
+            "title": "Recipient Name"
+          },
+          "recipient_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recipient Email"
+          },
+          "subject": {
+            "type": "string",
+            "title": "Subject"
+          },
+          "body": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Body"
+          },
+          "transport": {
+            "type": "string",
+            "title": "Transport",
+            "description": "gmail (really sent) or sandbox (simulated; `label` says why)"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "origin": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Origin"
+          },
+          "draft_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Draft Id"
+          },
+          "gmail_message_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gmail Message Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "ref",
+          "kind",
+          "on_date",
+          "recipient_id",
+          "recipient_name",
+          "recipient_email",
+          "subject",
+          "transport"
+        ],
+        "title": "OutboxEmail"
       },
       "OvernightReport": {
         "properties": {
@@ -10568,6 +11256,40 @@
         ],
         "title": "Receipt"
       },
+      "RecipientCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 60,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 3,
+            "title": "Email"
+          },
+          "confirm_email": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 3,
+            "title": "Confirm Email"
+          },
+          "confirmed": {
+            "type": "boolean",
+            "title": "Confirmed",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "email",
+          "confirm_email"
+        ],
+        "title": "RecipientCreate"
+      },
       "RedteamAttack": {
         "properties": {
           "id": {
@@ -10933,6 +11655,11 @@
               }
             ],
             "title": "Mandate Id"
+          },
+          "tool": {
+            "type": "string",
+            "title": "Tool",
+            "default": "send_invoice_reminder"
           }
         },
         "type": "object",
@@ -12540,6 +13267,28 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "WaitingEmail": {
+        "properties": {
+          "approval_id": {
+            "type": "string",
+            "title": "Approval Id"
+          },
+          "expires": {
+            "type": "string",
+            "title": "Expires"
+          },
+          "email": {
+            "$ref": "#/components/schemas/EmailView"
+          }
+        },
+        "type": "object",
+        "required": [
+          "approval_id",
+          "expires",
+          "email"
+        ],
+        "title": "WaitingEmail"
       }
     },
     "securitySchemes": {

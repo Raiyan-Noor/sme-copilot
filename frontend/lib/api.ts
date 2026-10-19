@@ -46,6 +46,12 @@ import type {
   RedteamReport,
   ApprovalView,
   ApproveRequest,
+  Contact,
+  DeclineResult,
+  EmailCompose,
+  EmailRevision,
+  Outbox,
+  RecipientCreate,
   AuditPage,
   BusinessDetail,
   BusinessInfo,
@@ -282,6 +288,13 @@ export const api = {
   limits: (id: string) => request<LimitsView>("GET", `${biz(id)}/limits`),
   redteam: () => request<RedteamReport>("GET", "/redteam"),
 
+  // Emails: every one is a draft the owner signs; nothing here sends
+  outbox: (id: string) => request<Outbox>("GET", `${biz(id)}/outbox`),
+  emailContacts: (id: string) => request<Contact[]>("GET", `${biz(id)}/emails/contacts`),
+  addEmailRecipient: (id: string, body: RecipientCreate) =>
+    request<Contact>("POST", `${biz(id)}/emails/recipients`, { body }),
+  composeEmail: (id: string, body: EmailCompose) => request<Decision>("POST", `${biz(id)}/emails/draft`, { body }),
+
   // Gateway
   enrollOwnerKey: (id: string, body: OwnerKeyRequest) =>
     request<OwnerKey>("POST", `${biz(id)}/gateway/owner-key`, { body }),
@@ -290,6 +303,10 @@ export const api = {
     request<ApprovalView>("GET", `${biz(id)}/gateway/approvals/${enc(approvalId)}`),
   approve: (id: string, approvalId: string, body: ApproveRequest) =>
     request<Decision>("POST", `${biz(id)}/gateway/approvals/${enc(approvalId)}/approve`, { body }),
+  declineApproval: (id: string, approvalId: string) =>
+    request<DeclineResult>("POST", `${biz(id)}/gateway/approvals/${enc(approvalId)}/decline`),
+  reviseEmail: (id: string, approvalId: string, body: EmailRevision) =>
+    request<Decision>("POST", `${biz(id)}/gateway/approvals/${enc(approvalId)}/revise-email`, { body }),
   draftMandate: (id: string, body: StandingMandateDraftRequest) =>
     request<StandingMandateDraft>("POST", `${biz(id)}/gateway/mandates/draft`, { body }),
   signMandate: (id: string, body: StandingMandateRequest) =>
