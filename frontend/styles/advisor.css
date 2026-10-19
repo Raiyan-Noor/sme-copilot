@@ -636,8 +636,9 @@ a{color:var(--brand-primary)}a:hover{color:var(--brand-primary-hover)}
 .ka-bt__tile{display:flex;flex-direction:column;gap:8px;padding:14px 16px;background:var(--surface-raised);border:1px solid var(--border);border-radius:var(--radius-medium);min-width:0}
 .ka-bt__tile .v{font-size:22px;line-height:28px;font-weight:300;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ka-bt__spark{gap:10px}
-.ka-bt__sparklink{all:unset;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;cursor:pointer;border-radius:var(--radius-small)}
-.ka-bt__spark .ka-spark__row > .kc-caption{white-space:nowrap}
+.ka-bt__sparklink{all:unset;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;cursor:pointer;border-radius:var(--radius-small);font-size:var(--type-caption-size);line-height:var(--type-caption-line);color:var(--text-muted)}
+.ka-bt__spark .ka-spark__row{flex-wrap:wrap;row-gap:2px;min-width:0}
+.ka-bt__spark .ka-spark__row > .kc-caption{min-width:0}
 .ka-bt__sparklink:hover{color:var(--text)}
 .ka-bt__sparklink:focus-visible{outline:2px solid var(--focus-ring);outline-offset:2px}
 .ka-bt__audit{margin-top:auto;padding-top:8px}
