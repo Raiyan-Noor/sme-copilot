@@ -56,7 +56,7 @@ inbox.
 
 **Demo email plan:** the console injects sandbox attacks that real email can't fake (lookalike domains, spoofed senders); real emails are sent live from your phone to the demo Gmail inbox.
 
-**Demo config (Tue Oct 20, ~07:15 Dhaka):** `.env` now has `LLM_PROFILE=demo` (Sol planner) and `DEMO_SEND_ALLOWLIST=raiyannoor2000@gmail.com`. Every seeded and sample customer has an `.example` address, so overnight reminders still go to the labelled sandbox outbox; a real Gmail send needs a recipient whose address is on the allowlist (e.g. added through "New address you added", `POST /emails/recipients`). Full `pytest` before the demo: 1021 passed, branding and types checks pass, `tsc --noEmit` clean.
+**Demo config (Tue Oct 20, ~07:15 Dhaka):** `.env` now has `LLM_PROFILE=demo` (Sol planner) and `DEMO_SEND_ALLOWLIST=raiyannoor2000@gmail.com`. Every seeded and sample customer has an `.example` address, so overnight reminders still go to the labelled sandbox outbox; a real Gmail send needs a recipient whose address is on the allowlist (e.g. added through "New address you added", `POST /emails/recipients`). **Audit chain fork, fixed:** two server processes (a stale uvicorn spawn worker beside a fresh one) appended to `audit.jsonl` at once and each kept its own head, so entries 1099–1118 were written twice and `/audit/verify` failed. `audit/log.py` `append()` now takes a cross-process lock on `audit.jsonl.lock` and re-reads the head from the file (tests: `test_two_writers_on_one_file_keep_one_chain`, `test_two_processes_appending_at_once_keep_one_chain`; both fail without the fix). The forked log and its anchor records were moved unedited to `backend/data/tenants/_archive/forked-chain-2026-10-20/` (README, SHA256SUMS, verify result); the live app started a new chain, and `anc-000001` of it confirmed live on Sepolia (block 11951950). The overnight activity feed is empty until the next fast-forward. Full `pytest` after the fix: 1023 passed, branding and types checks pass, `tsc --noEmit` clean. `make demo` running with both rehearsal businesses reset.
 
 **Manual setup before P6 (you, ~15 min):** create a fresh Gmail account for the demo shop; create a Google Cloud project; enable the Gmail API; configure the OAuth consent screen in testing mode; add the demo Gmail as a test user; create an OAuth client (web app) with redirect URI `http://localhost:<backend port>/inbox/gmail/callback`; put the client ID and secret in `.env`. No paid services needed.
 
@@ -99,7 +99,7 @@ Tiers in `policy.yaml` (canonical; matches the Tiers table in CLAUDE.md):
   `test_benign_questions.py`, new). `REPLAY_PROVIDER=openai-demo|gemini` selects them in tests (`tests/agent_env.py`);
   `make redteam` now reports every provider with recordings; `--record` needs an explicit `--provider`.
 - **`make redteam` (replay, `docs/results/redteam.json`):** openai 37/37 attacks (91/91 variants), 25/25 tasks;
-  openai-demo 36/37 (90/91), 25/25; gemini subset 4/4 (19/19), 7/11. Failures are explained in
+  openai-demo 36/37 (90/91), 25/25; gemini subset 4/4 (19/19), 11/11 (after the F14 re-record). Failures are explained in
   `docs/security-self-assessment.md` §3: an extra `instruction_like_text` flag and two extraction misses from a fresh
   Terra extractor sample in the Sol run, and four Gemini answers that cited the wrong facts or fell back to the template.
   Recorded once and reported as recorded, not re-sampled. Raiyan may choose to re-record those cases; ask first.

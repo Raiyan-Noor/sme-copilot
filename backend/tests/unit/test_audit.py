@@ -1,6 +1,7 @@
 """Hash-chained audit log (invariant 7): append, head, verify, export, tamper detection, canonical JSON."""
 
 import json
+import time
 from datetime import date
 
 import pytest
@@ -152,3 +153,39 @@ def test_canonical_json_is_sorted_compact_utf8():
 def test_canonical_json_rejects_floats_and_non_string_keys(bad):
     with pytest.raises(CanonicalError):
         canonical_json(bad)
+
+
+def test_two_writers_on_one_file_keep_one_chain(tmp_path):
+    """Two AuditLog objects on one file stand in for two server processes (a stale worker next to a fresh one):
+    each has its own thread lock and in-memory head, and before the file lock their appends forked the chain."""
+    path = tmp_path / "audit.jsonl"
+    a, b = AuditLog(path, FixedClock(date(2026, 10, 20))), AuditLog(path, FixedClock(date(2026, 10, 20)))
+    for i in range(10):
+        (a if i % 2 else b).append("test.event", {"i": i})
+    result = a.verify()
+    assert result.ok and result.entries == 10 and result.head.seq == 9
+
+
+def _append_many(path, n, go):
+    log = AuditLog(path, FixedClock(date(2026, 10, 20)))
+    go.wait(30)
+    for i in range(n):
+        log.append("test.process", {"i": i})
+
+
+def test_two_processes_appending_at_once_keep_one_chain(tmp_path):
+    import multiprocessing
+
+    path = tmp_path / "audit.jsonl"
+    ctx = multiprocessing.get_context("spawn")
+    go = ctx.Event()
+    procs = [ctx.Process(target=_append_many, args=(path, 300, go)) for _ in range(2)]
+    for p in procs:
+        p.start()
+    time.sleep(2)  # both processes have opened the log and read the same head
+    go.set()
+    for p in procs:
+        p.join(60)
+        assert p.exitcode == 0
+    result = AuditLog(path, FixedClock(date(2026, 10, 20))).verify()
+    assert result.ok and result.entries == 600

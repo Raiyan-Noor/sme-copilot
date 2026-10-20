@@ -15,9 +15,12 @@ their hashes are unchanged.
 """
 
 import json
+import os
 import shutil
 import threading
+import time
 from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
@@ -65,26 +68,68 @@ def entry_hash(body: dict[str, Any]) -> str:
     return canonical_hash(body)
 
 
+@contextmanager
+def _file_lock(path: Path) -> Iterator[None]:
+    """Exclusive OS lock on a sidecar file, held across processes (invariant 7).
+
+    Two server processes writing one log (a stale uvicorn worker next to a fresh one) each kept their own head in
+    memory and forked the chain. Under this lock, `append` re-reads the head from the file, so every writer links to
+    the true last entry.
+    """
+    with path.open("a+b") as f:
+        if os.name == "nt":
+            import msvcrt
+
+            while True:
+                f.seek(0)
+                try:
+                    msvcrt.locking(f.fileno(), msvcrt.LK_NBLCK, 1)
+                    break
+                except OSError:
+                    time.sleep(0.005)
+            try:
+                yield
+            finally:
+                f.seek(0)
+                msvcrt.locking(f.fileno(), msvcrt.LK_UNLCK, 1)
+        else:
+            import fcntl
+
+            fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+            try:
+                yield
+            finally:
+                fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+
+
 class AuditLog:
-    """One hash-chained JSONL file. Thread-safe for appends within one process."""
+    """One hash-chained JSONL file. Safe for appends from several threads and several processes."""
 
     def __init__(self, path: Path, clock: Clock):
         self.path = Path(path)
         self.clock = clock
         self._lock = threading.Lock()
         self._subscribers: list[Callable[[AuditEntry], None]] = []
+        self._lock_path = self.path.with_name(self.path.name + ".lock")
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.path.touch(exist_ok=True)
         self._head = self._read_head()
 
     def _read_head(self) -> Head:
-        last = None
-        for last in self._lines():
-            pass
-        if last is None:
-            return Head(seq=-1, hash=GENESIS_HASH)
-        entry = json.loads(last)
-        return Head(seq=entry["seq"], hash=entry["hash"])
+        """The last complete entry in the file, read from the end (cheap enough to do on every append)."""
+        with self.path.open("rb") as f:
+            end = f.seek(0, os.SEEK_END)
+            pos, tail = end, b""
+            while pos > 0:
+                step = min(65536, pos)
+                pos -= step
+                f.seek(pos)
+                tail = f.read(step) + tail
+                lines = [ln for ln in tail.split(b"\n") if ln.strip()]
+                if len(lines) > 1 or (lines and pos == 0):
+                    entry = json.loads(lines[-1])
+                    return Head(seq=entry["seq"], hash=entry["hash"])
+        return Head(seq=-1, hash=GENESIS_HASH)
 
     def _lines(self) -> Iterator[str]:
         with self.path.open("r", encoding="utf-8") as f:
@@ -94,7 +139,8 @@ class AuditLog:
 
     def append(self, kind: str, data: dict[str, Any] | None = None) -> AuditEntry:
         """Append one entry and return it. The only write path to the log (invariant 7)."""
-        with self._lock:
+        with self._lock, _file_lock(self._lock_path):
+            self._head = self._read_head()
             body = {
                 "seq": self._head.seq + 1,
                 "date": self.clock.today().isoformat(),
