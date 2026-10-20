@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowRight, ArrowUp, PenLine, Repeat } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import { Logo } from "@/components/brand/Logo";
 import { useBusinessKey } from "@/components/business-context";
@@ -241,12 +241,15 @@ export function Conversation() {
   );
 }
 
-/** "Good morning, Maya": time of day from the browser, first name from the brief feed (none until it loads). */
+const noSubscribe = () => () => {};
+
+/** "Good morning, Maya": time of day from the browser, first name from the brief feed (none until it loads).
+ *  The hour is read on the client only (server snapshot null), so the prerender never evaluates `new Date()`. */
 function useGreeting(): string {
   const { id, key } = useBusinessKey("greeting");
   const res = useApi<BriefActivity>(key && `${key}:activity`, () => api.briefActivity(id));
-  const hour = new Date().getHours();
-  const part = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  const hour = useSyncExternalStore(noSubscribe, () => new Date().getHours(), () => null);
+  const part = hour === null ? "Hello" : hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
   const name = res.data?.owner_first_name;
   return name ? `${part}, ${name}` : part;
 }
