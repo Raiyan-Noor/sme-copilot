@@ -2,7 +2,7 @@
  "schema": "redteam_results/v1",
  "generated_by": "make redteam (scripts/redteam.py)",
  "mode": "replay",
- "commit": "0887b4cc33ffaaadb3871fcfed101ff5478ea07b+dirty",
+ "commit": "a55f23332e9fdd7ccb3b19223fc57cda6ebd9e12+dirty",
  "data": "synthetic (Maya's Corner Store, Lina's Boutique)",
  "pending_attacks": {},
  "providers": {
@@ -12,8 +12,13 @@
    "scope": "full",
    "pytest_exit_code": 0,
    "recorded_models": {
+    "brief_writer:gemini/gemini-3.8-flash": 2,
+    "brief_writer:openai/gpt-5.6-sol": 4,
     "brief_writer:openai/gpt-5.6-terra": 9,
+    "extractor:gemini/gemini-3.8-flash": 1,
     "extractor:openai/gpt-5.6-terra": 51,
+    "planner:gemini/gemini-3.8-flash": 5,
+    "planner:openai/gpt-5.6-sol": 6,
     "planner:openai/gpt-5.6-terra": 76
    },
    "attacks_run": 37,

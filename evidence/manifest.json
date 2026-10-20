@@ -1,0 +1,17 @@
+{
+ "schema": "evidence-manifest/v1",
+ "run_started_utc": "2026-10-20T15:08:53Z",
+ "run_finished_utc": "2026-10-20T15:13:12Z",
+ "git_commit": "a55f23332e9fdd7ccb3b19223fc57cda6ebd9e12",
+ "git_tree_dirty_at_run": true,
+ "files_sha256": {
+  "logs/01_onboarding.jsonl": "4a8097311990c4726cfb1fe4ced09748eeedb8970b908266ad2a658f23d8d75f",
+  "logs/02_inbox.jsonl": "79ff9f565651dc5a3e15115073bbd2ac9f1f749791d7065fca1a1527e9fdf7ab",
+  "logs/03_payment.jsonl": "a2699fe5e0d39e67542b6078b9b4c76ac72c2f202875d38e35391f9f5976f086",
+  "logs/04_threshold.jsonl": "9015ff27d413532a9e2885a42e020c2109b81725ec1081a9d0e26412791e7257",
+  "logs/05_redteam.jsonl": "16d5b9c2a8406468c2ed1752017157af9f43dab89141cf0044136e2dbfa22591",
+  "logs/audit_chain.jsonl": "f7d990cb3054edd63dc12fc374f909fe573cbe50a757669ae5a3bda796818067"
+ },
+ "root_hash_sha256": "f3f147ef361cdb1d4812fa56df96a5d359fea005041cd8b22f47555bbf549590",
+ "root_hash_rule": "SHA-256 of the UTF-8 text '<path>  <sha256>' for each file, sorted by path, joined with LF (no trailing newline)"
+}

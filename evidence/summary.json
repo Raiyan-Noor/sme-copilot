@@ -1,0 +1,30 @@
+{
+ "01_onboarding": {
+  "steps": 20,
+  "errors": 0,
+  "extra": null
+ },
+ "02_inbox": {
+  "steps": 10,
+  "errors": 0,
+  "extra": {
+   "flagged": 1,
+   "held": 5,
+   "clean": 3
+  }
+ },
+ "03_payment": {
+  "steps": 9,
+  "errors": 0,
+  "extra": null
+ },
+ "04_threshold": {
+  "steps": 7,
+  "errors": 0,
+  "extra": null
+ },
+ "audit_chain": {
+  "steps": 228,
+  "errors": 0
+ }
+}

@@ -1,0 +1,105 @@
+{
+ "schema": "evidence-anchor/v1",
+ "anchored": true,
+ "manifest_root_hash_sha256": "f3f147ef361cdb1d4812fa56df96a5d359fea005041cd8b22f47555bbf549590",
+ "seal_entry": {
+  "seq": 227,
+  "date": "2026-10-19",
+  "time": "07:04:15",
+  "kind": "evidence.manifest_sealed",
+  "data": {
+   "manifest_root_hash_sha256": "f3f147ef361cdb1d4812fa56df96a5d359fea005041cd8b22f47555bbf549590",
+   "git_commit": "a55f23332e9fdd7ccb3b19223fc57cda6ebd9e12",
+   "run_started_utc": "2026-10-20T15:08:53Z"
+  },
+  "prev_hash": "8f51539e090c8079a6a4a214ef3a9b75a76ce344eb7801046a3a92801a20b3cf",
+  "hash": "f4beb1fbaec44a4f8fffc0c476fe1d3a2f914381bc80c64feffa3568bfbbfb54"
+ },
+ "batch": {
+  "batch_id": "anc-000001",
+  "merkle_root": "d0dfb0d8361616cd38fa90441dc5412f97e391ecc82dd2d6937519b84a148624",
+  "tx_hash": "0x50b81703fe6c3074ed31b3fbdd63c546786dcb7d63e14a9f6489e7b37f770f45",
+  "explorer_url": "https://sepolia.etherscan.io/tx/0x50b81703fe6c3074ed31b3fbdd63c546786dcb7d63e14a9f6489e7b37f770f45",
+  "chain_id": 11155111,
+  "chain_name": "Sepolia",
+  "from_address": "0x945Bba9062788823114726C5c2DaA74ED339017c",
+  "block_number": 11956116,
+  "block_timestamp": 1792509204,
+  "head_seq": 227,
+  "leaves": [
+   {
+    "kind": "audit_head",
+    "hash": "f4beb1fbaec44a4f8fffc0c476fe1d3a2f914381bc80c64feffa3568bfbbfb54",
+    "ref": "audit #227",
+    "leaf_hash": "2d121ee124bcd264b361711e5649857aefa4a54563379563ca66a26450e07b80",
+    "proof": [
+     {
+      "side": "right",
+      "hash": "219dd8d3d32781c72edfa63c018b6e6199de999336232ca6d4dc4f3e0e28a5ea"
+     },
+     {
+      "side": "right",
+      "hash": "36dcf6fb049fe9694e4225a993baa3da38bc77f8f829f28e43f21921b7f0f8db"
+     }
+    ]
+   },
+   {
+    "kind": "mandate",
+    "hash": "3f867f830f1fd4f26acf4518d8c9311444bc2e973e285a35bd379285182876a8",
+    "ref": "mandate 1 (audit #210)",
+    "leaf_hash": "219dd8d3d32781c72edfa63c018b6e6199de999336232ca6d4dc4f3e0e28a5ea",
+    "proof": [
+     {
+      "side": "left",
+      "hash": "2d121ee124bcd264b361711e5649857aefa4a54563379563ca66a26450e07b80"
+     },
+     {
+      "side": "right",
+      "hash": "36dcf6fb049fe9694e4225a993baa3da38bc77f8f829f28e43f21921b7f0f8db"
+     }
+    ]
+   },
+   {
+    "kind": "payment",
+    "hash": "f41b295750d13b74e38594248f2571782bb1b1caa8db27dde3b38280fc12ff5c",
+    "ref": "passport maya-corner-store (audit #215)",
+    "leaf_hash": "0c413d7c6617f1977a09db3818d41c6dec5db992ed9563f5b259aaa559507247",
+    "proof": [
+     {
+      "side": "right",
+      "hash": "1ebb5f8724d3ff2f456d7b7c62209101cd6458432680125b8c1aa362934c9b7e"
+     },
+     {
+      "side": "left",
+      "hash": "b5d98daabbbac4cfda0b0f2ab2c6fd04dc7a1f20235a76c6f099a4d168cecf65"
+     }
+    ]
+   },
+   {
+    "kind": "mandate",
+    "hash": "db0f319c4fe3b48834bb014134e68a65e2f8f3027e3ec67694de8c27aca3b633",
+    "ref": "mandate 2 (audit #218)",
+    "leaf_hash": "1ebb5f8724d3ff2f456d7b7c62209101cd6458432680125b8c1aa362934c9b7e",
+    "proof": [
+     {
+      "side": "left",
+      "hash": "0c413d7c6617f1977a09db3818d41c6dec5db992ed9563f5b259aaa559507247"
+     },
+     {
+      "side": "left",
+      "hash": "b5d98daabbbac4cfda0b0f2ab2c6fd04dc7a1f20235a76c6f099a4d168cecf65"
+     }
+    ]
+   }
+  ]
+ },
+ "chain_status": "confirmed",
+ "onchain_log_check_ok": true,
+ "onchain_batch_checks": [
+  {
+   "batch_id": "anc-000001",
+   "status": "match"
+  }
+ ],
+ "what_is_anchored": "Merkle root over leaves [audit_head = hash of the seal entry, + payment receipts]. The seal entry's data holds manifest_root_hash_sha256; its hash is recomputable with backend/app/audit/log.py entry_hash over the entry body."
+}

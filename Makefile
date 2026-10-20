@@ -9,7 +9,7 @@ else
   VENV_PY := $(CURDIR)/backend/.venv/bin/python
 endif
 
-.PHONY: setup seed dev demo test openapi redteam evidence anchor reset-demo demo-reset samples validate-skill
+.PHONY: setup seed dev demo test openapi redteam evidence evidence-docs anchor reset-demo demo-reset samples validate-skill
 
 setup:  ## venv + pip install, npm install
 	$(BOOT_PY) scripts/setup.py
@@ -48,7 +48,11 @@ redteam:  ## attack + benign suites (replay, per recorded provider); writes docs
 	"$(VENV_PY)" scripts/redteam.py
 
 evidence: export LLM_REPLAY = replay
-evidence:  ## offline: audit log + chain check, anchors re-verified, red-team, tests, outboxes, payments, spend -> docs/evidence/
+evidence:  ## run the scenarios end to end (sandbox, replay), write evidence/ logs + manifest + root hash, anchor it; ARGS=--skip-redteam|--skip-anchor
+	"$(VENV_PY)" scripts/run_evidence.py $(ARGS)
+
+evidence-docs: export LLM_REPLAY = replay
+evidence-docs:  ## offline: audit log + chain check, anchors re-verified, red-team, tests, outboxes, payments, spend -> docs/evidence/
 	"$(VENV_PY)" scripts/evidence.py
 
 anchor:  ## anchor now against the live testnet (manual only; needs ANCHOR_* in .env) -> docs/results/anchors.json
