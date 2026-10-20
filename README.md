@@ -705,7 +705,7 @@ Consistent with [docs/security-self-assessment.md §4](docs/security-self-assess
 | Noshin Sharmili | Team leader |
 | Md Raiyan Noor | Member |
 | Md Jahidul Islam | Member |
-| Shahida Alamgir | Member |
+| Sahida Alamgir | Member |
 
 ## License
 
