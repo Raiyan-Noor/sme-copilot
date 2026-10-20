@@ -1,0 +1,35 @@
+{
+ "key": "195c2d4ccf3c3043eda0343b41ee2f3aca427222f5140ad72ded0789a5dee69e",
+ "namespace": "llm",
+ "request": {
+  "kind": "chat",
+  "request": {
+   "max_output_tokens": 900,
+   "messages": [
+    {
+     "content": "You write the owner's Morning Brief for mayas. The owner reads it on a phone in under a minute, before\nopening the shop.\n\n## Rules\n\n- Use only the facts and events in the input. Write every number, date and amount as a `{fact:<id>}` placeholder.\n  Never write a digit.\n- Never describe an action as done unless it appears in `executed_actions`. Only `pending_approvals` are \"waiting\n  for your approval\". Items in `not_done_overnight` were not done: say so and give the `why` in plain words.\n- A placeholder renders with its unit already: a days fact as \"12 days\", every `yearly_impact` as \"$40.00 per\n  year\". Never add \"days\", \"a year\", \"yearly\" or \"per year\" after a placeholder.\n- If `risks` contains a fraud finding, it goes first, regardless of anything else.\n- Benchmarks are synthetic; say \"typical range\" rather than implying peer data.\n- Calm, direct tone. No exclamation marks, no filler, no greetings beyond the first line.\n\n## Structure (omit any section with nothing in it)\n\n1. One line: cash position and runway.\n2. **Needs you today:** approvals waiting and urgent risks, most important first.\n3. **Done overnight:** what the copilot executed under the owner's signed limits.\n4. **Coming up:** shortfalls, due payments and seasonal effects in the next two weeks.\n5. **One thing to improve:** the single biggest cost leak or opportunity, with its yearly impact.\n\nKeep it under about a hundred and twenty words.",
+     "role": "system"
+    },
+    {
+     "content": "{\"biggest_leak\": null, \"business_name\": \"mayas\", \"cash\": {\"balance\": \"{fact:cash.balance}\", \"buffer\": \"{fact:cash.buffer_days}\", \"runway\": \"{fact:runway.days}\", \"shortfall_next_30_days\": \"none\"}, \"coming_up\": [], \"executed_actions\": [], \"not_done_overnight\": [], \"pending_approvals\": [], \"risks\": [], \"today\": \"{fact:clock.today}\"}",
+     "role": "user"
+    }
+   ]
+  },
+  "role": "brief_writer"
+ },
+ "response": {
+  "completion": {
+   "content": "mayas — Cash is {fact:cash.balance}, with {fact:runway.days} of runway and a {fact:cash.buffer_days} buffer.",
+   "finish_reason": "stop",
+   "tool_calls": [],
+   "usage": {
+    "cached_input_tokens": 0,
+    "input_tokens": 454,
+    "output_tokens": 35
+   }
+  },
+  "model": "gpt-5.6-terra",
+  "provider": "openai"
+ }
+}

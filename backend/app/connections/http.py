@@ -2,9 +2,14 @@
 
 One small seam (`Transport`) so tests replace the network entirely (CI never calls Google). Responses are parsed as
 JSON when they are JSON; nothing here logs request bodies or headers, because they carry tokens and secrets.
+
+Connections try IPv4 addresses before IPv6, each with a short connect timeout: on networks where IPv6 is advertised
+but does not route, the standard library would wait out the full timeout on every request before falling back.
 """
 
+import http.client
 import json
+import socket
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -12,6 +17,7 @@ from dataclasses import dataclass
 from typing import Any, Protocol
 
 TIMEOUT_S = 20.0
+CONNECT_TIMEOUT_S = 5.0  # per address, so one unreachable address family costs seconds, not the whole timeout
 
 
 class TransportError(RuntimeError):
@@ -58,12 +64,61 @@ class UrllibTransport:
             hdrs["Content-Type"] = "application/json"
         req = urllib.request.Request(url, data=data, headers=hdrs, method=method)
         try:
-            with urllib.request.urlopen(req, timeout=TIMEOUT_S) as res:
+            with _OPENER.open(req, timeout=TIMEOUT_S) as res:
                 return Response(res.status, _parse(res.read()))
         except urllib.error.HTTPError as exc:
             return Response(exc.code, _parse(exc.read()))
         except (urllib.error.URLError, TimeoutError, OSError) as exc:
             raise TransportError(type(exc).__name__) from None
+
+
+def connect_ipv4_first(address: tuple[str, int], timeout: Any = None,
+                       source_address: tuple[str, int] | None = None) -> socket.socket:
+    """Open a TCP connection, trying every IPv4 address before any IPv6 one. Each attempt gets at most
+    CONNECT_TIMEOUT_S; the returned socket uses `timeout` for reads."""
+    host, port = address
+    timeout = timeout if isinstance(timeout, (int, float)) else None
+    infos = socket.getaddrinfo(host, port, 0, socket.SOCK_STREAM)
+    infos.sort(key=lambda info: info[0] != socket.AF_INET)  # stable: keeps the resolver's order within a family
+    last: OSError | None = None
+    for family, kind, proto, _, addr in infos:
+        sock = socket.socket(family, kind, proto)
+        try:
+            sock.settimeout(CONNECT_TIMEOUT_S if timeout is None else min(CONNECT_TIMEOUT_S, timeout))
+            if source_address:
+                sock.bind(source_address)
+            sock.connect(addr)
+            sock.settimeout(timeout)
+            return sock
+        except OSError as exc:
+            last = exc
+            sock.close()
+    raise last or OSError(f"no addresses for {host}")
+
+
+class _HTTPConnection(http.client.HTTPConnection):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self._create_connection = connect_ipv4_first
+
+
+class _HTTPSConnection(http.client.HTTPSConnection):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self._create_connection = connect_ipv4_first
+
+
+class _HTTPHandler(urllib.request.HTTPHandler):
+    def http_open(self, req: urllib.request.Request) -> Any:
+        return self.do_open(_HTTPConnection, req)
+
+
+class _HTTPSHandler(urllib.request.HTTPSHandler):
+    def https_open(self, req: urllib.request.Request) -> Any:
+        return self.do_open(_HTTPSConnection, req, context=self._context)
+
+
+_OPENER = urllib.request.build_opener(_HTTPHandler(), _HTTPSHandler())
 
 
 def _parse(raw: bytes) -> Any:

@@ -2,7 +2,7 @@
 
 Deadline: Tue Oct 20, 23:59 Beijing = **21:59 Dhaka**
 Feature freeze: **Tue 13:00 Dhaka**
-Last updated: Tue Oct 20, ~02:00 Dhaka (Prompt 19)
+Last updated: Tue Oct 20, ~07:15 Dhaka (demo prep)
 
 This file is now the single source of truth for remaining work (`docs/build-prompts.md` is superseded — see the
 note at its top). See "Maintaining this file" at the end before editing it.
@@ -23,12 +23,13 @@ Verified against `git log`, the code on disk and a full `pytest` run (1005 passe
 | F5 | Payments tab | Done (P3) — SandboxPay provider service, Payments tab, `pay_invoice` (T3); verified live in the browser on an isolated copy of the data; optional stablecoin rail not built |
 | F6 | Product and ad knowledge in Skill Packs | Merged into P1 |
 | F7 | Transactions tab | Done (P5, commit `c606eab`) |
-| F8 | Real Gmail inbox via OAuth (read + send approved emails) | Done (P6) — built and tested against a mocked Google; not yet connected to the live demo account (needs GMAIL_CLIENT_ID/SECRET in `.env`) |
+| F8 | Real Gmail inbox via OAuth (read + send approved emails) | Done (P6) — connected live to the demo account Tue Oct 20 (needed the Gmail API enabled in the Cloud project). Fix: `connections/http.py` now tries IPv4 before IPv6 with a 5 s per-address connect timeout; on a network with dead IPv6 every Google call had waited out the 20 s timeout first. The poller only reads mail that arrives after connecting; use "Import the last 7 days" for older mail |
 | F9 | Ad advisor: discuss which product to advertise more | Done (P7) |
 | F10 | Proactive "what you didn't think of" questions from the Skill Pack | Merged into P1 |
 | F11 | Upload a custom skill.md on the opening page; open skills library | Done (P8) |
 | F12 | Chat loading messages that show what KaChing is doing | Done (P0) |
 | F13 | Morning brief expanded into a wide popup with a live activity feed | Done — a "Morning brief" card in the chat brief opens a wide dialog over the conversation (deep link `/brief`; ✕, Esc, scrim click and browser back close it; panels and the approval sheet open above it); the feed is `GET /businesses/{id}/brief/activity`, built read-only from the overnight run's audit entries; Approve reuses the approval sheet (emails, one at a time; a group opens the Outbox since there is no batch signing) and the Payments flow (`approve.tsx`, shared with the Payments tab); held emails are Blocked + Review only. Audit entries now carry a simulated `time` (HH:MM:SS: each simulated day begins 07:00 at fast-forward, then real time passes); older entries keep their old shape and hashes, so the existing log and its anchors still verify. Full `pytest` run: 1013 passed (Tue Oct 20). Verified in the browser on an isolated copy of the data (render, Expand/Back, Approve opening the payment approval sheet); not signed there. The live demo log predates `time`, so rows show dates until the next fast-forward |
+| F14 | Friendlier, conversational assistant | Done — `planner.md` gains a "Tone and conversation" section: warm greeting by name in the first reply, answer first and never ask permission to look something up, a friendly tone never replaces `{fact:...}` citations (the first drafts made Terra and Sol answer in words only or ask "shall I check?", failing `benchmarks`, `products`, `boutique_*`), one follow-up question per reply (none after a `denied`/`pending_approval` status), and at most one question per reply about the business (key products, seasons, suppliers, customers, plans, worries); owner chat details are context, never numbers or permission to act. The chat empty state greets by time of day and the owner's first name (from the brief feed). The Morning brief opens with "Good morning, <first name>." built in code (`agent/brief.py` `with_greeting`), on both the LLM and the template path, skipped if the writer already greeted; `GET /brief` adds the greeting to briefs saved before this change. The brief is laid out for scanning: each section a bold title over a bullet list (bills coming up and money coming in apart), each item led by the bolded name, on both paths (`template_paragraphs` and `brief_writer.md`); the card renders a "Title:" + "- item" paragraph as a heading and list (`BriefParagraph` in `brief.tsx`). Bold uses FactText's `**bold**` support. The brief-writer prompt changed, so its old dev/demo recordings miss and fall back to the template, which has the same layout. Planner recordings re-recorded for the new prompt (Tue Oct 20): openai/Terra 126 passed, attacks 37/37, tasks 25/25; openai-demo/Sol attacks 36/37, tasks 25/25 (the 3 Sol mailbox failures are extractor recordings, unchanged and failing before this change) |
 | — | Correcting ledger entries | Dropped |
 
 Verification notes: P0 confirmed by `frontend/components/advisor/stage-line.tsx` and commit `23d2f8e`. P1 confirmed
@@ -54,6 +55,8 @@ inbox.
 **Remaining order from here:** nothing planned. Feature freeze 13:00, code freeze 15:00 Dhaka; only bug fixes and submission material after that.
 
 **Demo email plan:** the console injects sandbox attacks that real email can't fake (lookalike domains, spoofed senders); real emails are sent live from your phone to the demo Gmail inbox.
+
+**Demo config (Tue Oct 20, ~07:15 Dhaka):** `.env` now has `LLM_PROFILE=demo` (Sol planner) and `DEMO_SEND_ALLOWLIST=raiyannoor2000@gmail.com`. Every seeded and sample customer has an `.example` address, so overnight reminders still go to the labelled sandbox outbox; a real Gmail send needs a recipient whose address is on the allowlist (e.g. added through "New address you added", `POST /emails/recipients`). Full `pytest` before the demo: 1021 passed, branding and types checks pass, `tsc --noEmit` clean.
 
 **Manual setup before P6 (you, ~15 min):** create a fresh Gmail account for the demo shop; create a Google Cloud project; enable the Gmail API; configure the OAuth consent screen in testing mode; add the demo Gmail as a test user; create an OAuth client (web app) with redirect URI `http://localhost:<backend port>/inbox/gmail/callback`; put the client ID and secret in `.env`. No paid services needed.
 

@@ -361,35 +361,74 @@ def _section_facts(brief: MorningBrief) -> dict[str, Fact]:
     return facts
 
 
+def _section(title: str, items: list[str]) -> str:
+    """A titled section, one item per line: the UI shows the title as a heading and the items as a list."""
+    return "\n".join([f"{title}:", *(f"- {i}" for i in items)])
+
+
+def _names(names: list[str]) -> str:
+    bold = [f"**{n}**" for n in names]
+    return bold[0] if len(bold) == 1 else ", ".join(bold[:-1]) + " and " + bold[-1]
+
+
 def template_paragraphs(b: dict[str, Any]) -> list[str]:
     """The brief in fixed sentences from the bundle: placeholders and names only, so it always passes."""
     out = []
     cash = b["cash"]
-    line = f"Cash on hand is {cash['balance']}." if cash.get("balance") else "Cash position is not available yet."
+    line = f"You have {cash['balance']} in cash." if cash.get("balance") else "Cash position is not available yet."
     if cash.get("runway"):
-        line += f" Runway: {cash['runway']}."
+        line += f" At the current pace that lasts {cash['runway']}."
     if cash.get("shortfall_next_30_days") == "expected":
         line += " A shortfall is expected within the month."
     out.append(line)
-    needs = [f"{tool_words(n['action'])}" + (f" for {n['for']}" if n.get("for") else "")
+    needs = [f"Sign the {tool_words(n['action'])}" + (f" for **{n['for']}**" if n.get("for") else "")
              for n in b["pending_approvals"]]
-    needs += [f"reminder to {n['customer']} ({n['why']})" for n in b["not_done_overnight"]
-              if n["why"] != RULE_WORDS["frequency_cap"] and n.get("status") != "waiting_for_approval"]
+    unsent: dict[str, list[str]] = {}
+    for n in b["not_done_overnight"]:
+        if n["why"] != RULE_WORDS["frequency_cap"] and n.get("status") != "waiting_for_approval":
+            unsent.setdefault(n["why"], []).append(n["customer"])
+    needs += [f"Reminders to {_names(who)} were not sent: {why}" for why, who in unsent.items()]
     if needs:
-        out.append("Needs you today: " + "; ".join(needs) + ".")
-    done = [f"reminder sent to {e['customer']}" + (f" for {e['invoice_amount']}" if e.get("invoice_amount") else "")
+        out.append(_section("Needs you today", needs))
+    done = [f"Reminder sent to **{e['customer']}**" + (f" for {e['invoice_amount']}" if e.get("invoice_amount") else "")
             for e in b["executed_actions"]]
     if done:
-        out.append("Done overnight under your signed limits: " + "; ".join(done) + ".")
-    coming = [f"{c['what']}" + (f" ({c['who']})" if c.get("who") else "") + f", {c['amount']} due {c['due']}"
-              for c in b["coming_up"]]
-    if coming:
-        out.append("Coming up: " + "; ".join(coming) + ".")
+        out.append(_section("Done overnight under your signed limits", done))
+
+    def due(c: dict[str, Any]) -> str:
+        head = c.get("who") or c["what"]
+        return f"**{head}**: {c['amount']} on {c['due']}" + (f" ({c['what'].lower()})" if c.get("who") else "")
+
+    bills = [due(c) for c in b["coming_up"] if c.get("direction") != "money_in"]
+    incoming = [due(c) for c in b["coming_up"] if c.get("direction") == "money_in"]
+    if bills:
+        out.append(_section("Bills coming up", bills))
+    if incoming:
+        out.append(_section("Money coming in", incoming))
     leak = b.get("biggest_leak")
     if leak:
-        out.append(f"One thing to improve: {leak['finding']}" + (f" ({leak['about']})" if leak.get("about") else "")
-                   + f", about {leak['yearly_impact']}.")
+        out.append(_section("One thing to improve", [
+            f"**{leak['finding']}**" + (f" ({leak['about']})" if leak.get("about") else "")
+            + f", costing about {leak['yearly_impact']}"]))
     return out
+
+
+GREETINGS = ("good morning", "morning", "hi ", "hi,", "hello")
+
+
+def greeting(profile: Profile) -> str:
+    """The brief's first line, built in code: "Good morning, Maya." The name is left out if it is unset or carries a
+    digit, so the line always passes the Numeric Firewall (invariant 4)."""
+    first = profile.owner_name.split()[0] if profile.owner_name and profile.owner_name != "the owner" else ""
+    first = first.strip(",.")
+    return f"Good morning, {first}." if first and not any(c.isdigit() for c in first) else "Good morning."
+
+
+def with_greeting(paragraphs: list[str], profile: Profile) -> list[str]:
+    """Paragraphs opening with the greeting, unless the writer already greeted."""
+    if paragraphs and paragraphs[0].lower().startswith(GREETINGS):
+        return paragraphs
+    return [greeting(profile), *paragraphs]
 
 
 def system_prompt(profile: Profile) -> str:
@@ -442,6 +481,7 @@ def write(llm: Any, computed: Computed, profile: Profile, today: date, reminders
     if text is not None:
         render(text, known)  # re-checks the firewall: there is no path around it
         brief = brief.model_copy(update={"generated_by": "llm", "paragraphs": _paragraphs(text)})
+    brief = brief.model_copy(update={"paragraphs": with_greeting(brief.paragraphs, profile)})
     for p in brief.paragraphs + brief.could_also_check:
         render(p, known)
     brief = brief.model_copy(update={"firewall": BriefFirewall(attempts=attempts, rejected=rejected,

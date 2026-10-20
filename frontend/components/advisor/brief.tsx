@@ -153,11 +153,41 @@ function Brief({ brief, held }: { brief: MorningBrief; held: InboxItem[] }) {
       }
     >
       {brief.paragraphs.map((p, i) => (
-        <span key={i} className="ka-p">
-          <FactText text={p} facts={brief.facts} />
-        </span>
+        <BriefParagraph key={i} text={p} facts={brief.facts} />
       ))}
     </ChatBubble>
+  );
+}
+
+const BULLET = /^\s*[-*•]\s+/;
+
+/**
+ * One brief paragraph. A section ("Bills coming up:" then "- item" lines) shows as a small heading over a list, so
+ * the owner can scan it; any other paragraph is plain text. Every line still goes through FactText (invariant 4).
+ */
+function BriefParagraph({ text, facts }: { text: string; facts: MorningBrief["facts"] }) {
+  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+  const items = lines.filter((l) => BULLET.test(l)).map((l) => l.replace(BULLET, ""));
+  if (!items.length) {
+    return (
+      <span className="ka-p">
+        <FactText text={text} facts={facts} />
+      </span>
+    );
+  }
+  const head = lines.filter((l) => !BULLET.test(l)).join(" ");
+  const title = head.replace(/^\*\*(.*)\*\*$/, "$1").replace(/\*\*/g, "");
+  return (
+    <div className="ka-p ka-bsec">
+      {title ? <div className="kc-label ka-bsec__title">{title.replace(/:$/, "")}</div> : null}
+      <ul className="ka-bsec__list">
+        {items.map((item, i) => (
+          <li key={i}>
+            <FactText text={item} facts={facts} />
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

@@ -4,14 +4,17 @@ import { ArrowRight, ArrowUp, PenLine, Repeat } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { Logo } from "@/components/brand/Logo";
+import { useBusinessKey } from "@/components/business-context";
 import { ApprovalCard } from "@/components/kc/approval-card";
 import { Button } from "@/components/kc/button";
 import { ChatBubble } from "@/components/kc/chat-bubble";
 import { Segments } from "@/components/kc/fact";
 import { StatusPill, decisionPill } from "@/components/kc/status-pill";
 import { APP_NAME } from "@/config/app";
+import { api } from "@/lib/api";
 import { ruleLabel, sentence, toolTitle } from "@/lib/format";
-import type { ActionEvent, Decision } from "@/lib/types";
+import type { ActionEvent, BriefActivity, Decision } from "@/lib/types";
+import { useApi } from "@/lib/use-api";
 
 import { BriefMessage } from "./brief";
 import { RevealSegments, StageLine } from "./stage-line";
@@ -238,13 +241,25 @@ export function Conversation() {
   );
 }
 
+/** "Good morning, Maya": time of day from the browser, first name from the brief feed (none until it loads). */
+function useGreeting(): string {
+  const { id, key } = useBusinessKey("greeting");
+  const res = useApi<BriefActivity>(key && `${key}:activity`, () => api.briefActivity(id));
+  const hour = new Date().getHours();
+  const part = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  const name = res.data?.owner_first_name;
+  return name ? `${part}, ${name}` : part;
+}
+
 function EmptyState({ onSend }: { onSend: (t: string) => void }) {
+  const greeting = useGreeting();
   return (
     <div className="ka-empty">
       <div className="ka-col" style={{ display: "flex", flexDirection: "column", gap: 28 }}>
         <div className="ka-greet">
           <Logo variant="mark" />
-          <h1>What would you like to know?</h1>
+          <h1>{greeting}</h1>
+          <span className="kc-caption">How is the shop today? Ask me anything, or tell me about your products.</span>
         </div>
         <Composer onSend={onSend} autoFocus />
         <div className="ka-sugg">

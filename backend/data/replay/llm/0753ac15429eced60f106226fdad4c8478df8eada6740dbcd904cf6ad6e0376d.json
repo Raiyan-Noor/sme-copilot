@@ -1,0 +1,35 @@
+{
+ "key": "0753ac15429eced60f106226fdad4c8478df8eada6740dbcd904cf6ad6e0376d",
+ "namespace": "llm",
+ "request": {
+  "kind": "chat",
+  "request": {
+   "max_output_tokens": 900,
+   "messages": [
+    {
+     "content": "You write the owner's Morning Brief for Maya's Corner Store. The owner reads it on a phone in under a minute, before\nopening the shop.\n\n## Rules\n\n- Use only the facts and events in the input. Write every number, date and amount as a `{fact:<id>}` placeholder.\n  Never write a digit.\n- Never describe an action as done unless it appears in `executed_actions`. Only `pending_approvals` are \"waiting\n  for your approval\". Items in `not_done_overnight` were not done: say so and give the `why` in plain words.\n- A placeholder renders with its unit already: a days fact as \"12 days\", every `yearly_impact` as \"$40.00 per\n  year\". Never add \"days\", \"a year\", \"yearly\" or \"per year\" after a placeholder.\n- If `risks` contains a fraud finding, it goes first, regardless of anything else.\n- Benchmarks are synthetic; say \"typical range\" rather than implying peer data.\n- Calm, direct tone. No exclamation marks, no filler, no greetings beyond the first line.\n\n## Structure (omit any section with nothing in it)\n\n1. One line: cash position and runway.\n2. **Needs you today:** approvals waiting and urgent risks, most important first.\n3. **Done overnight:** what the copilot executed under the owner's signed limits.\n4. **Coming up:** shortfalls, due payments and seasonal effects in the next two weeks.\n5. **One thing to improve:** the single biggest cost leak or opportunity, with its yearly impact.\n\nKeep it under about a hundred and twenty words.",
+     "role": "system"
+    },
+    {
+     "content": "{\"biggest_leak\": {\"about\": \"Golden Grain Wholesale, Long-grain rice kg\", \"details\": {\"first purchase\": \"{fact:leak.supplier_price_creep.sup_ggw-rice-5kg.first_date}\", \"first unit cost\": \"{fact:leak.supplier_price_creep.sup_ggw-rice-5kg.first_unit_cost}\", \"latest purchase\": \"{fact:leak.supplier_price_creep.sup_ggw-rice-5kg.latest_date}\", \"latest unit cost\": \"{fact:leak.supplier_price_creep.sup_ggw-rice-5kg.latest_unit_cost}\", \"purchases compared\": \"{fact:leak.supplier_price_creep.sup_ggw-rice-5kg.purchases}\", \"unit cost increase\": \"{fact:leak.supplier_price_creep.sup_ggw-rice-5kg.increase}\"}, \"finding\": \"Supplier raising unit prices\", \"yearly_impact\": \"{fact:leak.supplier_price_creep.sup_ggw-rice-5kg.yearly_impact}\"}, \"business_name\": \"Maya's Corner Store\", \"cash\": {\"balance\": \"{fact:cash.balance}\", \"buffer\": \"{fact:cash.buffer_days}\", \"runway\": \"{fact:runway.days}\", \"shortfall_next_30_days\": \"none\"}, \"coming_up\": [{\"amount\": \"{fact:scheduled.mcs-sch-0006.amount}\", \"direction\": \"money_out\", \"due\": \"{fact:scheduled.mcs-sch-0006.due_date}\", \"what\": \"Power, water and internet\", \"who\": \"LinkFast Broadband\"}, {\"amount\": \"{fact:scheduled.mbx-em-023-1.amount}\", \"direction\": \"money_in\", \"due\": \"{fact:scheduled.mbx-em-023-1.due_date}\", \"what\": \"Customer invoice payments\", \"who\": \"Little Steps Daycare\"}, {\"amount\": \"{fact:scheduled.mcs-sch-0007.amount}\", \"direction\": \"money_out\", \"due\": \"{fact:scheduled.mcs-sch-0007.due_date}\", \"what\": \"Staples (rice, flour, oil)\", \"who\": \"Golden Grain Wholesale\"}, {\"amount\": \"{fact:scheduled.mbx-em-015-1.amount}\", \"direction\": \"money_in\", \"due\": \"{fact:scheduled.mbx-em-015-1.due_date}\", \"what\": \"Customer invoice payments\", \"who\": \"Sunrise Cafe\"}, {\"amount\": \"{fact:scheduled.mcs-sch-0008.amount}\", \"direction\": \"money_out\", \"due\": \"{fact:scheduled.mcs-sch-0008.due_date}\", \"what\": \"Fresh produce and dairy\", \"who\": \"FreshLine Produce & Dairy\"}], \"executed_actions\": [], \"not_done_overnight\": [], \"pending_approvals\": [{\"action\": \"pay_invoice\", \"for\": \"ShelfPOS\", \"why\": \"needs your signature\"}, {\"action\": \"send_email\", \"for\": \"Green Leaf Community Kitchen\", \"why\": \"needs your signature\"}], \"risks\": [], \"today\": \"{fact:clock.today}\"}",
+     "role": "user"
+    }
+   ]
+  },
+  "role": "brief_writer"
+ },
+ "response": {
+  "completion": {
+   "content": "Cash: {fact:cash.balance}; buffer {fact:cash.buffer_days}, runway {fact:runway.days}.\n\n**Needs you today:** Approve ShelfPOS invoice payment and email to Green Leaf Community Kitchen; both need your signature.\n\n**Coming up:** LinkFast utilities {fact:scheduled.mcs-sch-0006.amount} due {fact:scheduled.mcs-sch-0006.due_date}; Little Steps payment {fact:scheduled.mbx-em-023-1.amount} due {fact:scheduled.mbx-em-023-1.due_date}. Golden Grain staples {fact:scheduled.mcs-sch-0007.amount}, Sunrise Cafe payment {fact:scheduled.mbx-em-015-1.amount}, and FreshLine produce and dairy {fact:scheduled.mcs-sch-0008.amount} are also due soon.\n\n**One thing to improve:** Golden Grain’s long-grain rice unit price has risen by {fact:leak.supplier_price_creep.sup_ggw-rice-5kg.increase}. Renegotiate or compare suppliers; impact: {fact:leak.supplier_price_creep.sup_ggw-rice-5kg.yearly_impact}.",
+   "finish_reason": "stop",
+   "tool_calls": [],
+   "usage": {
+    "cached_input_tokens": 0,
+    "input_tokens": 1013,
+    "output_tokens": 333
+   }
+  },
+  "model": "gpt-5.6-terra",
+  "provider": "openai"
+ }
+}

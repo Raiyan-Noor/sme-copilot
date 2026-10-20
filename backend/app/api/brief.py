@@ -41,7 +41,9 @@ def get_brief(business_id: BusinessId, rt: RuntimeDep) -> MorningBrief:
     found = brief_writer.latest(rt.data_dir / business_id)
     if found is None:
         raise HTTPException(404, "no brief yet: advance the clock or POST /businesses/{id}/overnight")
-    return found
+    # Briefs saved before the greeting existed get it on the way out; a greeted brief is left as it is.
+    profile = load_profile(rt.facts(business_id), rt.settings.seed_dir)
+    return found.model_copy(update={"paragraphs": brief_writer.with_greeting(found.paragraphs, profile)})
 
 
 @router.get("/businesses/{business_id}/brief/activity", response_model=BriefActivity)

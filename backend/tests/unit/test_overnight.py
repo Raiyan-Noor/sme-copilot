@@ -212,6 +212,31 @@ def test_template_brief_reports_exactly_what_the_gateway_did(env):
     assert brief["improve"]["detector"] == "supplier_price_creep"
 
 
+def test_template_brief_greets_the_owner_by_first_name(env):
+    make, _ = env
+    client, _ = make()  # template text
+    assert advance(client)[MAYA]["brief"]["paragraphs"][0] == "Good morning, Maya."
+
+
+def test_a_writer_that_already_greets_is_not_greeted_twice(env):
+    make, _ = env
+    client, _ = make(FakeBriefWriter("Good morning, Maya. Cash on hand is {fact:cash.balance}."))
+    assert overnight(client)["brief"]["paragraphs"] == ["Good morning, Maya. Cash on hand is {fact:cash.balance}."]
+
+
+def test_a_brief_saved_without_a_greeting_is_greeted_when_served(env):
+    make, _ = env
+    client, _ = make()
+    overnight(client)
+    briefs = client.app.state.runtime.data_dir / MAYA / "briefs"
+    saved = sorted(briefs.glob("*.json"))[-1]
+    old = json.loads(saved.read_text(encoding="utf-8"))
+    old["paragraphs"] = old["paragraphs"][1:]  # as written before the greeting existed
+    saved.write_text(json.dumps(old), encoding="utf-8")
+    served = client.get(f"/businesses/{MAYA}/brief").json()["paragraphs"]
+    assert served == ["Good morning, Maya.", *old["paragraphs"]]
+
+
 def test_brief_without_executions_never_says_done(env):
     make, _ = env
     client, _ = make()
@@ -226,7 +251,8 @@ def test_llm_brief_is_used_when_it_passes_the_firewall(env):
     client, _ = make(writer)
     brief = overnight(client)["brief"]
     assert brief["generated_by"] == "llm"
-    assert brief["paragraphs"] == ["Cash on hand is {fact:cash.balance}.", "One thing to improve: rice prices."]
+    assert brief["paragraphs"] == ["Good morning, Maya.", "Cash on hand is {fact:cash.balance}.",
+                                   "One thing to improve: rice prices."]
     bundle = writer.requests[0][1]["content"]
     # The writer sees placeholders and names, never a fact value or statement text.
     assert "{fact:cash.balance}" in bundle

@@ -46,24 +46,37 @@ export function FactNumber({
 }
 
 const PLACEHOLDER = /\{fact:([^}]+)\}/g;
+const BOLD = /\*\*([^*]+)\*\*/g;
+
+function renderPlaceholders(text: string, facts: Record<string, Fact>, keyBase: string) {
+  const parts = text.split(PLACEHOLDER);
+  return parts.map((part, i) =>
+    i % 2 === 0 ? (
+      <Fragment key={`${keyBase}-${i}`}>{part}</Fragment>
+    ) : facts[part] ? (
+      <FactNumber key={`${keyBase}-${i}`} fact={facts[part]} />
+    ) : (
+      <span key={`${keyBase}-${i}`} className="kc-caption" title={`Unknown figure ${part}`}>
+        [missing figure]
+      </span>
+    ),
+  );
+}
 
 /**
- * Text with `{fact:id}` placeholders, as the brief writer and the gateway return it, rendered with each placeholder
- * as a FactNumber. An unknown ID shows a visible gap, never a guessed number (invariant 4).
+ * Text with `{fact:id}` placeholders and `**bold**` markers, as the brief writer and the gateway return it,
+ * rendered with each placeholder as a FactNumber and each bold span as <strong>. An unknown fact ID shows a
+ * visible gap, never a guessed number (invariant 4).
  */
 export function FactText({ text, facts }: { text: string; facts: Record<string, Fact> }) {
-  const parts = text.split(PLACEHOLDER);
+  const segments = text.split(BOLD);
   return (
     <>
-      {parts.map((part, i) =>
-        i % 2 === 0 ? (
-          <Fragment key={i}>{part}</Fragment>
-        ) : facts[part] ? (
-          <FactNumber key={i} fact={facts[part]} />
+      {segments.map((seg, i) =>
+        i % 2 === 1 ? (
+          <strong key={i}>{renderPlaceholders(seg, facts, `b${i}`)}</strong>
         ) : (
-          <span key={i} className="kc-caption" title={`Unknown figure ${part}`}>
-            [missing figure]
-          </span>
+          <Fragment key={i}>{renderPlaceholders(seg, facts, `p${i}`)}</Fragment>
         ),
       )}
     </>
