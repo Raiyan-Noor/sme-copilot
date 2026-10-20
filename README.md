@@ -18,8 +18,9 @@ packages only).
 | | |
 |---|---|
 | Repository | https://github.com/Raiyan-Noor/sme-copilot |
-| Demo video | `<!-- TODO: demo video link -->` |
-| Pitch deck | `<!-- TODO: pitch deck link -->` |
+| Team | Team KaChing |
+| Demo video | [Google Drive](https://drive.google.com/file/d/1BdKkz6TcpqdRH7pwbMApYrp3Kd7LZKMV/view?usp=sharing) |
+| Pitch deck | [Google Drive](https://drive.google.com/file/d/1BIfKlynVAS0Pmp8r4XJOT1aw8DhjO2aB/view?usp=sharing) |
 | Technical documentation | [docs/technical.md](docs/technical.md) · PDF: [docs/submission/technical-documentation.pdf](docs/submission/technical-documentation.pdf) |
 | Security self-assessment | [docs/security-self-assessment.md](docs/security-self-assessment.md) · summary: [docs/SECURITY.md](docs/SECURITY.md) |
 | Execution evidence | [docs/evidence/index.md](docs/evidence/index.md) |
@@ -697,11 +698,14 @@ Consistent with [docs/security-self-assessment.md §4](docs/security-self-assess
 
 ## Team
 
-| Name | Role | University |
-|---|---|---|
-| `<!-- TODO -->` | | |
-| `<!-- TODO -->` | | |
-| `<!-- TODO -->` | | |
+**Team KaChing**
+
+| Name | Role |
+|---|---|
+| Noshin Sharmili | Team leader |
+| Md Raiyan Noor | Member |
+| Md Jahidul Islam | Member |
+| Shahida Alamgir | Member |
 
 ## License
 
